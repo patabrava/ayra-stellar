@@ -7,16 +7,17 @@ import {
   createBatchAction,
   moderateUpdateAction,
   submitBatchAction,
+  syncBatchStatusAction,
   verifyPayoutAddressAction,
 } from "@/lib/ayra/actions";
-import { loadOperatorAyraState } from "@/lib/ayra/data";
-import { createDemoState, formatLocal, getProofPack } from "@/lib/ayra/domain";
+import { requireAdminSession } from "@/lib/ayra/session";
+import { formatLocal, getProofPack, type AyraState } from "@/lib/ayra/domain";
 
 type PageProps = {
   searchParams?: Promise<{ status?: string }>;
 };
 
-function batchTotal(state: ReturnType<typeof createDemoState>, batchId: string) {
+function batchTotal(state: AyraState, batchId: string) {
   return state.batchLineItems
     .filter((item) => item.batchId === batchId)
     .reduce((sum, item) => sum + item.amountUsdc, 0);
@@ -24,10 +25,17 @@ function batchTotal(state: ReturnType<typeof createDemoState>, batchId: string) 
 
 export default async function AdminPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const state = await loadOperatorAyraState();
-  const admin = state.profiles.find((item) => item.id === "profile-admin")!;
-  const providencia = state.tracks.find((item) => item.slug === "providencia")!;
-  const reforest = state.initiatives.find((item) => item.slug === "reforestation")!;
+  const session = await requireAdminSession("/admin");
+  const state = session.state;
+  const admin = session.context.profile;
+  const providencia =
+    state.tracks.find((item) => item.slug === "providencia") ?? state.tracks[0]!;
+  const reforest =
+    state.initiatives.find((item) => item.slug === "reforestation") ??
+    state.initiatives[0]!;
+  const defaultSponsor =
+    state.sponsors.find((item) => item.slug === "climate-future") ??
+    state.sponsors[0];
   const pendingApplications = state.applications.filter(
     (item) => item.status === "pending",
   );
@@ -42,7 +50,13 @@ export default async function AdminPage({ searchParams }: PageProps) {
   const committed = state.batches
     .filter((batch) => batch.status === "submitted" || batch.status === "settled")
     .reduce((sum, batch) => sum + batchTotal(state, batch.id), 0);
-  const proof = getProofPack(state, "batch-reforest-mar26");
+  const proofBatch =
+    state.batches.find((batch) => batch.status === "settled") ?? state.batches[0]!;
+  const lineItemBatch =
+    state.batches.find((batch) => batch.code === "PV-REFOREST-APR26") ??
+    state.batches.find((batch) => batch.status === "submitted") ??
+    state.batches[0]!;
+  const proof = getProofPack(state, proofBatch.id);
 
   return (
     <main className="ops-shell">
@@ -76,9 +90,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
               <Link className="btn ghost" href="/">
                 Public wall <ExternalLink className="h-4 w-4" />
               </Link>
-              <button className="btn" type="button">
+              <Link className="btn" href="/admin/export">
                 <Download className="h-4 w-4" /> Export CSV
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -253,7 +267,6 @@ export default async function AdminPage({ searchParams }: PageProps) {
                     </td>
                     <td>
                       <form action={approveApplicationAction}>
-                        <input name="actorProfileId" type="hidden" value={admin.id} />
                         <input name="applicationId" type="hidden" value={application.id} />
                         <button className="btn primary" type="submit">
                           Approve <Check className="h-4 w-4" />
@@ -291,7 +304,6 @@ export default async function AdminPage({ searchParams }: PageProps) {
                     </div>
                     <p className="mt-3 text-sm leading-6">{update.caption}</p>
                     <form action={moderateUpdateAction} className="mt-4 grid gap-3">
-                      <input name="actorProfileId" type="hidden" value={admin.id} />
                       <input name="updateId" type="hidden" value={update.id} />
                       <div className="field">
                         <label htmlFor={`caption-${update.id}`}>Public caption</label>
@@ -403,10 +415,16 @@ export default async function AdminPage({ searchParams }: PageProps) {
                       <td>
                         {batch.status === "ready" ? (
                           <form action={submitBatchAction}>
-                            <input name="actorProfileId" type="hidden" value={admin.id} />
                             <input name="batchId" type="hidden" value={batch.id} />
                             <button className="btn primary" type="submit">
                               Submit <Send className="h-4 w-4" />
+                            </button>
+                          </form>
+                        ) : batch.status === "submitted" ? (
+                          <form action={syncBatchStatusAction}>
+                            <input name="batchId" type="hidden" value={batch.id} />
+                            <button className="btn" type="submit">
+                              Sync status
                             </button>
                           </form>
                         ) : (
@@ -425,9 +443,10 @@ export default async function AdminPage({ searchParams }: PageProps) {
                 <Chip>Manual v1</Chip>
               </div>
               <div className="panel-body grid gap-4">
-                <input name="actorProfileId" type="hidden" value={admin.id} />
                 <input name="initiativeId" type="hidden" value={reforest.id} />
-                <input name="sponsorId" type="hidden" value="sponsor-climate-future" />
+                {defaultSponsor ? (
+                  <input name="sponsorId" type="hidden" value={defaultSponsor.id} />
+                ) : null}
                 <div className="grid-2">
                   <div className="field">
                     <label htmlFor="code">Code</label>
@@ -459,6 +478,10 @@ export default async function AdminPage({ searchParams }: PageProps) {
                     </select>
                   </div>
                 </div>
+                <div className="field">
+                  <label htmlFor="receiptFile">Private receipt</label>
+                  <input id="receiptFile" name="receiptFile" type="file" />
+                </div>
                 <button className="btn primary justify-self-start" type="submit">
                   Create ready batch
                 </button>
@@ -468,7 +491,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
           <div className="panel mt-4 overflow-x-auto">
             <div className="panel-head">
-              <span className="panel-title">PV-REFOREST-APR26 · line items</span>
+              <span className="panel-title">{lineItemBatch.code} · line items</span>
               <Chip tone="warn">partial settlement</Chip>
             </div>
             <table className="t min-w-[760px]">
@@ -483,7 +506,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
               </thead>
               <tbody>
                 {state.batchLineItems
-                  .filter((line) => line.batchId === "batch-reforest-apr26")
+                  .filter((line) => line.batchId === lineItemBatch.id)
                   .map((line) => (
                     <tr key={line.id}>
                       <td>{line.category}</td>
@@ -503,6 +526,45 @@ export default async function AdminPage({ searchParams }: PageProps) {
                       </td>
                     </tr>
                   ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="panel mt-4 overflow-x-auto">
+            <div className="panel-head">
+              <span className="panel-title">Reconciliation</span>
+              <Chip>Admin-only receipts</Chip>
+            </div>
+            <table className="t min-w-[760px]">
+              <thead>
+                <tr>
+                  <th>Batch</th>
+                  <th>Line item</th>
+                  <th>Status</th>
+                  <th>Private receipt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.reconciliationItems.map((item) => {
+                  const batch = state.batches.find((entry) => entry.id === item.batchId);
+                  const line = state.batchLineItems.find(
+                    (entry) => entry.id === item.lineItemId,
+                  );
+                  return (
+                    <tr key={item.id}>
+                      <td>{batch?.code}</td>
+                      <td>{line?.category}</td>
+                      <td>
+                        <Chip tone={item.status === "reconciled" ? "ok" : "warn"}>
+                          {item.status}
+                        </Chip>
+                      </td>
+                      <td>
+                        <Hash value={item.privateReceiptPath ?? "admin-only"} />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -531,9 +593,12 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   <label>Sponsor</label>
                   <input readOnly value={proof.sponsorName ?? "General fund"} />
                 </div>
-                <button className="btn primary justify-self-start" type="button">
+                <Link
+                  className="btn primary justify-self-start"
+                  href={`/proof/${proof.batchId}`}
+                >
                   Generate preview <ShieldCheck className="h-4 w-4" />
-                </button>
+                </Link>
               </div>
             </div>
             <div className="panel">
@@ -612,7 +677,6 @@ export default async function AdminPage({ searchParams }: PageProps) {
                         <td>
                           {address.status === "pending" ? (
                             <form action={verifyPayoutAddressAction}>
-                              <input name="actorProfileId" type="hidden" value={admin.id} />
                               <input name="payoutAddressId" type="hidden" value={address.id} />
                               <input
                                 name="verificationNote"

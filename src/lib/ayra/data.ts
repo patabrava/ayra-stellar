@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import {
   createSupabaseAdminClient,
@@ -12,6 +12,7 @@ import {
   type Batch,
   type BatchLineItem,
   type BatchStatus,
+  type FundingAllocation,
   type Grantee,
   type GranteeContact,
   type Initiative,
@@ -21,6 +22,7 @@ import {
   type PayoutAddressStatus,
   type Profile,
   type Role,
+  type ReconciliationItem,
   type SdpSyncEvent,
   type Sponsor,
   type StewardProfile,
@@ -50,9 +52,13 @@ type OperatorRows = PublicRows & {
   granteeContacts: GranteeContactRow[];
   payoutAddresses: PayoutAddressRow[];
   lineItems?: LineItemRow[];
+  fundingAllocations: FundingAllocationRow[];
+  reconciliationItems: ReconciliationRow[];
   sdpSyncEvents: SdpSyncEventRow[];
   auditLogs: AuditLogRow[];
 };
+
+type AyraSupabaseClient = Pick<SupabaseClient, "from">;
 
 type TrackRow = {
   id: string;
@@ -229,6 +235,33 @@ type LineItemRow = {
   private_recipient_name: string | null;
 };
 
+type FundingAllocationRow = {
+  id: string;
+  initiative_id: string;
+  sponsor_id: string | null;
+  batch_id: string | null;
+  category: string;
+  amount_usdc: number | string;
+  local_amount: number | string;
+  local_currency: string;
+  status: string;
+  notes: string | null;
+  created_by_profile_id: string;
+  created_at: string;
+};
+
+type ReconciliationRow = {
+  id: string;
+  batch_id: string;
+  line_item_id: string;
+  status: string;
+  private_receipt_path: string | null;
+  note: string | null;
+  created_by_profile_id: string;
+  created_at: string;
+  reconciled_at: string | null;
+};
+
 type SdpSyncEventRow = {
   id: string;
   batch_id: string;
@@ -351,7 +384,19 @@ export async function loadPublicAyraState() {
 export async function loadOperatorAyraState() {
   if (!hasSupabaseAdminEnv()) return createDemoState();
 
-  const supabase = createSupabaseAdminClient();
+  return loadOperatorAyraStateFromClient(createSupabaseAdminClient(), {
+    fallbackToDemo: true,
+  });
+}
+
+export async function loadAuthenticatedAyraState(supabase: AyraSupabaseClient) {
+  return loadOperatorAyraStateFromClient(supabase, { fallbackToDemo: false });
+}
+
+async function loadOperatorAyraStateFromClient(
+  supabase: AyraSupabaseClient,
+  { fallbackToDemo }: { fallbackToDemo: boolean },
+) {
   const [
     profiles,
     userRoles,
@@ -368,6 +413,8 @@ export async function loadOperatorAyraState() {
     media,
     batches,
     lineItems,
+    fundingAllocations,
+    reconciliationItems,
     sdpSyncEvents,
     auditLogs,
   ] = await Promise.all([
@@ -415,6 +462,16 @@ export async function loadOperatorAyraState() {
         "id,batch_id,category,amount_usdc,local_amount,local_currency,status,sdp_payment_id,transaction_hash,private_recipient_name",
       ),
     supabase
+      .from("funding_allocations")
+      .select(
+        "id,initiative_id,sponsor_id,batch_id,category,amount_usdc,local_amount,local_currency,status,notes,created_by_profile_id,created_at",
+      ),
+    supabase
+      .from("reconciliation_items")
+      .select(
+        "id,batch_id,line_item_id,status,private_receipt_path,note,created_by_profile_id,created_at,reconciled_at",
+      ),
+    supabase
       .from("sdp_sync_events")
       .select("id,batch_id,provider,action,status,external_id,message,created_at"),
     supabase
@@ -438,12 +495,15 @@ export async function loadOperatorAyraState() {
     media,
     batches,
     lineItems,
+    fundingAllocations,
+    reconciliationItems,
     sdpSyncEvents,
     auditLogs,
   ];
   if (results.some((result) => result.error)) {
     console.error("Falling back to AYRA demo state after operator Supabase read failure.");
-    return createDemoState();
+    if (fallbackToDemo) return createDemoState();
+    throw new Error("Authenticated Supabase read failed.");
   }
 
   return stateFromOperatorRows({
@@ -463,6 +523,8 @@ export async function loadOperatorAyraState() {
     batches: (batches.data ?? []) as BatchRow[],
     receipts: [],
     lineItems: (lineItems.data ?? []) as LineItemRow[],
+    fundingAllocations: (fundingAllocations.data ?? []) as FundingAllocationRow[],
+    reconciliationItems: (reconciliationItems.data ?? []) as ReconciliationRow[],
     sdpSyncEvents: (sdpSyncEvents.data ?? []) as SdpSyncEventRow[],
     auditLogs: (auditLogs.data ?? []) as AuditLogRow[],
   });
@@ -496,6 +558,8 @@ export function stateFromPublicRows(rows: PublicRows): AyraState {
     updates: rows.updates.map((row) => mapUpdate(row, mediaByUpdate)),
     batches: rows.batches.map(mapBatch),
     batchLineItems: rows.receipts.map(mapReceiptLineItem),
+    fundingAllocations: [],
+    reconciliationItems: [],
     sdpSyncEvents: [],
     auditLogs: [],
   };
@@ -513,6 +577,8 @@ export function stateFromOperatorRows(rows: OperatorRows): AyraState {
     granteeContacts: rows.granteeContacts.map(mapGranteeContact),
     payoutAddresses: rows.payoutAddresses.map(mapPayoutAddress),
     batchLineItems: rows.lineItems?.map(mapLineItem) ?? state.batchLineItems,
+    fundingAllocations: rows.fundingAllocations.map(mapFundingAllocation),
+    reconciliationItems: rows.reconciliationItems.map(mapReconciliationItem),
     sdpSyncEvents: rows.sdpSyncEvents.map(mapSdpSyncEvent),
     auditLogs: rows.auditLogs.map(mapAuditLog),
   };
@@ -633,6 +699,45 @@ function mapLineItem(row: LineItemRow): BatchLineItem {
     sdpPaymentId: row.sdp_payment_id ?? undefined,
     transactionHash: row.transaction_hash ?? undefined,
     recipientName: row.private_recipient_name ?? undefined,
+  };
+}
+
+function mapFundingAllocation(row: FundingAllocationRow): FundingAllocation {
+  return {
+    id: row.id,
+    initiativeId: row.initiative_id,
+    sponsorId: row.sponsor_id ?? undefined,
+    batchId: row.batch_id ?? undefined,
+    category: row.category,
+    amountUsdc: numeric(row.amount_usdc),
+    localAmount: numeric(row.local_amount),
+    localCurrency: currency(row.local_currency),
+    status:
+      row.status === "batched" ||
+      row.status === "submitted" ||
+      row.status === "settled"
+        ? row.status
+        : "planned",
+    notes: row.notes ?? undefined,
+    createdByProfileId: row.created_by_profile_id,
+    createdAt: row.created_at,
+  };
+}
+
+function mapReconciliationItem(row: ReconciliationRow): ReconciliationItem {
+  return {
+    id: row.id,
+    batchId: row.batch_id,
+    lineItemId: row.line_item_id,
+    status:
+      row.status === "receipt_attached" || row.status === "reconciled"
+        ? row.status
+        : "needs_receipt",
+    privateReceiptPath: row.private_receipt_path ?? undefined,
+    note: row.note ?? undefined,
+    createdByProfileId: row.created_by_profile_id,
+    createdAt: row.created_at,
+    reconciledAt: row.reconciled_at ?? undefined,
   };
 }
 

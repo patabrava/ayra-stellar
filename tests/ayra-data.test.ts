@@ -169,6 +169,8 @@ describe("AYRA Supabase row mapping", () => {
         },
       ],
       payoutAddresses: [],
+      fundingAllocations: [],
+      reconciliationItems: [],
       sdpSyncEvents: [],
       auditLogs: [],
     });

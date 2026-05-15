@@ -3,7 +3,7 @@ import { Download, Send } from "lucide-react";
 
 import { Chip, Hash, Money, OpsNav, StatusBanner } from "@/components/ayra/ui";
 import { submitUpdateAction } from "@/lib/ayra/actions";
-import { loadOperatorAyraState } from "@/lib/ayra/data";
+import { requireStewardSession } from "@/lib/ayra/session";
 import {
   formatLocal,
   getProofPack,
@@ -15,24 +15,38 @@ type PageProps = {
 
 export default async function StewardPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const state = await loadOperatorAyraState();
-  const initiative = state.initiatives.find((item) => item.slug === "reforestation")!;
-  const profile = state.profiles.find((item) => item.id === "profile-leidy")!;
+  const session = await requireStewardSession("/steward");
+  const state = session.state;
+  const profile = session.context.profile;
+  const initiative =
+    state.initiatives.find(
+      (item) =>
+        item.slug === "reforestation" &&
+        session.context.scopedInitiativeIds.includes(item.id),
+    ) ??
+    state.initiatives.find((item) =>
+      session.context.scopedInitiativeIds.includes(item.id),
+    ) ??
+    state.initiatives[0]!;
   const steward = state.stewardProfiles.find(
     (item) => item.initiativeId === initiative.id,
-  )!;
-  const grantee = state.grantees.find((item) => item.initiativeId === initiative.id)!;
+  );
+  const grantee = state.grantees.find((item) => item.initiativeId === initiative.id);
   const address = state.payoutAddresses.find(
     (item) => item.initiativeId === initiative.id,
-  )!;
+  );
   const milestones = state.milestones.filter(
     (item) => item.initiativeId === initiative.id,
   );
+  const defaultMilestone =
+    milestones.find((milestone) => milestone.status === "active") ?? milestones[0];
   const updates = state.updates
     .filter((item) => item.initiativeId === initiative.id)
     .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt));
   const batches = state.batches.filter((item) => item.initiativeId === initiative.id);
-  const currentProof = getProofPack(state, "batch-reforest-apr26");
+  const currentBatch =
+    batches.find((batch) => batch.status === "submitted") ?? batches[0]!;
+  const currentProof = getProofPack(state, currentBatch.id);
   const totalReceived = state.batchLineItems
     .filter((line) => {
       const batch = state.batches.find((item) => item.id === line.batchId);
@@ -78,9 +92,11 @@ export default async function StewardPage({ searchParams }: PageProps) {
             <div className="panel-body grid-2">
               <div>
                 <div className="stat-k">Organisation</div>
-                <div className="mt-1 text-lg font-medium">{steward.organisationName}</div>
+                <div className="mt-1 text-lg font-medium">
+                  {steward?.organisationName ?? grantee?.name ?? initiative.name}
+                </div>
                 <p className="mt-2 text-sm text-ink-muted">
-                  Public contact: {steward.publicContactName}
+                  Public contact: {steward?.publicContactName ?? profile.displayName}
                 </p>
               </div>
               <div>
@@ -122,9 +138,11 @@ export default async function StewardPage({ searchParams }: PageProps) {
               </div>
               <div className="mt-5 border border-rule bg-surface-3 p-4">
                 <div className="stat-k">Current address</div>
-                <div className="mono mt-2 break-all text-sm">{address.address}</div>
+                <div className="mono mt-2 break-all text-sm">
+                  {address?.address ?? "Pending operator verification"}
+                </div>
                 <p className="mt-2 text-sm text-ink-muted">
-                  Verified {address.verifiedAt?.slice(0, 10)} by AYRA. Locked on
+                  Verified {address?.verifiedAt?.slice(0, 10) ?? "pending"} by AYRA. Locked on
                   first disbursement.
                 </p>
               </div>
@@ -149,11 +167,9 @@ export default async function StewardPage({ searchParams }: PageProps) {
                 <span className="panel-title">New submission</span>
               </div>
               <div className="panel-body grid gap-4">
-                <input name="actorProfileId" type="hidden" value={profile.id} />
-                <input name="initiativeId" type="hidden" value={initiative.id} />
                 <div className="field">
                   <label htmlFor="milestoneId">Milestone</label>
-                  <select id="milestoneId" name="milestoneId" defaultValue="milestone-reforest-03">
+                  <select id="milestoneId" name="milestoneId" defaultValue={defaultMilestone?.id}>
                     {milestones.map((milestone) => (
                       <option key={milestone.id} value={milestone.id}>
                         {milestone.code} · {milestone.title}
@@ -188,6 +204,15 @@ export default async function StewardPage({ searchParams }: PageProps) {
                       placeholder="Field crew planting seedlings"
                     />
                   </div>
+                </div>
+                <div className="field">
+                  <label htmlFor="mediaFile">Upload public media</label>
+                  <input
+                    id="mediaFile"
+                    name="mediaFile"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml,video/mp4"
+                  />
                 </div>
                 <div className="flex flex-wrap justify-between gap-3 border-t border-rule pt-4">
                   <p className="max-w-md text-sm text-ink-muted">
@@ -242,13 +267,13 @@ export default async function StewardPage({ searchParams }: PageProps) {
             <div>
               <h2>Payments</h2>
               <p className="section-sub">
-                Read-only history of line items disbursed to {grantee.name}. The
+                Read-only history of line items disbursed to {grantee?.name ?? initiative.name}. The
                 verified link opens the same public proof surface.
               </p>
             </div>
-            <button className="btn ghost" type="button">
+            <Link className="btn ghost" href="/steward/export">
               <Download className="h-4 w-4" /> Download CSV
-            </button>
+            </Link>
           </div>
 
           <div className="stat-grid mb-4">
@@ -289,7 +314,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
               </thead>
               <tbody>
                 {state.batchLineItems
-                  .filter((line) => line.batchId === "batch-reforest-apr26")
+                  .filter((line) => line.batchId === currentBatch.id)
                   .map((line) => (
                     <tr key={line.id}>
                       <td className="mono">2026-04-30</td>
@@ -307,7 +332,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
                       </td>
                       <td>
                         {line.transactionHash ? (
-                          <Link className="btn" href="/#receipts">
+                          <Link className="btn" href={`/proof/${currentBatch.id}`}>
                             Verified
                           </Link>
                         ) : (
@@ -337,6 +362,9 @@ export default async function StewardPage({ searchParams }: PageProps) {
                       <div className="row-meta">{batch.periodLabel}</div>
                     </div>
                     <Chip tone="ok">Cleared</Chip>
+                    <Link className="btn ghost" href={`/proof/${batch.id}`}>
+                      Proof
+                    </Link>
                   </div>
                 ))}
             </div>

@@ -211,3 +211,5 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Public transparency projections are track-scoped feeds: keep the hero default on Reforestation, but include approved public records from all initiatives in the selected track.
 - Anonymous application inserts must use return-minimal writes unless a privileged client can also read `applications`; selecting inserted ids will fail RLS.
 - When changing `public_batch_receipts` column order or adding leading columns, drop and recreate the view instead of `create or replace view`.
+- Authenticated admin server actions need explicit admin RLS policies for every registry table they write; service-role-era assumptions surface as promotion or batch mutation errors.
+- Supabase email-link callbacks must normalize legacy `magiclink`/`signup` types to `email`; login hashes in this project verify as `confirmation_token` rows.

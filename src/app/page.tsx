@@ -247,9 +247,9 @@ export default async function Home({ searchParams }: PageProps) {
               Batch-level proof from canonical records.
             </p>
           </div>
-          <Chip tone={proof.publicLabel === "Cleared" ? "ok" : "info"}>
-            {proof.publicLabel}
-          </Chip>
+          <Link className="btn ghost border-white/20 text-white" href={`/proof/${proof.batchId}`}>
+            Open proof <ExternalLink className="h-4 w-4" />
+          </Link>
         </div>
 
         <div className="overflow-x-auto border border-[var(--dark-rule)]">

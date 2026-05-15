@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { signOutAction } from "@/lib/ayra/actions";
+
 export function Chip({
   children,
   tone,
@@ -49,6 +51,11 @@ export function OpsNav({
         <span className="ml-auto hidden items-center gap-2 md:inline-flex">
           <Chip tone={role === "ADMIN" ? "info" : "ok"}>{role}</Chip>
           <span className="mono text-xs text-ink-muted">{user}</span>
+          <form action={signOutAction}>
+            <button className="btn ghost" type="submit">
+              Sign out
+            </button>
+          </form>
         </span>
       </nav>
       <nav className="tabs" aria-label={`${role} sections`}>

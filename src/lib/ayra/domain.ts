@@ -162,6 +162,33 @@ export type BatchLineItem = {
   recipientName?: string;
 };
 
+export type FundingAllocation = {
+  id: string;
+  initiativeId: string;
+  sponsorId?: string;
+  batchId?: string;
+  category: string;
+  amountUsdc: number;
+  localAmount: number;
+  localCurrency: "COP" | "USD";
+  status: "planned" | "batched" | "submitted" | "settled";
+  notes?: string;
+  createdByProfileId: string;
+  createdAt: string;
+};
+
+export type ReconciliationItem = {
+  id: string;
+  batchId: string;
+  lineItemId: string;
+  status: "needs_receipt" | "receipt_attached" | "reconciled";
+  privateReceiptPath?: string;
+  note?: string;
+  createdByProfileId: string;
+  createdAt: string;
+  reconciledAt?: string;
+};
+
 export type SdpSyncEvent = {
   id: string;
   batchId: string;
@@ -199,6 +226,8 @@ export type AyraState = {
   updates: InitiativeUpdate[];
   batches: Batch[];
   batchLineItems: BatchLineItem[];
+  fundingAllocations: FundingAllocation[];
+  reconciliationItems: ReconciliationItem[];
   sdpSyncEvents: SdpSyncEvent[];
   auditLogs: AuditLog[];
 };
@@ -307,6 +336,8 @@ function cloneState(state: AyraState): AyraState {
     updates: [...state.updates],
     batches: [...state.batches],
     batchLineItems: [...state.batchLineItems],
+    fundingAllocations: [...state.fundingAllocations],
+    reconciliationItems: [...state.reconciliationItems],
     sdpSyncEvents: [...state.sdpSyncEvents],
     auditLogs: [...state.auditLogs],
   };
@@ -722,6 +753,35 @@ export function createDemoState(): AyraState {
         ["Tools", 2700, 10_530_000, "settled", "mock-tx-feb-tools"],
         ["Crew wages", 5100, 19_890_000, "settled", "mock-tx-feb-crew"],
       ]),
+    ],
+    fundingAllocations: [
+      {
+        id: "allocation-reforest-apr26-crew",
+        initiativeId: "initiative-reforest",
+        sponsorId: "sponsor-audi",
+        batchId: "batch-reforest-apr26",
+        category: "Crew wages",
+        amountUsdc: 4820,
+        localAmount: 18_798_000,
+        localCurrency: "COP",
+        status: "settled",
+        notes: "Seeded category allocation.",
+        createdByProfileId: "profile-admin",
+        createdAt: "2026-04-28T08:00:00.000Z",
+      },
+    ],
+    reconciliationItems: [
+      {
+        id: "reconciliation-reforest-apr26-crew",
+        batchId: "batch-reforest-apr26",
+        lineItemId: "batch-reforest-apr26-line-1",
+        status: "reconciled",
+        privateReceiptPath: "receipts/batch-reforest-apr26/crew.pdf",
+        note: "Seeded private receipt pointer.",
+        createdByProfileId: "profile-admin",
+        createdAt: "2026-04-30T09:30:00.000Z",
+        reconciledAt: "2026-04-30T10:00:00.000Z",
+      },
     ],
     sdpSyncEvents: [
       {
