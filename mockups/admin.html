@@ -1,0 +1,1957 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#f4f3ef" />
+<title>AYRA · Operator Console</title>
+<meta name="description" content="Operator console for the AYRA Allocation Wall — Providencia. Internal. Auth required in production." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   AYRA · Operator Console — admin.html
+   Utilitarian working-software aesthetic. Never co-renders with
+   the public wall. Light surface, dense tables, mono allowed.
+   ============================================================ */
+
+:root {
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --bg:        oklch(97% 0.003 80);
+  --surface:   oklch(99% 0.002 80);
+  --surface-2: oklch(95% 0.004 80);
+  --surface-3: oklch(92% 0.006 80);
+
+  --rule:      oklch(86% 0.006 80);
+  --rule-2:    oklch(78% 0.008 80);
+
+  --ink:    oklch(18% 0.010 60);
+  --ink-2:  oklch(35% 0.010 60);
+  --ink-3:  oklch(52% 0.008 60);
+  --ink-4:  oklch(68% 0.006 60);
+
+  --accent:      oklch(48% 0.18 258);
+  --accent-soft: oklch(94% 0.04 258);
+  --accent-line: oklch(72% 0.10 258);
+
+  --ok:    oklch(45% 0.14 150);
+  --ok-bg: oklch(94% 0.05 150);
+  --warn:    oklch(55% 0.16 70);
+  --warn-bg: oklch(95% 0.06 70);
+  --err:    oklch(50% 0.20 28);
+  --err-bg: oklch(95% 0.05 28);
+
+  --pad: clamp(16px, 2vw, 28px);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+img, svg { display: block; max-width: 100%; }
+::selection { background: var(--accent-soft); color: var(--ink); }
+
+/* ============================================================
+   Topnav
+   ============================================================ */
+.topnav {
+  position: sticky; top: 0; z-index: 30;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; gap: 24px;
+  padding: 0 var(--pad); height: 56px;
+}
+.brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: 16px;
+}
+.brand .slash { color: var(--ink-3); margin: 0 6px; font-weight: 400; }
+.brand .scope { color: var(--ink-2); font-weight: 500; }
+.topnav .ctx-pick {
+  margin-left: 8px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  border-radius: 2px;
+}
+.topnav .ctx-pick .caret { color: var(--ink-3); }
+.topnav .balance {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.topnav .balance .live {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 3px oklch(45% 0.14 150 / .15);
+}
+.topnav .balance b { color: var(--ink); font-weight: 700; }
+.topnav .who {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  padding-left: 14px;
+  border-left: 1px solid var(--rule);
+}
+.topnav .who .role {
+  display: inline-block;
+  padding: 1px 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-line);
+  border-radius: 2px;
+  margin-right: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Tabs (sticky just under topnav) */
+.tabs {
+  position: sticky; top: 56px; z-index: 25;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+  padding: 0 var(--pad);
+  display: flex; gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.tab:hover { color: var(--ink); text-decoration: none; }
+.tab.is-active { color: var(--ink); border-bottom-color: var(--accent); }
+.tab .count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 6px;
+  background: var(--surface-3);
+  color: var(--ink-2);
+  border-radius: 2px;
+}
+.tab.is-active .count { background: var(--accent-soft); color: var(--accent); }
+
+/* ============================================================
+   Page
+   ============================================================ */
+main { padding: var(--pad); max-width: 1440px; margin: 0 auto; }
+section + section { margin-top: clamp(28px, 3vw, 44px); }
+
+.section-head {
+  display: flex; align-items: end; justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.section-head h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-size: clamp(22px, 1.4vw + 14px, 28px);
+  margin: 0;
+}
+.section-head .sub {
+  color: var(--ink-3);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.section-head .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ============================================================
+   Buttons / chips
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--surface);
+  border: 1px solid var(--rule-2);
+  border-radius: 2px;
+  color: var(--ink);
+  transition: background .15s, border-color .15s;
+}
+.btn:hover { background: var(--surface-2); border-color: var(--ink-3); text-decoration: none; }
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.btn.primary:hover { background: oklch(42% 0.20 258); border-color: oklch(42% 0.20 258); }
+.btn.danger { color: var(--err); border-color: oklch(75% 0.10 28); }
+.btn.danger:hover { background: var(--err-bg); border-color: var(--err); }
+.btn.ghost { border-color: transparent; color: var(--ink-2); }
+.btn.ghost:hover { background: var(--surface-2); }
+.btn.sm { padding: 4px 8px; font-size: 12px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.chip.ok    { background: var(--ok-bg);   color: var(--ok);   border-color: oklch(80% 0.08 150); }
+.chip.warn  { background: var(--warn-bg); color: var(--warn); border-color: oklch(82% 0.10 70); }
+.chip.err   { background: var(--err-bg);  color: var(--err);  border-color: oklch(82% 0.10 28); }
+.chip.info  { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-line); }
+
+/* ============================================================
+   Stat tiles
+   ============================================================ */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 18px 20px;
+  border-radius: 2px;
+}
+.stat .k {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.stat .v {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+  color: var(--ink);
+}
+.stat .v small {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-3);
+  font-weight: 400;
+  margin-left: 4px;
+}
+.stat .delta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-top: 4px;
+  color: var(--ink-3);
+}
+.stat .delta.up { color: var(--ok); }
+.stat .delta.dn { color: var(--err); }
+
+/* ============================================================
+   Cards / panels
+   ============================================================ */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.panel-head .title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.panel-body { padding: 16px; }
+
+/* ============================================================
+   Table
+   ============================================================ */
+.t {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.t th, .t td {
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--rule);
+}
+.t th {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--rule-2);
+  position: sticky;
+  top: 100px;
+  z-index: 5;
+}
+.t tr:hover td { background: var(--surface-2); }
+.t td.mono { font-family: var(--font-mono); font-size: 12px; }
+.t td.num  { font-family: var(--font-mono); font-size: 13px; text-align: right; font-weight: 700; }
+.t td.dim  { color: var(--ink-3); }
+.t td.row-actions { text-align: right; white-space: nowrap; }
+.t .name { font-weight: 500; }
+.t .meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+.t a.deep {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--ink-4);
+}
+.t a.deep:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* truncated address / hash with copy */
+.hashish {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  display: inline-flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.hashish code {
+  font: inherit;
+  padding: 2px 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+.hashish .copy {
+  font-size: 11px; color: var(--ink-3);
+  padding: 0 4px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--surface);
+}
+.hashish .copy:hover { color: var(--accent); border-color: var(--accent-line); }
+
+/* ============================================================
+   Two-up grids used inside several shells
+   ============================================================ */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 920px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+@media (max-width: 920px) { .grid-3 { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   Initiative status cards (Overview)
+   ============================================================ */
+.init-card {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 16px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  align-items: start;
+}
+.init-card .swatch {
+  width: 56px; height: 56px;
+  background: var(--surface-3);
+  background-image: linear-gradient(135deg, var(--surface-3), var(--surface-2));
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+.init-card .name {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+.init-card .code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+.init-card .row {
+  display: flex; gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.init-card .stats-mini {
+  display: flex; gap: 16px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+}
+.init-card .stats-mini b { color: var(--ink); font-weight: 700; }
+.init-card .open {
+  align-self: center;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.init-card .open::after { content: " →"; color: var(--ink-3); }
+.init-card:hover .open { color: var(--accent); }
+.init-card:hover .open::after { color: var(--accent); }
+
+/* ============================================================
+   Inflow sparkline
+   ============================================================ */
+.sparkline {
+  height: 80px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 14px 16px;
+  border-radius: 2px;
+  position: relative;
+}
+.sparkline svg { width: 100%; height: 100%; }
+.sparkline .label {
+  position: absolute; top: 8px; left: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ============================================================
+   State timeline (batch lifecycle)
+   ============================================================ */
+.timeline {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 12px 0 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.timeline .step {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.timeline .step.done { background: var(--ok-bg); color: var(--ok); border-color: oklch(80% 0.08 150); }
+.timeline .step.active {
+  background: var(--accent-soft); color: var(--accent);
+  border-color: var(--accent-line);
+}
+.timeline .step.fail { background: var(--err-bg); color: var(--err); border-color: oklch(82% 0.10 28); }
+.timeline .arrow { color: var(--ink-4); padding: 0 6px; }
+
+/* ============================================================
+   Reconciliation row (H5 suggestions)
+   ============================================================ */
+.recon {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  margin-bottom: 10px;
+  border-radius: 2px;
+}
+.recon-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rule);
+  align-items: center;
+}
+.recon-head .why {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+}
+.recon-body {
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.recon-block {
+  background: var(--surface-2);
+  border: 1px dashed var(--rule-2);
+  padding: 10px 12px;
+  border-radius: 2px;
+}
+.recon-block .k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.recon-block .v { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); }
+.recon-block .v + .v { margin-top: 2px; }
+.recon-actions {
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--rule);
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+}
+.recon-actions .h5-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-right: auto;
+}
+.recon-actions .h5-tag b {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ============================================================
+   Updates moderation queue
+   ============================================================ */
+.mod-row {
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
+  gap: 14px;
+  padding: 14px;
+  border-bottom: 1px solid var(--rule);
+  align-items: start;
+}
+.mod-row:last-child { border-bottom: 0; }
+.mod-row .thumb {
+  width: 88px; height: 88px;
+  background: var(--surface-3);
+  background-image: linear-gradient(135deg, var(--surface-3), var(--surface-2));
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+.mod-row .who {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+.mod-row .who b { color: var(--ink-2); }
+.mod-row .cap {
+  font-size: 14px;
+  color: var(--ink);
+  margin: 4px 0 6px;
+  text-wrap: pretty;
+}
+.mod-row .tags {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.mod-row .tags span {
+  padding: 1px 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+.mod-row .controls {
+  display: flex; flex-direction: column; gap: 6px;
+  align-items: stretch;
+  min-width: 140px;
+}
+
+/* ============================================================
+   Proof-pack composer split
+   ============================================================ */
+.pp {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+}
+@media (max-width: 920px) { .pp { grid-template-columns: 1fr; } }
+.pp .sel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 14px 16px;
+  border-radius: 2px;
+  height: max-content;
+}
+.pp .sel label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 12px 0 6px;
+}
+.pp .sel label:first-of-type { margin-top: 0; }
+.pp .sel select, .pp .sel input {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid var(--rule-2);
+  border-radius: 2px;
+  color: var(--ink);
+}
+.pp .preview {
+  background: white;
+  border: 1px solid var(--rule);
+  padding: clamp(20px, 3vw, 36px);
+  border-radius: 2px;
+  min-height: 480px;
+  font-family: var(--font-body);
+  color: var(--ink);
+  position: relative;
+}
+.pp .preview::before {
+  content: "PDF preview · A4";
+  position: absolute; top: 8px; right: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-4);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pp .preview h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+.pp .preview .pp-sub {
+  color: var(--ink-3);
+  font-size: 13px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 14px;
+}
+.pp .preview p { margin: 0 0 12px; max-width: 60ch; }
+.pp .preview .narrative {
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  margin: 14px 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  position: relative;
+}
+.pp .preview .narrative::before {
+  content: "H6 draft";
+  position: absolute; top: -10px; left: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent);
+  background: white;
+  padding: 0 6px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pp .preview .num-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+.pp .preview .num {
+  border: 1px solid var(--rule);
+  padding: 10px 12px;
+}
+.pp .preview .num .k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+}
+.pp .preview .num .v {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   Drill-in (per-initiative)
+   ============================================================ */
+.drill {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  margin-bottom: 16px;
+}
+.drill-head {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 16px;
+  padding: 18px 20px;
+  align-items: center;
+  border-bottom: 1px solid var(--rule);
+}
+.drill-head .swatch {
+  width: 64px; height: 64px;
+  background: var(--surface-3);
+  background-image: linear-gradient(135deg, var(--surface-3), var(--surface-2));
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+.drill-head .name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.drill-head .code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+.drill-head .row {
+  display: flex; gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.subnav {
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--rule);
+  padding: 0 12px;
+  background: var(--surface-2);
+}
+.subnav a {
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+}
+.subnav a:hover { color: var(--ink); text-decoration: none; }
+.subnav a.is-active { color: var(--ink); border-bottom-color: var(--accent); background: var(--surface); }
+
+.drill-body { padding: 18px 20px; }
+
+/* Milestones strip */
+.miles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+.mile {
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  padding: 10px 12px;
+  border-radius: 2px;
+}
+.mile.done { border-color: oklch(80% 0.08 150); background: var(--ok-bg); }
+.mile.active { border-color: var(--accent-line); background: var(--accent-soft); }
+.mile .code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+}
+.mile .label { font-size: 13px; margin-top: 2px; font-weight: 500; }
+.mile .pct { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+.mile.done .pct, .mile.active .pct { color: inherit; }
+@media (max-width: 720px) { .miles { grid-template-columns: 1fr 1fr; } }
+
+/* ============================================================
+   Empty state
+   ============================================================ */
+.empty {
+  text-align: center;
+  padding: 36px 20px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.empty b { color: var(--ink-2); display: block; margin-bottom: 4px; font-weight: 500; }
+
+/* ============================================================
+   Footer
+   ============================================================ */
+footer.foot {
+  margin-top: 40px;
+  padding: 24px var(--pad);
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  display: flex; gap: 16px; flex-wrap: wrap;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ============================================================
+   Tab section show/hide via :target-like behavior using JS.
+   For mockup: each section has data-tab; we toggle .is-hidden.
+   ============================================================ */
+.tab-pane[hidden] { display: none; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     Topnav
+     ============================================================ -->
+<nav class="topnav" aria-label="Operator console">
+  <span class="brand">AYRA<span class="slash">/</span><span class="scope">admin</span></span>
+  <span class="ctx-pick" title="Tenant scope (single-tenant at v1)">Providencia · Climate Future <span class="caret">▾</span></span>
+  <span class="balance" title="On-chain balance · distribution account">
+    <span class="live" aria-hidden="true"></span>
+    Distribution wallet · <b>48,210.55</b> USDC
+    <span style="color:var(--ink-4); margin: 0 4px;">·</span>
+    30d in <b>+12,400</b>
+  </span>
+  <span class="who"><span class="role">ADMIN</span>nicolas@ayra.haus</span>
+</nav>
+
+<!-- Tab bar -->
+<nav class="tabs" role="tablist" aria-label="Operator shells">
+  <a class="tab is-active" data-pane="overview" href="#overview" role="tab" aria-selected="true">Overview</a>
+  <a class="tab" data-pane="batches" href="#batches" role="tab">Batches <span class="count">3</span></a>
+  <a class="tab" data-pane="reconcile" href="#reconcile" role="tab">Reconciliation <span class="count">4</span></a>
+  <a class="tab" data-pane="updates" href="#updates" role="tab">Updates <span class="count">2</span></a>
+  <a class="tab" data-pane="proof" href="#proof" role="tab">Proof packs</a>
+  <a class="tab" data-pane="registry" href="#registry" role="tab">Registry</a>
+  <a class="tab" data-pane="initiative" href="#initiative" role="tab">Reforestation · drill-in</a>
+</nav>
+
+<main>
+
+<!-- ============================================================
+     PANE 1 · Overview
+     ============================================================ -->
+<section id="overview" class="tab-pane" data-pane="overview">
+
+  <div class="section-head">
+    <div>
+      <h2>Overview</h2>
+      <div class="sub">Funding log · committed vs free to allocate · grantee + initiative health.</div>
+    </div>
+    <div class="actions">
+      <a class="btn ghost" href="#">View on stellar.expert →</a>
+      <a class="btn" href="#">Export CSV</a>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="k">Allocation plan · YTD</div>
+      <div class="v">€186,400</div>
+      <div class="delta">3 active initiatives</div>
+    </div>
+    <div class="stat">
+      <div class="k">Committed to batches</div>
+      <div class="v">€124,820</div>
+      <div class="delta up">+€18,400 this month</div>
+    </div>
+    <div class="stat">
+      <div class="k">Free to allocate</div>
+      <div class="v">€61,580</div>
+      <div class="delta">incl. €4,200 pending Stripe top-up</div>
+    </div>
+    <div class="stat">
+      <div class="k">On-chain balance</div>
+      <div class="v">48,210<small>USDC</small></div>
+      <div class="delta">≈ €44,580 · GAYRA…7K2P</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="title">Initiatives</span>
+        <a class="btn sm" href="#registry">Manage registry</a>
+      </div>
+      <div style="padding:14px;">
+
+        <a href="#initiative" class="init-card" style="margin-bottom: 10px;">
+          <div class="swatch" style="background-image: linear-gradient(135deg, oklch(70% 0.10 145), oklch(40% 0.10 145));"></div>
+          <div>
+            <div class="name">Reforestation</div>
+            <div class="code">AYRA-PVD-REFOREST · Steward: Leidy Mendoza</div>
+            <div class="row">
+              <span class="chip ok">LIVE · MAINNET</span>
+              <span class="chip">M03 · in flight</span>
+              <span class="chip info">League 87</span>
+            </div>
+            <div class="stats-mini">
+              <span>Committed <b>€48,820</b></span>
+              <span>Settled <b>€44,200</b></span>
+              <span>Trees <b>1,284 / 1,800</b></span>
+              <span>Grantee <b style="color:var(--ok);">verified</b></span>
+            </div>
+          </div>
+          <div class="open">Open</div>
+        </a>
+
+        <a href="#initiative" class="init-card" style="margin-bottom: 10px;">
+          <div class="swatch" style="background-image: linear-gradient(135deg, oklch(70% 0.08 50), oklch(40% 0.08 50));"></div>
+          <div>
+            <div class="name">Dog Sterilization</div>
+            <div class="code">AYRA-PVD-STERIL · Steward: Pending invite</div>
+            <div class="row">
+              <span class="chip warn">APPROVED · FUNDING</span>
+              <span class="chip">M00 · planning</span>
+              <span class="chip info">League 71</span>
+            </div>
+            <div class="stats-mini">
+              <span>Committed <b>€18,000</b></span>
+              <span>Settled <b>€0</b></span>
+              <span>Grantee <b style="color:var(--warn);">invite pending</b></span>
+            </div>
+          </div>
+          <div class="open">Open</div>
+        </a>
+
+        <a href="#initiative" class="init-card">
+          <div class="swatch" style="background-image: linear-gradient(135deg, oklch(70% 0.08 220), oklch(40% 0.08 220));"></div>
+          <div>
+            <div class="name">Reef</div>
+            <div class="code">AYRA-PVD-REEF · Steward: Pending invite</div>
+            <div class="row">
+              <span class="chip warn">APPROVED · FUNDING</span>
+              <span class="chip">M00 · planning</span>
+              <span class="chip info">League 58</span>
+            </div>
+            <div class="stats-mini">
+              <span>Committed <b>€12,000</b></span>
+              <span>Settled <b>€0</b></span>
+              <span>Grantee <b style="color:var(--warn);">invite pending</b></span>
+            </div>
+          </div>
+          <div class="open">Open</div>
+        </a>
+
+      </div>
+    </div>
+
+    <div>
+      <div class="sparkline" style="height: 120px; margin-bottom: 12px;">
+        <span class="label">30-DAY INFLOWS · €</span>
+        <svg viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true">
+          <polyline fill="none" stroke="oklch(72% 0.10 258)" stroke-width="1.4"
+            points="0,60 15,55 30,58 45,52 60,48 75,50 90,46 105,42 120,40 135,38 150,32 165,30 180,28 195,32 210,28 225,24 240,22 255,18 270,20 285,14 300,12"/>
+          <polyline fill="oklch(72% 0.10 258 / 0.10)" stroke="none"
+            points="0,60 15,55 30,58 45,52 60,48 75,50 90,46 105,42 120,40 135,38 150,32 165,30 180,28 195,32 210,28 225,24 240,22 255,18 270,20 285,14 300,12 300,80 0,80"/>
+        </svg>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="title">Pending operator actions</span>
+          <span class="chip">6 OPEN</span>
+        </div>
+        <table class="t" role="table">
+          <tbody>
+            <tr>
+              <td><span class="chip warn">VERIFY ADDR</span></td>
+              <td>
+                <div class="name">Steril · Pending payout address</div>
+                <div class="meta">Submitted 2026-04-30 · attested 0.01 XLM round-trip OK</div>
+              </td>
+              <td class="row-actions"><a class="btn sm primary" href="#registry">Confirm</a></td>
+            </tr>
+            <tr>
+              <td><span class="chip warn">REVIEW UPDATE</span></td>
+              <td>
+                <div class="name">Reforest · "Old Point Day 12" submission</div>
+                <div class="meta">From Leidy Mendoza · tagged M03</div>
+              </td>
+              <td class="row-actions"><a class="btn sm primary" href="#updates">Review</a></td>
+            </tr>
+            <tr>
+              <td><span class="chip err">EXCEPTION</span></td>
+              <td>
+                <div class="name">Reforest · 2 unmatched line items</div>
+                <div class="meta">Reconciliation queue · H5 has suggestions</div>
+              </td>
+              <td class="row-actions"><a class="btn sm primary" href="#reconcile">Open queue</a></td>
+            </tr>
+            <tr>
+              <td><span class="chip">INVITE</span></td>
+              <td>
+                <div class="name">Reef · Send grantee invite</div>
+                <div class="meta">Steward TBD · contact lined up</div>
+              </td>
+              <td class="row-actions"><a class="btn sm" href="#registry">Send</a></td>
+            </tr>
+            <tr>
+              <td><span class="chip">INVITE</span></td>
+              <td>
+                <div class="name">Steril · Send grantee invite</div>
+                <div class="meta">Steward: Dr. Gómez · contact ready</div>
+              </td>
+              <td class="row-actions"><a class="btn sm" href="#registry">Send</a></td>
+            </tr>
+            <tr>
+              <td><span class="chip">PROOF PACK</span></td>
+              <td>
+                <div class="name">April pack · Audi Foundation</div>
+                <div class="meta">Draft saved · awaits final review</div>
+              </td>
+              <td class="row-actions"><a class="btn sm" href="#proof">Preview</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PANE 2 · Batches
+     ============================================================ -->
+<section id="batches" class="tab-pane" data-pane="batches" hidden>
+
+  <div class="section-head">
+    <div>
+      <h2>Batches</h2>
+      <div class="sub">Monthly disbursements across initiatives. State pulled from SDP callbacks; on-chain hash from Horizon.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="#">New batch</a>
+      <a class="btn ghost" href="#">Export all</a>
+    </div>
+  </div>
+
+  <div class="panel">
+    <table class="t">
+      <thead>
+        <tr>
+          <th>Batch</th>
+          <th>Initiative</th>
+          <th>Milestone</th>
+          <th style="text-align:right;">Amount</th>
+          <th>State</th>
+          <th>Published</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <tr>
+          <td>
+            <div class="name">PV-REFOREST-APR26</div>
+            <div class="meta">15 line items · 8 categories</div>
+          </td>
+          <td>Reforestation</td>
+          <td class="mono">M03</td>
+          <td class="num">€18,400</td>
+          <td>
+            <span class="chip info">SUBMITTED · 8/15</span>
+            <div class="timeline" style="margin-top:6px;">
+              <span class="step done">draft</span>
+              <span class="arrow">→</span>
+              <span class="step done">ready</span>
+              <span class="arrow">→</span>
+              <span class="step active">submitted</span>
+              <span class="arrow">→</span>
+              <span class="step">settled</span>
+            </div>
+          </td>
+          <td class="dim mono">2026-04-30 09:14 UTC</td>
+          <td class="row-actions">
+            <a class="btn sm" href="#initiative">Open</a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="name">PV-REFOREST-MAR26</div>
+            <div class="meta">14 line items · 7 categories</div>
+          </td>
+          <td>Reforestation</td>
+          <td class="mono">M02</td>
+          <td class="num">€16,200</td>
+          <td>
+            <span class="chip ok">SETTLED · 14/14</span>
+            <div class="timeline" style="margin-top:6px;">
+              <span class="step done">draft</span>
+              <span class="arrow">→</span>
+              <span class="step done">ready</span>
+              <span class="arrow">→</span>
+              <span class="step done">submitted</span>
+              <span class="arrow">→</span>
+              <span class="step done">settled</span>
+            </div>
+          </td>
+          <td class="dim mono">2026-03-31 09:02 UTC</td>
+          <td class="row-actions">
+            <a class="btn sm" href="#initiative">Open</a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="name">PV-REFOREST-FEB26</div>
+            <div class="meta">12 line items · 6 categories · 1 retried</div>
+          </td>
+          <td>Reforestation</td>
+          <td class="mono">M02</td>
+          <td class="num">€13,800</td>
+          <td>
+            <span class="chip ok">SETTLED · 12/12</span>
+            <div class="timeline" style="margin-top:6px;">
+              <span class="step done">draft</span>
+              <span class="arrow">→</span>
+              <span class="step done">ready</span>
+              <span class="arrow">→</span>
+              <span class="step done">submitted</span>
+              <span class="arrow">→</span>
+              <span class="step done">settled</span>
+            </div>
+          </td>
+          <td class="dim mono">2026-02-28 10:18 UTC</td>
+          <td class="row-actions">
+            <a class="btn sm" href="#initiative">Open</a>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel" style="margin-top: 16px;">
+    <div class="panel-head">
+      <span class="title">PV-REFOREST-APR26 · line items <span class="chip warn" style="margin-left:8px;">8 / 15 SETTLED</span></span>
+      <a class="btn sm ghost" href="#">Retry failed (0)</a>
+    </div>
+    <table class="t">
+      <thead>
+        <tr>
+          <th>External payment ID</th>
+          <th>Recipient category</th>
+          <th style="text-align:right;">Amount</th>
+          <th>State</th>
+          <th>Stellar tx</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">pv-reforest-apr26-001</td>
+          <td>Crew wages</td>
+          <td class="num">€4,820</td>
+          <td><span class="chip ok">SETTLED</span></td>
+          <td><span class="hashish"><code>e7c1…a4f2</code><button class="copy">Copy</button><a href="#">view</a></span></td>
+        </tr>
+        <tr>
+          <td class="mono">pv-reforest-apr26-002</td>
+          <td>Seedlings</td>
+          <td class="num">€3,160</td>
+          <td><span class="chip ok">SETTLED</span></td>
+          <td><span class="hashish"><code>9b40…11e8</code><button class="copy">Copy</button><a href="#">view</a></span></td>
+        </tr>
+        <tr>
+          <td class="mono">pv-reforest-apr26-003</td>
+          <td>Tools</td>
+          <td class="num">€2,540</td>
+          <td><span class="chip info">PROCESSING</span></td>
+          <td class="dim">—</td>
+        </tr>
+        <tr>
+          <td class="mono">pv-reforest-apr26-004</td>
+          <td>Training</td>
+          <td class="num">€1,860</td>
+          <td><span class="chip info">SUBMITTED</span></td>
+          <td class="dim">—</td>
+        </tr>
+        <tr>
+          <td class="mono">pv-reforest-apr26-005</td>
+          <td>Monitoring</td>
+          <td class="num">€1,820</td>
+          <td><span class="chip info">SUBMITTED</span></td>
+          <td class="dim">—</td>
+        </tr>
+        <tr>
+          <td colspan="5" class="dim" style="text-align:center; padding: 8px;">+ 10 more line items · <a href="#">show all</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PANE 3 · Reconciliation (H5)
+     ============================================================ -->
+<section id="reconcile" class="tab-pane" data-pane="reconcile" hidden>
+
+  <div class="section-head">
+    <div>
+      <h2>Reconciliation queue</h2>
+      <div class="sub">Unmatched, failed, or mismatched line items. H5 proposes likely matches; nothing is auto-applied.</div>
+    </div>
+    <div class="actions">
+      <a class="btn ghost" href="#">Filter: all initiatives ▾</a>
+      <a class="btn" href="#">Resolved log</a>
+    </div>
+  </div>
+
+  <div class="recon">
+    <div class="recon-head">
+      <div>
+        <div class="name" style="font-weight:500; font-size:14.5px;">Unmatched inflow · 4,200 USDC · 2026-04-29</div>
+        <div class="why">Stripe payout reference missing from registry · arrived from <span class="hashish"><code>GA7…stripeacct</code></span></div>
+      </div>
+      <span class="chip err">UNMATCHED</span>
+    </div>
+    <div class="recon-body">
+      <div class="recon-block">
+        <div class="k">Observed on Horizon</div>
+        <div class="v">amount · 4,200.00 USDC</div>
+        <div class="v">memo · stripe-payout-ach-2026-04</div>
+        <div class="v">tx · <span class="hashish"><code>9c1f…22a8</code></span></div>
+      </div>
+      <div class="recon-block">
+        <div class="k">H5 suggested match</div>
+        <div class="v">Stripe Stablecoin payout · April backings</div>
+        <div class="v">€4,180 · 24 backings · all initiatives</div>
+        <div class="v" style="color:var(--ink-3);">confidence · 0.94 · memo + amount + window</div>
+      </div>
+    </div>
+    <div class="recon-actions">
+      <span class="h5-tag">H5 · <b>Accept suggestion</b> tags this inflow as the April backings payout and updates "Free to allocate".</span>
+      <a class="btn sm primary" href="#">Accept</a>
+      <a class="btn sm" href="#">Edit & accept</a>
+      <a class="btn sm danger" href="#">Reject</a>
+    </div>
+  </div>
+
+  <div class="recon">
+    <div class="recon-head">
+      <div>
+        <div class="name" style="font-weight:500; font-size:14.5px;">Mismatched amount · pv-reforest-apr26-007</div>
+        <div class="why">Registry expects €1,820 · SDP callback returned 1,612 USDC ≈ €1,795 (FX drift)</div>
+      </div>
+      <span class="chip warn">MISMATCH</span>
+    </div>
+    <div class="recon-body">
+      <div class="recon-block">
+        <div class="k">Registry</div>
+        <div class="v">expected · €1,820</div>
+        <div class="v">recipient · monitoring</div>
+      </div>
+      <div class="recon-block">
+        <div class="k">H5 read</div>
+        <div class="v">paid · 1,612 USDC ≈ €1,795</div>
+        <div class="v">delta · €25 (1.4% FX drift)</div>
+        <div class="v" style="color:var(--ink-3);">confidence · 0.99 · within tolerance</div>
+      </div>
+    </div>
+    <div class="recon-actions">
+      <span class="h5-tag">H5 · <b>Within FX tolerance.</b> Accept records the actual settled EUR-equivalent.</span>
+      <a class="btn sm primary" href="#">Accept (record €1,795)</a>
+      <a class="btn sm">Edit</a>
+      <a class="btn sm danger">Open exception</a>
+    </div>
+  </div>
+
+  <div class="recon">
+    <div class="recon-head">
+      <div>
+        <div class="name" style="font-weight:500; font-size:14.5px;">Failed payment · pv-reforest-feb26-009</div>
+        <div class="why">Stellar account requires trustline for USDC · auto-retry exhausted</div>
+      </div>
+      <span class="chip err">FAILED</span>
+    </div>
+    <div class="recon-body">
+      <div class="recon-block">
+        <div class="k">Failure</div>
+        <div class="v">op_no_trust</div>
+        <div class="v">amount · 540 USDC</div>
+        <div class="v">retries · 3 (final 2026-02-28)</div>
+      </div>
+      <div class="recon-block">
+        <div class="k">H5 suggested action</div>
+        <div class="v">Move to next batch with note</div>
+        <div class="v">Notify grantee · request trustline + reattest</div>
+        <div class="v" style="color:var(--ink-3);">confidence · 0.88 · trustline policy</div>
+      </div>
+    </div>
+    <div class="recon-actions">
+      <span class="h5-tag">H5 · Funds remained on the distribution account; nothing was lost. Operator action records the carry-forward.</span>
+      <a class="btn sm primary" href="#">Carry forward</a>
+      <a class="btn sm">Notify grantee</a>
+      <a class="btn sm danger">Mark unrecoverable</a>
+    </div>
+  </div>
+
+  <div class="recon">
+    <div class="recon-head">
+      <div>
+        <div class="name" style="font-weight:500; font-size:14.5px;">Pending payout address · Sterilization</div>
+        <div class="why">New attestation submitted by grantee · 0.01 XLM round-trip verified on Horizon</div>
+      </div>
+      <span class="chip warn">VERIFY</span>
+    </div>
+    <div class="recon-body">
+      <div class="recon-block">
+        <div class="k">Submitted by grantee</div>
+        <div class="v">address · <span class="hashish"><code>GBVET…7K9F</code></span></div>
+        <div class="v">attested · 2026-04-30 18:42 UTC</div>
+        <div class="v">round-trip tx · <span class="hashish"><code>4d11…ee03</code></span></div>
+      </div>
+      <div class="recon-block">
+        <div class="k">Out-of-band confirm checklist</div>
+        <div class="v" style="color:var(--ink-3);">☐ Voice-confirmed with Dr. Gómez (signal)</div>
+        <div class="v" style="color:var(--ink-3);">☐ Address matches the one in WhatsApp 2026-04-22</div>
+        <div class="v" style="color:var(--ink-3);">☐ Steward control of seed acknowledged</div>
+      </div>
+    </div>
+    <div class="recon-actions">
+      <span class="h5-tag">First disbursement after confirm <b>locks</b> this address. Replacement requires a new attestation cycle.</span>
+      <a class="btn sm primary" href="#registry">Confirm & lock</a>
+      <a class="btn sm">Edit</a>
+      <a class="btn sm danger">Reject with note</a>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PANE 4 · Updates publisher
+     ============================================================ -->
+<section id="updates" class="tab-pane" data-pane="updates" hidden>
+
+  <div class="section-head">
+    <div>
+      <h2>Updates publisher</h2>
+      <div class="sub">Two lanes — operator-authored + grantee moderation queue. Nothing auto-publishes; every public update routes through here.</div>
+    </div>
+    <div class="actions">
+      <a class="btn primary" href="#">Compose update</a>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="title">Grantee submissions <span class="chip warn" style="margin-left:8px;">2 PENDING</span></span>
+        <a href="#" class="btn sm ghost">Filter ▾</a>
+      </div>
+
+      <div class="mod-row">
+        <div class="thumb" style="background-image: linear-gradient(135deg, oklch(70% 0.10 145), oklch(40% 0.10 145));"></div>
+        <div>
+          <div class="who">From <b>Leidy Mendoza</b> · Reforestation · submitted 2026-05-02 14:08</div>
+          <h3 style="margin:2px 0 0; font-family: var(--font-display); font-weight:500; font-size:16px; letter-spacing:-0.01em;">Old Point · Day 12 · canopy line completed</h3>
+          <p class="cap">"Six volunteers, three rows. Bottom House next week. Niño from Ecoparque cooked the lunch — best yet." — <i>auto-translated from Spanish</i></p>
+          <div class="tags">
+            <span>tag · M03</span>
+            <span>tag · PV-REFOREST-APR26</span>
+            <span>media · 1 photo · 1 clip 12s</span>
+          </div>
+        </div>
+        <div class="controls">
+          <a class="btn sm primary" href="#">Approve as-is</a>
+          <a class="btn sm" href="#">Edit caption</a>
+          <a class="btn sm" href="#">Hold</a>
+          <a class="btn sm danger" href="#">Reject…</a>
+        </div>
+      </div>
+
+      <div class="mod-row">
+        <div class="thumb" style="background-image: linear-gradient(135deg, oklch(70% 0.06 90), oklch(40% 0.06 90));"></div>
+        <div>
+          <div class="who">From <b>Leidy Mendoza</b> · Reforestation · submitted 2026-05-01 19:33</div>
+          <h3 style="margin:2px 0 0; font-family: var(--font-display); font-weight:500; font-size:16px; letter-spacing:-0.01em;">Nursery · 1,800 transplants ready</h3>
+          <p class="cap">"Casabaja batch transferred yesterday. Photo before transport. Survival looking strong on inland sites; we will know more in 30 days."</p>
+          <div class="tags">
+            <span>tag · M02</span>
+            <span>media · 2 photos</span>
+          </div>
+        </div>
+        <div class="controls">
+          <a class="btn sm primary" href="#">Approve as-is</a>
+          <a class="btn sm" href="#">Edit caption</a>
+          <a class="btn sm" href="#">Hold</a>
+          <a class="btn sm danger" href="#">Reject…</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="title">Recently published</span>
+        <a href="#" class="btn sm ghost">View on wall →</a>
+      </div>
+
+      <div class="mod-row">
+        <div class="thumb" style="background-image: linear-gradient(135deg, oklch(70% 0.10 220), oklch(40% 0.10 220));"></div>
+        <div>
+          <div class="who">2026-04-28 · operator-authored · published by <b>nicolas@</b></div>
+          <h3 style="margin:2px 0 0; font-family: var(--font-display); font-weight:500; font-size:16px; letter-spacing:-0.01em;">Permit extended · two sites added.</h3>
+          <p class="cap">"Casabaja and Bottom House are now permitted through Q4. Planting line moves south next week."</p>
+          <div class="tags">
+            <span>tag · M03</span>
+            <span>tag · PV-REFOREST-APR26</span>
+            <span style="color:var(--ok); border-color:oklch(80% 0.08 150); background:var(--ok-bg);">✓ public</span>
+          </div>
+        </div>
+        <div class="controls">
+          <a class="btn sm" href="#">Edit</a>
+          <a class="btn sm danger" href="#">Unpublish</a>
+        </div>
+      </div>
+
+      <div class="mod-row">
+        <div class="thumb" style="background-image: linear-gradient(135deg, oklch(70% 0.10 145), oklch(40% 0.10 145));"></div>
+        <div>
+          <div class="who">2026-04-22 · grantee submission · edited by <b>nicolas@</b></div>
+          <h3 style="margin:2px 0 0; font-family: var(--font-display); font-weight:500; font-size:16px; letter-spacing:-0.01em;">Nursery hit 1,800 transplant-ready.</h3>
+          <p class="cap">"Survival rate by site holding above 85% on the older stands. Casabaja batch transplanted on Thursday."</p>
+          <div class="tags">
+            <span>tag · M02</span>
+            <span style="color:var(--ok); border-color:oklch(80% 0.08 150); background:var(--ok-bg);">✓ public</span>
+          </div>
+        </div>
+        <div class="controls">
+          <a class="btn sm" href="#">Edit</a>
+          <a class="btn sm danger" href="#">Unpublish</a>
+        </div>
+      </div>
+
+      <div class="empty">
+        <b>That's the last 30 days.</b>
+        Earlier updates available in the archive.
+      </div>
+    </div>
+
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PANE 5 · Proof packs (H6)
+     ============================================================ -->
+<section id="proof" class="tab-pane" data-pane="proof" hidden>
+
+  <div class="section-head">
+    <div>
+      <h2>Proof packs</h2>
+      <div class="sub">Pick month + sponsor, preview composition, send or download. Numbers come from the registry verbatim; H6 only drafts narrative.</div>
+    </div>
+    <div class="actions">
+      <a class="btn ghost" href="#">Sent log</a>
+    </div>
+  </div>
+
+  <div class="pp">
+    <div class="sel">
+      <label>Month</label>
+      <select>
+        <option>April 2026</option>
+        <option>March 2026</option>
+        <option>February 2026</option>
+      </select>
+
+      <label>Sponsor</label>
+      <select>
+        <option>Audi Foundation</option>
+        <option>Smart Provider GmbH</option>
+        <option>(All sponsors · public version)</option>
+      </select>
+
+      <label>Initiative</label>
+      <select>
+        <option>Reforestation</option>
+        <option>Sterilization (no batches)</option>
+        <option>Reef (no batches)</option>
+      </select>
+
+      <label>Format</label>
+      <select>
+        <option>A4 PDF · branded</option>
+        <option>A4 PDF · plain</option>
+        <option>Markdown export</option>
+      </select>
+
+      <label>H6 narrative tone</label>
+      <select>
+        <option>Editorial (default)</option>
+        <option>Concise</option>
+        <option>Technical</option>
+      </select>
+
+      <div style="margin-top:18px; display:flex; gap:8px;">
+        <a class="btn primary" href="#">Generate</a>
+        <a class="btn" href="#">Save draft</a>
+      </div>
+      <div style="margin-top:14px; font-size:12px; color:var(--ink-3); font-family:var(--font-mono);">
+        Ledger anchor · <span class="hashish"><code>a3f2…b91c</code></span>
+      </div>
+    </div>
+
+    <div class="preview">
+      <h3>Audi Foundation · Providencia · April 2026</h3>
+      <div class="pp-sub">Climate Future · Reforestation · 1 of 1 batch · settled</div>
+
+      <div class="num-row">
+        <div class="num"><div class="k">Backed (your share)</div><div class="v">€18,400</div></div>
+        <div class="num"><div class="k">Settled on-chain</div><div class="v">100%</div></div>
+        <div class="num"><div class="k">Trees planted (April)</div><div class="v">412</div></div>
+      </div>
+
+      <div class="narrative">
+        Across April, the Reforestation crew completed the Old Point canopy line and shifted south to Bottom House. 412 trees went into the ground, drawn from the 1,800-strong nursery transplant batch. Crew wages and seedlings represented 73% of the month's spend; tools and training the remainder. Survival on inland sites held above 85%.
+      </div>
+
+      <p>The batch <code>PV-REFOREST-APR26</code> settled across 15 line items. Categories, amounts, and tx hashes are itemized below; every euro carries a Verified ✓ link to its on-chain receipt.</p>
+
+      <p style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3);">Continued · receipts table on page 2 · ledger anchor on page 4 · field photographs on pages 5–6.</p>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PANE 6 · Registry
+     ============================================================ -->
+<section id="registry" class="tab-pane" data-pane="registry" hidden>
+
+  <div class="section-head">
+    <div>
+      <h2>Registry</h2>
+      <div class="sub">Initiatives · sponsors · grantees · payout addresses. Where Reforestation, Sterilization, and Reef were created.</div>
+    </div>
+    <div class="actions">
+      <a class="btn primary" href="#">+ New initiative</a>
+      <a class="btn" href="#">+ Invite grantee</a>
+      <a class="btn" href="#">+ Sponsor</a>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <div class="panel">
+      <div class="panel-head"><span class="title">Initiatives</span><span class="chip">3</span></div>
+      <table class="t">
+        <thead>
+          <tr>
+            <th>Track code</th>
+            <th>Name</th>
+            <th>Steward</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">AYRA-PVD-REFOREST</td>
+            <td><a class="deep" href="#initiative">Reforestation</a></td>
+            <td>Leidy Mendoza · Ecoparque Iron Wood</td>
+            <td><span class="chip ok">LIVE</span></td>
+            <td class="row-actions"><a class="btn sm">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="mono">AYRA-PVD-STERIL</td>
+            <td>Dog Sterilization</td>
+            <td>Dr. Gómez · invite pending</td>
+            <td><span class="chip warn">FUNDING</span></td>
+            <td class="row-actions"><a class="btn sm">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="mono">AYRA-PVD-REEF</td>
+            <td>Reef</td>
+            <td class="dim">— pending</td>
+            <td><span class="chip warn">FUNDING</span></td>
+            <td class="row-actions"><a class="btn sm">Edit</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span class="title">Grantees</span><span class="chip">3 · 1 active</span></div>
+      <table class="t">
+        <thead>
+          <tr>
+            <th>Steward</th>
+            <th>Initiative</th>
+            <th>Payout address</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="name">Leidy Mendoza</div>
+              <div class="meta">leidy@ecoparque.co · last login 2026-05-02</div>
+            </td>
+            <td>Reforestation</td>
+            <td><span class="hashish"><code>GBLEIDY…3RS9</code><button class="copy">Copy</button></span></td>
+            <td><span class="chip ok">VERIFIED · LOCKED</span></td>
+            <td class="row-actions"><a class="btn sm">Profile</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="name">Dr. M. Gómez</div>
+              <div class="meta">gomez@vetprov.co · invite sent 2026-04-28</div>
+            </td>
+            <td>Sterilization</td>
+            <td><span class="hashish"><code>GBVET…7K9F</code><button class="copy">Copy</button></span></td>
+            <td><span class="chip warn">PENDING · ATTESTED</span></td>
+            <td class="row-actions"><a class="btn sm primary" href="#reconcile">Verify</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="name">— TBD</div>
+              <div class="meta">contact lined up · invite not sent</div>
+            </td>
+            <td>Reef</td>
+            <td class="dim">—</td>
+            <td><span class="chip">DRAFT</span></td>
+            <td class="row-actions"><a class="btn sm">Send invite</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <div class="panel" style="margin-top: 16px;">
+    <div class="panel-head"><span class="title">Sponsors & attributions</span><a href="#" class="btn sm ghost">Backings (public · Stripe)</a></div>
+    <table class="t">
+      <thead>
+        <tr>
+          <th>Sponsor</th>
+          <th>Slug</th>
+          <th>Backed initiatives</th>
+          <th style="text-align:right;">Committed</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Audi Foundation</td>
+          <td class="mono">audi-foundation</td>
+          <td>Reforestation</td>
+          <td class="num">€36,000</td>
+          <td class="row-actions"><a class="btn sm">Edit</a></td>
+        </tr>
+        <tr>
+          <td>Smart Provider GmbH</td>
+          <td class="mono">smart-provider</td>
+          <td>Reforestation, Sterilization</td>
+          <td class="num">€24,000</td>
+          <td class="row-actions"><a class="btn sm">Edit</a></td>
+        </tr>
+        <tr>
+          <td>(public backings · 248 supporters)</td>
+          <td class="mono">—</td>
+          <td>All</td>
+          <td class="num">€8,420</td>
+          <td class="row-actions"><a class="btn sm">View</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PANE 7 · Drill-in (per-initiative)
+     ============================================================ -->
+<section id="initiative" class="tab-pane" data-pane="initiative" hidden>
+
+  <div class="section-head" style="border-bottom:0; padding-bottom:0; margin-bottom:8px;">
+    <div>
+      <h2 style="font-size: 18px;"><a href="#overview" style="color:var(--ink-3); text-decoration:none;">← Overview</a></h2>
+    </div>
+  </div>
+
+  <div class="drill">
+    <div class="drill-head">
+      <div class="swatch" style="background-image: linear-gradient(135deg, oklch(70% 0.10 145), oklch(40% 0.10 145));"></div>
+      <div>
+        <div class="name">Reforestation</div>
+        <div class="code">AYRA-PVD-REFOREST · Providencia · Climate Future</div>
+        <div class="row">
+          <span class="chip ok">LIVE · MAINNET</span>
+          <span class="chip">M03 · in flight</span>
+          <span class="chip info">League 87</span>
+          <span class="chip">Steward · Leidy Mendoza</span>
+          <span class="chip ok">Address · LOCKED</span>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a class="btn primary" href="#">+ New batch</a>
+        <a class="btn" href="#">Edit</a>
+        <a class="btn ghost" href="#">View on wall →</a>
+      </div>
+    </div>
+
+    <div class="subnav">
+      <a class="is-active" href="#initiative">Summary</a>
+      <a href="#initiative">Batches</a>
+      <a href="#initiative">Line items</a>
+      <a href="#initiative">Updates</a>
+      <a href="#initiative">Grantee</a>
+      <a href="#initiative">Files</a>
+    </div>
+
+    <div class="drill-body">
+
+      <div class="stats" style="margin-bottom: 16px;">
+        <div class="stat">
+          <div class="k">Allocated</div>
+          <div class="v">€72,400</div>
+          <div class="delta">3 sponsors</div>
+        </div>
+        <div class="stat">
+          <div class="k">Settled on-chain</div>
+          <div class="v">€44,200</div>
+          <div class="delta up">+€16,200 this month</div>
+        </div>
+        <div class="stat">
+          <div class="k">Trees in the ground</div>
+          <div class="v">1,284<small>/ 1,800</small></div>
+          <div class="delta">survival 89% (3 of 4 sites)</div>
+        </div>
+        <div class="stat">
+          <div class="k">League Score</div>
+          <div class="v">87<small>/ 99</small></div>
+          <div class="delta">5 dimensions, weighted</div>
+        </div>
+      </div>
+
+      <div class="miles" style="margin-bottom: 20px;">
+        <div class="mile done">
+          <div class="code">M01</div>
+          <div class="label">Permits · sites locked</div>
+          <div class="pct">100%</div>
+        </div>
+        <div class="mile done">
+          <div class="code">M02</div>
+          <div class="label">Nursery · 1,800 ready</div>
+          <div class="pct">100%</div>
+        </div>
+        <div class="mile active">
+          <div class="code">M03</div>
+          <div class="label">Planting · in flight</div>
+          <div class="pct">71%</div>
+        </div>
+        <div class="mile">
+          <div class="code">M04</div>
+          <div class="label">Q4 survival audit</div>
+          <div class="pct">—</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="title">Recent batches</span>
+            <a class="btn sm ghost" href="#batches">Full list</a>
+          </div>
+          <table class="t">
+            <thead><tr><th>Batch</th><th style="text-align:right;">Amount</th><th>State</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="name">PV-REFOREST-APR26</div>
+                  <div class="meta">M03 · 15 items</div>
+                </td>
+                <td class="num">€18,400</td>
+                <td><span class="chip info">SUBMITTED · 8/15</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="name">PV-REFOREST-MAR26</div>
+                  <div class="meta">M02 · 14 items</div>
+                </td>
+                <td class="num">€16,200</td>
+                <td><span class="chip ok">SETTLED</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="name">PV-REFOREST-FEB26</div>
+                  <div class="meta">M02 · 12 items</div>
+                </td>
+                <td class="num">€13,800</td>
+                <td><span class="chip ok">SETTLED</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="title">Grantee · Leidy Mendoza</span>
+            <a class="btn sm ghost" href="grantee.html">Open as steward →</a>
+          </div>
+          <div style="padding: 16px;">
+            <div style="font-family:var(--font-mono); font-size: 12px; color: var(--ink-3); text-transform:uppercase; letter-spacing:0.06em;">Org</div>
+            <div style="font-size: 14.5px; margin: 2px 0 12px;">Ecoparque Iron Wood · Providencia</div>
+
+            <div style="font-family:var(--font-mono); font-size: 12px; color: var(--ink-3); text-transform:uppercase; letter-spacing:0.06em;">Contact</div>
+            <div style="font-family: var(--font-mono); font-size: 13px; margin: 2px 0 12px;">leidy@ecoparque.co · last login 2026-05-02 09:14 UTC</div>
+
+            <div style="font-family:var(--font-mono); font-size: 12px; color: var(--ink-3); text-transform:uppercase; letter-spacing:0.06em;">Payout address · LOCKED</div>
+            <div style="margin-top:4px;">
+              <span class="hashish"><code>GBLEIDY…ECOPARQUE…3RS9</code><button class="copy">Copy</button><a href="#">view on Horizon</a></span>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); margin-top:6px;">
+              attested 2026-02-12 · verified 2026-02-13 by nicolas@ · locked at first disbursement 2026-02-28
+            </div>
+
+            <div style="margin-top: 16px; font-family:var(--font-mono); font-size: 12px; color: var(--ink-3); text-transform:uppercase; letter-spacing:0.06em;">Activity (90d)</div>
+            <div style="display:flex; gap:18px; margin-top:6px; font-family:var(--font-mono); font-size:12px;">
+              <span>updates submitted · <b>14</b></span>
+              <span>approved · <b>12</b></span>
+              <span>edited · <b>2</b></span>
+              <span>rejected · <b>0</b></span>
+            </div>
+
+            <div style="margin-top: 16px; display:flex; gap:8px;">
+              <a class="btn sm" href="#">Send message</a>
+              <a class="btn sm danger" href="#">Suspend</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="panel" style="margin-top: 16px;">
+        <div class="panel-head">
+          <span class="title">Pending updates from grantee <span class="chip warn" style="margin-left:8px;">2</span></span>
+          <a class="btn sm" href="#updates">Open queue</a>
+        </div>
+        <div class="mod-row">
+          <div class="thumb" style="background-image: linear-gradient(135deg, oklch(70% 0.10 145), oklch(40% 0.10 145));"></div>
+          <div>
+            <div class="who">Submitted 2026-05-02 14:08 · tagged M03 · PV-REFOREST-APR26</div>
+            <h3 style="margin:2px 0 0; font-family: var(--font-display); font-weight:500; font-size:16px; letter-spacing:-0.01em;">Old Point · Day 12 · canopy line completed</h3>
+            <p class="cap">"Six volunteers, three rows. Bottom House next week. Niño from Ecoparque cooked the lunch — best yet."</p>
+          </div>
+          <div class="controls">
+            <a class="btn sm primary" href="#updates">Approve</a>
+            <a class="btn sm" href="#updates">Edit</a>
+            <a class="btn sm danger" href="#updates">Reject</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+</main>
+
+<footer class="foot">
+  <span>AYRA · operator console · v5</span>
+  <span>Auth required in production · Supabase magic-link</span>
+  <span>Public wall · <a href="index.html">index.html</a></span>
+  <span>Steward portal · <a href="grantee.html">grantee.html</a></span>
+</footer>
+
+<script>
+(function(){
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const panes = Array.from(document.querySelectorAll('.tab-pane'));
+  const showPane = (name) => {
+    tabs.forEach(t => {
+      const on = t.dataset.pane === name;
+      t.classList.toggle('is-active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    panes.forEach(p => {
+      p.hidden = p.dataset.pane !== name;
+    });
+  };
+  tabs.forEach(t => {
+    t.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = t.dataset.pane;
+      history.replaceState(null, '', '#' + target);
+      showPane(target);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+  // Cross-pane deep links inside content
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href || href === '#') return;
+    const name = href.slice(1);
+    if (panes.find(p => p.dataset.pane === name)) {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        history.replaceState(null, '', href);
+        showPane(name);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  });
+  // Honor initial hash
+  const init = (location.hash || '#overview').slice(1);
+  if (panes.find(p => p.dataset.pane === init)) showPane(init);
+})();
+</script>
+
+</body>
+</html>

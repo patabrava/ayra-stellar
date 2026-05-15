@@ -1,0 +1,1567 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1b1814" />
+<title>Providencia · AYRA</title>
+<meta name="description" content="The wall of what AYRA is funding in Providencia. Monthly receipts, verified in one tap." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   AYRA · Providencia Allocation Wall — v5 IMMERSIVE mockup
+   Cinematic dark · gallery placement · one accent · mono in drawer
+   ============================================================ */
+
+:root {
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  /* Cinematic dark · warm charcoal · AYRA-leaning */
+  --bg:              oklch(13% 0.008 60);
+  --surface:         oklch(15% 0.009 60);
+  --surface-2:       oklch(18% 0.010 60);
+  --surface-3:       oklch(22% 0.012 60);
+
+  --hairline:        oklch(26% 0.012 60);
+  --hairline-strong: oklch(34% 0.015 60);
+
+  --ink:    oklch(95% 0.014 80);
+  --ink-2:  oklch(78% 0.014 70);
+  --ink-3:  oklch(58% 0.012 60);
+  --ink-4:  oklch(42% 0.010 60);
+
+  /* Single accent (existing --viio token, kept per "colors stay" rule) */
+  --accent:      oklch(72% 0.16 258);
+  --accent-deep: oklch(64% 0.20 258);
+  --accent-soft: oklch(28% 0.07 258);
+  --accent-tint: oklch(38% 0.12 258);
+
+  --ok: oklch(74% 0.16 155);
+
+  --ease-out:  cubic-bezier(.2,.7,.2,1);
+  --ease-expo: cubic-bezier(.16,1,.3,1);
+
+  --pad-page: clamp(20px, 4vw, 80px);
+  --rad: 2px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+body::before {
+  /* very faint vignette to lift the cinematic feel */
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(120% 80% at 50% 0%, oklch(20% 0.02 60 / .55), transparent 70%),
+              radial-gradient(120% 80% at 50% 100%, oklch(8% 0.01 60 / .6), transparent 70%);
+}
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+::selection { background: var(--accent-tint); color: var(--ink); }
+
+/* ============================================================
+   Type
+   ============================================================ */
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.038em;
+  line-height: 0.96;
+}
+.h-hero {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 0.96;
+  font-size: clamp(44px, 6.4vw + 8px, 112px);
+  margin: 0;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.h-2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.028em;
+  line-height: 1.04;
+  font-size: clamp(30px, 2.4vw + 16px, 56px);
+  margin: 0;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.h-3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-size: clamp(22px, 1vw + 14px, 30px);
+  margin: 0;
+  color: var(--ink);
+}
+.body-lg {
+  font-size: clamp(17px, .35vw + 15.5px, 19px);
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 60ch;
+  text-wrap: pretty;
+}
+.body { color: var(--ink-2); }
+.muted { color: var(--ink-3); }
+.kicker {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+}
+
+/* ============================================================
+   Topnav — wordmark left, single quiet anchor right
+   ============================================================ */
+.nav {
+  position: sticky; top: 0; z-index: 30;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 18px var(--pad-page);
+  background: color-mix(in oklab, var(--bg) 70%, transparent);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.wordmark .place {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+}
+.nav .anchor {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--ink-2);
+  padding: 8px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  transition: color .25s var(--ease-out), border-color .25s var(--ease-out);
+}
+.nav .anchor:hover { color: var(--ink); border-color: var(--ink-3); }
+
+/* ============================================================
+   Sponsor ribbon — quiet, accent-soft, closable
+   ============================================================ */
+.ribbon {
+  display: none;
+  margin: 18px var(--pad-page) 0;
+  padding: 14px 18px;
+  border: 1px solid var(--accent-tint);
+  background: color-mix(in oklab, var(--accent-soft) 60%, transparent);
+  border-radius: var(--rad);
+  font-size: 14px;
+  color: var(--ink);
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+.ribbon[data-show="true"] { display: flex; }
+.ribbon strong { font-weight: 600; color: var(--ink); }
+.ribbon .jump { color: var(--accent); padding-left: 4px; }
+.ribbon .jump:hover { text-decoration: underline; }
+.ribbon .x {
+  margin-left: auto;
+  width: 28px; height: 28px; border-radius: 999px;
+  display: inline-grid; place-items: center;
+  color: var(--ink-3);
+  transition: color .2s var(--ease-out), background .2s var(--ease-out);
+}
+.ribbon .x:hover { color: var(--ink); background: var(--surface-2); }
+
+/* small demo control — only present in mockup */
+.demo-toggle {
+  position: fixed; bottom: 16px; left: 16px; z-index: 40;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.demo-toggle:hover { color: var(--ink); border-color: var(--hairline-strong); }
+.demo-toggle .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--ink-4); }
+.demo-toggle[data-on="true"] .dot { background: var(--accent); }
+
+/* ============================================================
+   Plane 1 — The wall (hero + 3 tiles)
+   ============================================================ */
+.wall {
+  position: relative; z-index: 1;
+  padding: clamp(48px, 8vw, 144px) var(--pad-page) clamp(72px, 9vw, 160px);
+}
+
+/* Hero — asymmetric, single editorial line, trust rail */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(24px, 3vw, 56px);
+  margin-bottom: clamp(56px, 8vw, 144px);
+  max-width: 1200px;
+}
+.hero .place-line {
+  margin: 0 0 clamp(20px, 3vw, 36px);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: clamp(13px, .3vw + 12px, 15px);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.hero .place-line::before {
+  content: ""; width: 28px; height: 1px; background: var(--ink-4);
+}
+.hero .trust {
+  margin: clamp(28px, 3vw, 48px) 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(17px, .35vw + 16px, 20px);
+  letter-spacing: -0.012em;
+  color: var(--ink-3);
+  max-width: 38ch;
+}
+.hero .trust strong { color: var(--ink-2); font-weight: 500; }
+
+/* The wall — 3 tiles */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(20px, 2vw, 36px);
+}
+@media (max-width: 920px) {
+  .tiles { grid-template-columns: 1fr; gap: clamp(28px, 4vw, 48px); }
+}
+
+.tile {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: transparent;
+  isolation: isolate;
+  cursor: pointer;
+  transition: transform .35s var(--ease-expo);
+}
+.tile:hover { transform: translateY(-3px); }
+.tile:active { transform: translateY(0) scale(.992); transition-duration: .12s; }
+
+.tile .visual {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--rad);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  transition: border-color .35s var(--ease-out), box-shadow .35s var(--ease-out);
+}
+.tile:hover .visual {
+  border-color: var(--hairline-strong);
+  box-shadow: 0 30px 60px -28px oklch(0% 0 0 / .6);
+}
+.tile .visual::after {
+  /* gradient floor for legibility (no glassmorphism overlays) */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 35%, oklch(8% 0.01 60 / .6) 100%);
+  z-index: 1;
+}
+.tile .visual img,
+.panel-head .visual-large img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  /* gentle grade so the photo sits inside the cinematic dark room */
+  filter: contrast(1.02) saturate(.94) brightness(.96);
+  transition: transform .9s var(--ease-expo), filter .35s var(--ease-out);
+}
+.tile:hover .visual img { transform: scale(1.02); filter: contrast(1.04) saturate(.98) brightness(.98); }
+.tile .rank { z-index: 2; }
+
+/* Visual treatments — replace with real photography in production */
+.viz-reforest {
+  background:
+    radial-gradient(120% 80% at 25% 18%, oklch(78% 0.13 148 / .55), transparent 60%),
+    radial-gradient(80% 60% at 85% 92%, oklch(36% 0.10 152 / .9), transparent 70%),
+    radial-gradient(50% 40% at 60% 50%, oklch(60% 0.12 145 / .35), transparent 70%),
+    linear-gradient(160deg, oklch(26% 0.06 145), oklch(38% 0.10 132));
+}
+.viz-steril {
+  background:
+    radial-gradient(120% 80% at 70% 25%, oklch(82% 0.08 75 / .55), transparent 60%),
+    radial-gradient(80% 60% at 20% 90%, oklch(48% 0.12 38 / .65), transparent 70%),
+    radial-gradient(40% 35% at 50% 55%, oklch(70% 0.10 60 / .35), transparent 70%),
+    linear-gradient(160deg, oklch(34% 0.07 50), oklch(56% 0.11 68));
+}
+.viz-reef {
+  background:
+    radial-gradient(100% 80% at 50% 0%, oklch(72% 0.11 220 / .7), transparent 60%),
+    radial-gradient(60% 60% at 85% 100%, oklch(50% 0.14 195 / .75), transparent 70%),
+    radial-gradient(50% 35% at 30% 60%, oklch(62% 0.13 215 / .35), transparent 70%),
+    linear-gradient(180deg, oklch(24% 0.07 215), oklch(40% 0.13 200));
+}
+
+/* Initiative number — quiet ranking signal in upper-left of the visual */
+.tile .rank {
+  position: absolute; top: 18px; left: 18px; z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: oklch(95% 0.01 80 / .8);
+}
+
+.tile .meta {
+  padding: 22px 4px 8px;
+  display: grid;
+  gap: 14px;
+}
+.tile .head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: start;
+}
+.tile h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+  font-size: clamp(22px, 1vw + 16px, 30px);
+  color: var(--ink);
+  margin: 0;
+  text-wrap: balance;
+}
+.tile .sub {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+  max-width: 32ch;
+  margin: 0;
+}
+
+/* The League Score pill — the one memorable detail */
+.score {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 10px;
+  background: var(--accent);
+  color: oklch(98% 0.005 258);
+  border-radius: var(--rad);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+  align-self: start;
+  position: relative;
+  isolation: isolate;
+}
+.score .n { font-variant-numeric: tabular-nums; }
+.score .l {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: .85;
+}
+.score::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  border: 1px solid color-mix(in oklab, var(--accent-deep) 55%, transparent);
+  pointer-events: none;
+}
+.score--null {
+  background: transparent;
+  color: var(--ink-3);
+}
+.score--null::after { border-color: var(--hairline); }
+
+/* Primary action on tile — full width, thumb zone on mobile */
+.tile .cta {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  width: 100%;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rad);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  transition: background .25s var(--ease-out), border-color .25s var(--ease-out), color .25s var(--ease-out);
+}
+.tile .cta .arrow {
+  width: 24px; height: 1px; background: currentColor;
+  position: relative;
+  transition: width .3s var(--ease-expo);
+}
+.tile .cta .arrow::after {
+  content: ""; width: 7px; height: 7px;
+  border-top: 1px solid currentColor; border-right: 1px solid currentColor;
+  position: absolute; right: 0; top: -3.5px;
+  transform: rotate(45deg);
+}
+.tile:hover .cta {
+  background: var(--accent);
+  color: oklch(98% 0.005 258);
+  border-color: var(--accent-deep);
+}
+.tile:hover .cta .arrow { width: 32px; }
+.tile.is-primary .cta {
+  background: var(--accent);
+  color: oklch(98% 0.005 258);
+  border-color: var(--accent-deep);
+}
+.tile.is-primary:hover .cta { background: var(--accent-deep); }
+
+/* ============================================================
+   Plane 2 — Detail panel (Reforestation)
+   ============================================================ */
+.panel {
+  position: relative; z-index: 1;
+  background: var(--surface);
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  padding: clamp(56px, 7vw, 128px) var(--pad-page) clamp(72px, 8vw, 144px);
+}
+.panel .crumb {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-family: var(--font-body); font-weight: 500; font-size: 13px;
+  color: var(--ink-3);
+  margin-bottom: clamp(36px, 5vw, 72px);
+  transition: color .2s var(--ease-out);
+}
+.panel .crumb:hover { color: var(--ink-2); }
+.panel .crumb::before { content: ""; width: 16px; height: 1px; background: currentColor; }
+
+.panel-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 96px);
+  align-items: end;
+  margin-bottom: clamp(40px, 5vw, 80px);
+}
+@media (max-width: 920px) { .panel-head { grid-template-columns: 1fr; align-items: start; } }
+
+.panel-head .visual-large {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--rad);
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  position: relative;
+}
+.panel-head .visual-large::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(170deg, transparent 55%, oklch(8% 0.01 60 / .45) 100%);
+  z-index: 1;
+}
+.panel-head .credit { z-index: 2; }
+.panel-head .credit {
+  position: absolute; bottom: 16px; left: 18px; z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: oklch(95% 0.01 80 / .75);
+}
+
+.panel-head .lockup { display: grid; gap: 18px; }
+.panel-head .title-row {
+  display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start;
+}
+.panel-head h2 { margin: 0; }
+.panel-head .actions { margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 16px 22px;
+  background: var(--accent);
+  color: oklch(98% 0.005 258);
+  border: 1px solid var(--accent-deep);
+  border-radius: var(--rad);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: -0.005em;
+  transition: background .2s var(--ease-out);
+}
+.btn-primary:hover { background: var(--accent-deep); }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 16px 22px;
+  background: transparent;
+  color: var(--ink-2);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rad);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: -0.005em;
+  transition: color .2s var(--ease-out), border-color .2s var(--ease-out);
+}
+.btn-ghost:hover { color: var(--ink); border-color: var(--ink-3); }
+
+/* Story */
+.story {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(40px, 6vw, 96px);
+  padding-top: clamp(24px, 3vw, 56px);
+  border-top: 1px solid var(--hairline);
+}
+@media (max-width: 920px) { .story { grid-template-columns: 1fr; } }
+
+.story p {
+  font-family: var(--font-body);
+  font-size: clamp(17px, .25vw + 16px, 18px);
+  line-height: 1.65;
+  color: var(--ink-2);
+  max-width: 62ch;
+  margin: 0 0 22px;
+}
+.story p:last-child { margin-bottom: 0; }
+.story p::first-letter { /* unobtrusive, no drop-cap drama */ }
+
+/* Updates feed */
+.updates {
+  display: grid;
+  gap: 0;
+}
+.updates .head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 4px;
+}
+.updates .head h3 { font-family: var(--font-display); font-weight: 500; font-size: 18px; letter-spacing: -0.01em; color: var(--ink); margin: 0; }
+.updates .head a { font-family: var(--font-body); font-size: 13px; color: var(--ink-3); }
+.updates .head a:hover { color: var(--ink); }
+
+.update {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 24px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.update:last-of-type { border-bottom: 0; }
+.update .when {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+}
+.update .when b { display: block; font-family: var(--font-display); font-weight: 500; font-size: 22px; color: var(--ink); letter-spacing: -0.02em; line-height: 1; margin-bottom: 4px; }
+.update h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+.update p {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin: 0 0 10px;
+  max-width: 56ch;
+}
+.update .verify-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--accent);
+  padding: 4px 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
+}
+.update .verify-link:hover { border-bottom-color: var(--accent); }
+.update .verify-link::before {
+  content: "✓"; font-weight: 700; font-size: 11px;
+  display: inline-grid; place-items: center;
+  width: 18px; height: 18px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent);
+}
+
+@media (max-width: 920px) {
+  .update { grid-template-columns: 1fr; gap: 8px; }
+  .update .when { display: flex; gap: 12px; align-items: baseline; }
+  .update .when b { font-size: 18px; margin: 0; }
+}
+
+/* Receipts entry — quiet, single-tap */
+.see-receipts {
+  margin-top: clamp(40px, 5vw, 72px);
+  padding: 22px 24px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rad);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap;
+  background: color-mix(in oklab, var(--surface-2) 50%, transparent);
+}
+.see-receipts .label { display: grid; gap: 4px; }
+.see-receipts .label b {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.see-receipts .label b::before {
+  content: "✓"; font-weight: 700; font-size: 11px;
+  display: inline-grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent);
+}
+.see-receipts .label span { font-family: var(--font-body); font-size: 14px; color: var(--ink-3); }
+
+/* ============================================================
+   Plane 3 — Verified drawer (mono confined here)
+   ============================================================ */
+.drawer {
+  position: relative; z-index: 1;
+  background: var(--surface-2);
+  border-top: 1px solid var(--hairline);
+  padding: clamp(56px, 7vw, 128px) var(--pad-page) clamp(64px, 7vw, 128px);
+  font-family: var(--font-mono);
+}
+.drawer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.drawer .head {
+  display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 8px;
+}
+.drawer h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(22px, 1vw + 16px, 30px);
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+.drawer .head .sub {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  color: var(--ink-3);
+}
+.drawer .head .right {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.drawer .head button {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--ink-2);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rad);
+  transition: color .2s var(--ease-out), border-color .2s var(--ease-out);
+}
+.drawer .head button:hover { color: var(--ink); border-color: var(--ink-3); }
+
+.receipts {
+  width: 100%; border-collapse: collapse; margin-top: 4px;
+  font-size: 13px;
+}
+.receipts th, .receipts td {
+  text-align: left; padding: 16px 14px 16px 0;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: middle;
+}
+.receipts th {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  padding-bottom: 12px;
+}
+.receipts td.month, .receipts th.month { width: 14%; color: var(--ink-2); }
+.receipts td.amount, .receipts th.amount { width: 18%; color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.receipts td.cat,    .receipts th.cat    { width: 26%; color: var(--ink-2); }
+.receipts td.ref,    .receipts th.ref    { width: 42%; }
+.receipts td .hash {
+  display: inline-flex; align-items: center; gap: 12px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+.receipts td .hash code {
+  font-family: var(--font-mono);
+  background: transparent;
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
+}
+.receipts td .hash .copy,
+.receipts td .hash .open {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  padding: 4px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rad);
+  transition: color .2s var(--ease-out), border-color .2s var(--ease-out);
+}
+.receipts td .hash .copy:hover,
+.receipts td .hash .open:hover { color: var(--ink-2); border-color: var(--hairline-strong); }
+.receipts td .hash .open { color: var(--accent); border-color: color-mix(in oklab, var(--accent) 30%, var(--hairline)); }
+.receipts td .hash .open:hover { color: var(--accent); border-color: var(--accent); }
+
+.drawer .footnote {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--hairline);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink-4);
+  max-width: 60ch;
+}
+.drawer .footnote a { color: var(--ink-3); border-bottom: 1px solid var(--hairline-strong); }
+.drawer .footnote a:hover { color: var(--ink); border-bottom-color: var(--ink-3); }
+
+/* ============================================================
+   Footer — single line
+   ============================================================ */
+.foot {
+  position: relative; z-index: 1;
+  padding: 28px var(--pad-page) 36px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-4);
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-top: 1px solid var(--hairline);
+}
+.foot a { color: var(--ink-3); transition: color .2s var(--ease-out); }
+.foot a:hover { color: var(--ink); }
+
+/* ============================================================
+   Charts (project deep-dive) — calm, single-accent, no chart libs
+   ============================================================ */
+.charts {
+  display: grid;
+  gap: clamp(28px, 3vw, 40px);
+  margin-top: clamp(20px, 2.5vw, 32px);
+}
+.chart {
+  display: grid;
+  gap: 14px;
+}
+.chart .chart-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 10px;
+}
+.chart .chart-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-size: 16px;
+  color: var(--ink);
+}
+.chart .chart-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Single horizontal bar (trees in the ground) */
+.bar-track {
+  position: relative;
+  height: 32px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rad);
+  overflow: hidden;
+}
+.bar-fill {
+  position: absolute; inset: 0 auto 0 0;
+  width: var(--w, 0%);
+  background: var(--accent);
+  transition: width 1.1s var(--ease-expo);
+}
+.bar-fill::after {
+  content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 1px;
+  background: var(--accent-deep);
+}
+.bar-track .pin {
+  position: absolute; top: 0; bottom: 0; width: 1px;
+  background: var(--ink-4);
+}
+.bar-track .pin span {
+  position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.chart .bar-foot {
+  display: flex; justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: -2px;
+  letter-spacing: 0.04em;
+}
+.chart .bar-foot b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Stacked bars (April spend by category) */
+.bars {
+  display: grid;
+  gap: 10px;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 70px;
+  gap: 14px;
+  align-items: center;
+}
+.bar-row .name {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.bar-row .gauge {
+  position: relative;
+  height: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rad);
+  overflow: hidden;
+}
+.bar-row .gauge::after {
+  content: ""; position: absolute; inset: 0 auto 0 0;
+  width: var(--w, 0%);
+  background: var(--accent);
+  transition: width 1.1s var(--ease-expo);
+}
+.bar-row.is-primary .gauge::after { background: var(--accent); }
+.bar-row:not(.is-primary) .gauge::after { background: color-mix(in oklab, var(--accent) 70%, var(--ink-4) 30%); }
+.bar-row .num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 560px) {
+  .bar-row { grid-template-columns: 1fr 60px; }
+  .bar-row .gauge { grid-column: 1 / -1; order: 3; }
+}
+
+/* Sites (survival by site) */
+.sites {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 560px) { .sites { grid-template-columns: 1fr; } }
+.site {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 14px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rad);
+}
+.site .nm {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.site .pct {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.site .gauge {
+  grid-column: 1 / -1;
+  position: relative;
+  height: 6px;
+  background: oklch(22% 0.012 60);
+  border-radius: var(--rad);
+  overflow: hidden;
+}
+.site .gauge::after {
+  content: ""; position: absolute; inset: 0 auto 0 0;
+  width: var(--w, 0%);
+  background: var(--accent);
+  transition: width 1.1s var(--ease-expo);
+}
+.site.is-new .gauge::after { background: var(--ink-4); }
+.site.is-new .pct { color: var(--ink-3); }
+.site .note {
+  grid-column: 1 / -1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+/* ============================================================
+   Score modal — opens when a League Score pill is clicked
+   ============================================================ */
+.score { cursor: pointer; }
+.score:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.modal {
+  position: fixed; inset: 0; z-index: 50;
+  display: none;
+  background: oklch(8% 0.01 60 / .82);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  align-items: center; justify-content: center;
+  padding: clamp(16px, 4vw, 48px);
+  opacity: 0;
+  transition: opacity .25s var(--ease-out);
+}
+.modal[data-open="true"] { display: flex; opacity: 1; }
+.modal-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rad);
+  width: min(560px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: clamp(28px, 4vw, 44px);
+  box-shadow: 0 60px 120px -40px oklch(0% 0 0 / .8);
+  transform: translateY(8px) scale(.98);
+  transition: transform .35s var(--ease-expo);
+}
+.modal[data-open="true"] .modal-card { transform: none; }
+.modal-card .close {
+  position: absolute; top: 14px; right: 14px;
+  width: 32px; height: 32px; border-radius: 999px;
+  display: inline-grid; place-items: center;
+  color: var(--ink-3);
+  font-size: 20px; line-height: 1;
+  transition: color .2s var(--ease-out), background .2s var(--ease-out);
+}
+.modal-card .close:hover { color: var(--ink); background: var(--surface-2); }
+.modal-card .label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.modal-card .total {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 8vw, 104px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: .96;
+  margin: 8px 0 4px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.modal-card .total span {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  font-weight: 400;
+  margin-left: 8px;
+}
+.modal-card .blurb {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin: 0 0 22px;
+  max-width: 50ch;
+}
+.modal-card .dim {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--hairline);
+}
+.modal-card .dim:last-of-type { border-bottom: 1px solid var(--hairline); }
+.modal-card .dim .name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.modal-card .dim .num {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.modal-card .dim .gauge {
+  grid-column: 1 / -1;
+  position: relative;
+  height: 4px;
+  background: oklch(22% 0.012 60);
+  border-radius: var(--rad);
+  overflow: hidden;
+}
+.modal-card .dim .gauge::after {
+  content: ""; position: absolute; inset: 0 auto 0 0;
+  width: var(--w, 0%);
+  background: var(--accent);
+  transition: width 1.1s var(--ease-expo);
+}
+.modal-card .foot {
+  margin-top: 18px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink-3);
+  max-width: 50ch;
+  line-height: 1.55;
+}
+.modal-card .foot a {
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--hairline-strong);
+}
+.modal-card .foot a:hover { color: var(--ink); border-bottom-color: var(--ink-3); }
+
+body.modal-open { overflow: hidden; }
+
+/* ============================================================
+   Reduced motion + reveal
+   ============================================================ */
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity .9s var(--ease-out), transform .9s var(--ease-expo); }
+.reveal.in { opacity: 1; transform: none; }
+.reveal:nth-child(2) { transition-delay: 80ms; }
+.reveal:nth-child(3) { transition-delay: 160ms; }
+.reveal:nth-child(4) { transition-delay: 240ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  .reveal { opacity: 1; transform: none; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     NAV
+     ============================================================ -->
+<nav class="nav" aria-label="Primary">
+  <a class="wordmark" href="#top">
+    AYRA
+    <span class="place">Providencia</span>
+  </a>
+  <a class="anchor" href="#receipts">Receipts</a>
+</nav>
+
+<!-- Sponsor ribbon (?backer=… renders this; demo button toggles) -->
+<aside id="ribbon" class="ribbon" role="status" aria-label="Welcome ribbon for sponsor">
+  <span>Welcome, <strong>Audi Foundation</strong>. Here is what your funding is helping build on Providencia.</span>
+  <a class="jump" href="#initiative">Jump to Reforestation →</a>
+  <button class="x" aria-label="Dismiss" onclick="document.getElementById('ribbon').dataset.show='false'">×</button>
+</aside>
+
+<!-- ============================================================
+     PLANE 1 · THE WALL
+     ============================================================ -->
+<main id="top" class="wall" aria-label="Allocation Wall">
+
+  <!-- Hero -->
+  <header class="hero reveal">
+    <div class="place-line">Providencia · 2026</div>
+    <h1 class="h-hero">Providencia,<br/>lived&nbsp;in.<br/>Funded&nbsp;by AYRA.</h1>
+    <p class="trust"><strong>Monthly receipts.</strong> Verified in one tap.</p>
+  </header>
+
+  <!-- Tiles (League Score DESC) -->
+  <section class="tiles" aria-label="Initiatives">
+
+    <!-- Tile 1 — Reforestation (highest score, primary) -->
+    <a class="tile is-primary reveal" href="#initiative" aria-label="Open Reforestation">
+      <div class="visual viz-reforest">
+        <img src="img/reforest.jpg" alt="" loading="eager" decoding="async" />
+        <span class="rank">01 / 03</span>
+      </div>
+      <div class="meta">
+        <div class="head">
+          <h3>Native canopy across&nbsp;Old&nbsp;Point.</h3>
+          <span class="score" aria-label="League Score: 87 out of 99">
+            <span class="n">87</span><span class="l">Score</span>
+          </span>
+        </div>
+        <p class="sub">Led by Leidy Mendoza, Ecoparque Iron Wood.</p>
+        <span class="cta">
+          Back this <span class="arrow" aria-hidden="true"></span>
+        </span>
+      </div>
+    </a>
+
+    <!-- Tile 2 — Sterilization -->
+    <a class="tile reveal" href="#initiative" aria-label="Open Dog Sterilization">
+      <div class="visual viz-steril">
+        <img src="img/steril.jpg" alt="" loading="lazy" decoding="async" />
+        <span class="rank">02 / 03</span>
+      </div>
+      <div class="meta">
+        <div class="head">
+          <h3>Care for free-roaming dogs.</h3>
+          <span class="score" aria-label="League Score: 71 out of 99">
+            <span class="n">71</span><span class="l">Score</span>
+          </span>
+        </div>
+        <p class="sub">A mobile clinic for the island, six months.</p>
+        <span class="cta">
+          Back this <span class="arrow" aria-hidden="true"></span>
+        </span>
+      </div>
+    </a>
+
+    <!-- Tile 3 — Reef -->
+    <a class="tile reveal" href="#initiative" aria-label="Open Reef">
+      <div class="visual viz-reef">
+        <img src="img/reef.jpg" alt="" loading="lazy" decoding="async" />
+        <span class="rank">03 / 03</span>
+      </div>
+      <div class="meta">
+        <div class="head">
+          <h3>Reef survey and coral nursery.</h3>
+          <span class="score" aria-label="League Score: 58 out of 99">
+            <span class="n">58</span><span class="l">Score</span>
+          </span>
+        </div>
+        <p class="sub">Live this season on Providencia's east shore.</p>
+        <span class="cta">
+          Back this <span class="arrow" aria-hidden="true"></span>
+        </span>
+      </div>
+    </a>
+
+  </section>
+</main>
+
+<!-- ============================================================
+     PLANE 2 · DETAIL PANEL (Reforestation)
+     ============================================================ -->
+<section id="initiative" class="panel" aria-labelledby="panel-title">
+  <a class="crumb" href="#top">Back to the wall</a>
+
+  <header class="panel-head">
+    <div class="visual-large viz-reforest">
+      <img src="img/reforest-panel.jpg" alt="" loading="lazy" decoding="async" />
+      <span class="credit">April 2026 · Old Point planting</span>
+    </div>
+    <div class="lockup">
+      <div class="title-row">
+        <h2 id="panel-title" class="h-2">Native canopy<br/>across&nbsp;Old&nbsp;Point<br/>and&nbsp;Bottom&nbsp;House.</h2>
+        <span class="score" aria-label="League Score: 87 out of 99">
+          <span class="n">87</span><span class="l">Score</span>
+        </span>
+      </div>
+      <div class="actions">
+        <a class="btn-primary" href="#receipts" aria-label="Back this initiative">
+          Back this
+          <span aria-hidden="true">→</span>
+        </a>
+        <a class="btn-ghost" href="#receipts">See receipts</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="story">
+    <article>
+      <p>The work is straightforward: 1,800 native seedlings across four sites, planted by a crew of seven in the early hours before the heat. Old Point and Bottom House lost canopy faster than the rest of the island; the trees that hold become the canopy that, in ten years, Providencia walks under.</p>
+
+      <div class="charts" aria-label="Reforestation · April 2026 at a glance">
+
+        <!-- Chart 1: Trees in the ground -->
+        <section class="chart" aria-label="Trees in the ground">
+          <div class="chart-head">
+            <span class="chart-title">Trees in the ground</span>
+            <span class="chart-meta">Goal · 1,800</span>
+          </div>
+          <div class="bar-track" role="img" aria-label="1,284 of 1,800 trees planted">
+            <div class="bar-fill" style="--w: 71.3%;"></div>
+            <div class="pin" style="left: 71.3%;"><span>1,284 · today</span></div>
+          </div>
+          <div class="bar-foot">
+            <span><b>1,284</b> planted · 71%</span>
+            <span>Goal · 1,800 by Q4</span>
+          </div>
+        </section>
+
+        <!-- Chart 2: April spend by category -->
+        <section class="chart" aria-label="April 2026 spend by category">
+          <div class="chart-head">
+            <span class="chart-title">April spend, by category</span>
+            <span class="chart-meta">€14,200 · 5 categories</span>
+          </div>
+          <div class="bars">
+            <div class="bar-row is-primary">
+              <span class="name">Crew wages</span>
+              <span class="gauge" style="--w: 100%;"></span>
+              <span class="num">€4,820</span>
+            </div>
+            <div class="bar-row">
+              <span class="name">Seedlings</span>
+              <span class="gauge" style="--w: 65.6%;"></span>
+              <span class="num">€3,160</span>
+            </div>
+            <div class="bar-row">
+              <span class="name">Tools · transport</span>
+              <span class="gauge" style="--w: 52.7%;"></span>
+              <span class="num">€2,540</span>
+            </div>
+            <div class="bar-row">
+              <span class="name">Training</span>
+              <span class="gauge" style="--w: 38.6%;"></span>
+              <span class="num">€1,860</span>
+            </div>
+            <div class="bar-row">
+              <span class="name">Monitoring</span>
+              <span class="gauge" style="--w: 37.8%;"></span>
+              <span class="num">€1,820</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Chart 3: Survival by site -->
+        <section class="chart" aria-label="Survival rate by site">
+          <div class="chart-head">
+            <span class="chart-title">Survival, by site</span>
+            <span class="chart-meta">Q1 · field count by Universidad del Norte</span>
+          </div>
+          <div class="sites">
+            <div class="site">
+              <span class="nm">Old Point</span>
+              <span class="pct">94%</span>
+              <span class="gauge" style="--w: 94%;"></span>
+            </div>
+            <div class="site">
+              <span class="nm">Freetown</span>
+              <span class="pct">91%</span>
+              <span class="gauge" style="--w: 91%;"></span>
+            </div>
+            <div class="site">
+              <span class="nm">Bottom House</span>
+              <span class="pct">88%</span>
+              <span class="gauge" style="--w: 88%;"></span>
+            </div>
+            <div class="site is-new">
+              <span class="nm">Casabaja</span>
+              <span class="pct">—</span>
+              <span class="gauge" style="--w: 6%;"></span>
+              <span class="note">Just planted · first count in Q3</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </article>
+
+    <aside class="updates" aria-label="Updates">
+      <div class="head">
+        <h3>Updates</h3>
+        <a href="#">See all updates</a>
+      </div>
+
+      <article class="update">
+        <div class="when"><b>22</b>April 2026</div>
+        <div>
+          <h4>1,284 trees in the ground.</h4>
+          <a class="verify-link" href="#receipts">View receipts for April</a>
+        </div>
+      </article>
+
+      <article class="update">
+        <div class="when"><b>20</b>March 2026</div>
+        <div>
+          <h4>Permit extended · two sites added.</h4>
+          <a class="verify-link" href="#receipts">View receipts for March</a>
+        </div>
+      </article>
+
+      <article class="update">
+        <div class="when"><b>22</b>February 2026</div>
+        <div>
+          <h4>Nursery hit 1,800 transplant-ready.</h4>
+          <a class="verify-link" href="#receipts">View receipts for February</a>
+        </div>
+      </article>
+    </aside>
+  </div>
+
+  <a class="see-receipts" href="#receipts">
+    <span class="label">
+      <b>See receipts</b>
+      <span>Every euro for this initiative — month, amount, category, on-chain reference.</span>
+    </span>
+    <span class="btn-ghost" aria-hidden="true">Open the drawer →</span>
+  </a>
+</section>
+
+<!-- ============================================================
+     PLANE 3 · VERIFIED DRAWER (mono lives only here)
+     ============================================================ -->
+<section id="receipts" class="drawer" aria-labelledby="drawer-title">
+  <div class="drawer-inner">
+    <header class="head">
+      <div>
+        <h2 id="drawer-title">Receipts · Reforestation · April 2026</h2>
+        <div class="sub">Every euro, accounted for.</div>
+      </div>
+      <div class="right">
+        <button type="button">Download CSV</button>
+        <button type="button">Monthly proof pack (PDF)</button>
+      </div>
+    </header>
+
+    <table class="receipts" aria-label="Verified line items">
+      <thead>
+        <tr>
+          <th class="month">Month</th>
+          <th class="amount">Amount</th>
+          <th class="cat">Category</th>
+          <th class="ref">On-chain reference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="month">Apr 2026</td>
+          <td class="amount">€4,820</td>
+          <td class="cat">Crew wages</td>
+          <td class="ref">
+            <span class="hash">
+              <code>a3f0…b2c9</code>
+              <button class="copy" type="button">Copy</button>
+              <a class="open" href="#" target="_blank" rel="noopener">View on stellar.expert</a>
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td class="month">Apr 2026</td>
+          <td class="amount">€3,160</td>
+          <td class="cat">Seedlings</td>
+          <td class="ref">
+            <span class="hash">
+              <code>9e21…44d7</code>
+              <button class="copy" type="button">Copy</button>
+              <a class="open" href="#" target="_blank" rel="noopener">View on stellar.expert</a>
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td class="month">Apr 2026</td>
+          <td class="amount">€2,540</td>
+          <td class="cat">Tools · transport</td>
+          <td class="ref">
+            <span class="hash">
+              <code>71b8…0ef2</code>
+              <button class="copy" type="button">Copy</button>
+              <a class="open" href="#" target="_blank" rel="noopener">View on stellar.expert</a>
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td class="month">Apr 2026</td>
+          <td class="amount">€1,820</td>
+          <td class="cat">Monitoring</td>
+          <td class="ref">
+            <span class="hash">
+              <code>cc04…1a55</code>
+              <button class="copy" type="button">Copy</button>
+              <a class="open" href="#" target="_blank" rel="noopener">View on stellar.expert</a>
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td class="month">Apr 2026</td>
+          <td class="amount">€1,860</td>
+          <td class="cat">Training</td>
+          <td class="ref">
+            <span class="hash">
+              <code>56d2…ff80</code>
+              <button class="copy" type="button">Copy</button>
+              <a class="open" href="#" target="_blank" rel="noopener">View on stellar.expert</a>
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="footnote">
+      Settlement asset: USDC on Stellar. Public display unit: EUR. About this <a href="#">proof rail</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="foot">
+  <span>Providencia 2026 by AYRA.</span>
+  <a href="#top">Back to the wall</a>
+</footer>
+
+<!-- ============================================================
+     SCORE MODAL — opens when a League Score pill is clicked
+     ============================================================ -->
+<div id="score-modal" class="modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="score-modal-title" hidden>
+  <div class="modal-card" role="document">
+    <button class="close" type="button" aria-label="Close">×</button>
+    <span class="label">League Score · Reforestation</span>
+    <div class="total" id="score-modal-title">87<span>/ 99</span></div>
+    <p class="blurb">Recalculated monthly from on-chain receipts and field reports. Five dimensions, weighted.</p>
+
+    <div class="dim">
+      <span class="name">Verifiability</span>
+      <span class="num">22 / 25</span>
+      <span class="gauge" style="--w: 88%;"></span>
+    </div>
+    <div class="dim">
+      <span class="name">Local leadership</span>
+      <span class="num">18 / 20</span>
+      <span class="gauge" style="--w: 90%;"></span>
+    </div>
+    <div class="dim">
+      <span class="name">Cost efficiency</span>
+      <span class="num">17 / 20</span>
+      <span class="gauge" style="--w: 85%;"></span>
+    </div>
+    <div class="dim">
+      <span class="name">Impact evidence</span>
+      <span class="num">16 / 20</span>
+      <span class="gauge" style="--w: 80%;"></span>
+    </div>
+    <div class="dim">
+      <span class="name">Transparency</span>
+      <span class="num">14 / 14</span>
+      <span class="gauge" style="--w: 100%;"></span>
+    </div>
+
+    <p class="foot">Weights set by AYRA's review board, audited quarterly. <a href="#">Methodology</a>.</p>
+  </div>
+</div>
+
+<!-- demo control — toggle the sponsor ribbon to preview ?backer= behavior -->
+<button id="demo-toggle" class="demo-toggle" data-on="false" type="button" aria-label="Demo: toggle sponsor ribbon">
+  <span class="dot"></span>
+  Sponsor ribbon (demo)
+</button>
+
+<script>
+  // Sponsor ribbon: appears when ?backer=<name> is present.
+  const params = new URLSearchParams(location.search);
+  const ribbon = document.getElementById('ribbon');
+  const demoBtn = document.getElementById('demo-toggle');
+  if (params.get('backer')) {
+    ribbon.dataset.show = 'true';
+    demoBtn.dataset.on = 'true';
+  }
+  demoBtn.addEventListener('click', () => {
+    const on = ribbon.dataset.show === 'true';
+    ribbon.dataset.show = on ? 'false' : 'true';
+    demoBtn.dataset.on = on ? 'false' : 'true';
+  });
+
+  // Reveal-on-load (gentle stagger)
+  const reveal = (el) => requestAnimationFrame(() => el.classList.add('in'));
+  document.querySelectorAll('.reveal').forEach((el, i) => setTimeout(() => reveal(el), i * 80));
+
+  // Score modal: open from any .score pill, close on backdrop / × / Escape
+  const scoreModal = document.getElementById('score-modal');
+  const openScoreModal = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    scoreModal.hidden = false;
+    document.body.classList.add('modal-open');
+    requestAnimationFrame(() => { scoreModal.dataset.open = 'true'; });
+  };
+  const closeScoreModal = () => {
+    scoreModal.dataset.open = 'false';
+    document.body.classList.remove('modal-open');
+    setTimeout(() => { scoreModal.hidden = true; }, 280);
+  };
+  document.querySelectorAll('.score').forEach((el) => {
+    el.setAttribute('role', 'button');
+    el.setAttribute('tabindex', '0');
+    el.addEventListener('click', openScoreModal);
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') openScoreModal(e);
+    });
+  });
+  scoreModal.addEventListener('click', (e) => {
+    if (e.target === scoreModal || e.target.classList.contains('close')) closeScoreModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && scoreModal.dataset.open === 'true') closeScoreModal();
+  });
+
+  // Smooth scroll for in-page anchors with offset for the sticky nav
+  // (browsers handle this via scroll-padding-top; nothing else needed)
+</script>
+
+</body>
+</html>
