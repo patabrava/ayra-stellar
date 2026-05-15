@@ -122,7 +122,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
                 <p className="max-w-md text-sm text-ink-muted">
                   Synthetic demo submissions redirect locally unless Supabase
-                  service-role env is configured.
+                  environment variables are configured.
                 </p>
                 <button className="btn primary" type="submit">
                   Submit for review <Send className="h-4 w-4" />

@@ -94,6 +94,14 @@ insert into public.user_roles (profile_id, role, initiative_id, grantee_id) valu
   ('00000000-0000-0000-0000-000000000002', 'grantee_contact', null, '40000000-0000-0000-0000-000000000001')
 on conflict do nothing;
 
+insert into public.grantee_contacts (id, profile_id, grantee_id) values
+  (
+    '42000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000002',
+    '40000000-0000-0000-0000-000000000001'
+  )
+on conflict (profile_id, grantee_id) do nothing;
+
 insert into public.payout_addresses (
   id, initiative_id, address, status, submitted_by_profile_id,
   submitted_at, verified_at, verified_by_profile_id, locked_at, verification_note

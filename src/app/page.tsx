@@ -3,8 +3,8 @@ import Link from "next/link";
 import { ArrowRight, ExternalLink, Leaf, ReceiptText } from "lucide-react";
 
 import { Chip, Hash } from "@/components/ayra/ui";
+import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
-  createDemoState,
   formatLocal,
   formatUsdc,
   getProofPack,
@@ -26,7 +26,7 @@ function widthVar(value: number): CSSProperties {
 
 export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams;
-  const state = createDemoState();
+  const state = await loadPublicAyraState();
   const wall = getPublicWallProjection(state, params?.track ?? "providencia");
   const active = wall.activeInitiative;
   const clearedBatch =

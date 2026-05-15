@@ -9,6 +9,7 @@ import {
   submitBatchAction,
   verifyPayoutAddressAction,
 } from "@/lib/ayra/actions";
+import { loadOperatorAyraState } from "@/lib/ayra/data";
 import { createDemoState, formatLocal, getProofPack } from "@/lib/ayra/domain";
 
 type PageProps = {
@@ -23,7 +24,7 @@ function batchTotal(state: ReturnType<typeof createDemoState>, batchId: string) 
 
 export default async function AdminPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const state = createDemoState();
+  const state = await loadOperatorAyraState();
   const admin = state.profiles.find((item) => item.id === "profile-admin")!;
   const providencia = state.tracks.find((item) => item.slug === "providencia")!;
   const reforest = state.initiatives.find((item) => item.slug === "reforestation")!;

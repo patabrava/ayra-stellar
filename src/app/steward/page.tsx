@@ -3,8 +3,8 @@ import { Download, Send } from "lucide-react";
 
 import { Chip, Hash, Money, OpsNav, StatusBanner } from "@/components/ayra/ui";
 import { submitUpdateAction } from "@/lib/ayra/actions";
+import { loadOperatorAyraState } from "@/lib/ayra/data";
 import {
-  createDemoState,
   formatLocal,
   getProofPack,
 } from "@/lib/ayra/domain";
@@ -15,7 +15,7 @@ type PageProps = {
 
 export default async function StewardPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const state = createDemoState();
+  const state = await loadOperatorAyraState();
   const initiative = state.initiatives.find((item) => item.slug === "reforestation")!;
   const profile = state.profiles.find((item) => item.id === "profile-leidy")!;
   const steward = state.stewardProfiles.find(

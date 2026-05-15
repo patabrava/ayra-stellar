@@ -209,3 +209,5 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 
 3) Specific repo rules
 - Public transparency projections are track-scoped feeds: keep the hero default on Reforestation, but include approved public records from all initiatives in the selected track.
+- Anonymous application inserts must use return-minimal writes unless a privileged client can also read `applications`; selecting inserted ids will fail RLS.
+- When changing `public_batch_receipts` column order or adding leading columns, drop and recreate the view instead of `create or replace view`.

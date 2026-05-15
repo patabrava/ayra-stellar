@@ -8,6 +8,10 @@ import {
   createSupabaseAdminClient,
   hasSupabaseAdminEnv,
 } from "@/lib/supabase/admin";
+import {
+  createPublicSupabaseClient,
+  hasPublicSupabaseEnv,
+} from "@/lib/ayra/data";
 
 const applicationSchema = z.object({
   applicantName: z.string().trim().min(2),
@@ -108,35 +112,44 @@ export async function submitApplicationAction(formData: FormData) {
 
   if (!parsed.success) redirectWithStatus("/apply", "invalid");
 
-  if (hasSupabaseAdminEnv()) {
-    const supabase = createSupabaseAdminClient();
-    const { data, error } = await supabase
-      .from("applications")
-      .insert({
-        applicant_name: parsed.data.applicantName,
-        applicant_email: parsed.data.applicantEmail,
-        proposed_track_name: parsed.data.proposedTrackName,
-        proposed_initiative_name: parsed.data.proposedInitiativeName,
-        scope_summary: parsed.data.scopeSummary,
-        operational_notes: parsed.data.operationalNotes,
-        contact_signal: parsed.data.contactSignal,
-        status: "pending",
-      })
-      .select("id")
-      .single();
+  const canWritePublicApplication = hasSupabaseAdminEnv() || hasPublicSupabaseEnv();
+
+  if (canWritePublicApplication) {
+    const supabase = hasSupabaseAdminEnv()
+      ? createSupabaseAdminClient()
+      : createPublicSupabaseClient();
+    const applicationInsert = {
+      applicant_name: parsed.data.applicantName,
+      applicant_email: parsed.data.applicantEmail,
+      proposed_track_name: parsed.data.proposedTrackName,
+      proposed_initiative_name: parsed.data.proposedInitiativeName,
+      scope_summary: parsed.data.scopeSummary,
+      operational_notes: parsed.data.operationalNotes,
+      contact_signal: parsed.data.contactSignal,
+      status: "pending",
+    };
+    const { data, error } = hasSupabaseAdminEnv()
+      ? await supabase
+          .from("applications")
+          .insert(applicationInsert)
+          .select("id")
+          .single()
+      : await supabase.from("applications").insert(applicationInsert);
     if (error) redirectWithStatus("/apply", "error");
-    await insertAudit({
-      action: "application.submitted",
-      entityType: "application",
-      entityId: data.id,
-      after: { status: "pending" },
-    });
+    if (hasSupabaseAdminEnv() && data) {
+      await insertAudit({
+        action: "application.submitted",
+        entityType: "application",
+        entityId: data.id,
+        after: { status: "pending" },
+      });
+    }
     revalidatePath("/admin");
   }
 
   redirectWithStatus(
     "/apply",
-    hasSupabaseAdminEnv() ? "submitted" : "demo-submitted",
+    canWritePublicApplication ? "submitted" : "demo-submitted",
   );
 }
 
