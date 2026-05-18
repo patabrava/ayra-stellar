@@ -44,6 +44,36 @@ describe("AYRA Stellar domain smoke path", () => {
     assert.ok(!JSON.stringify(wall).includes("leidy@ecoparque.co"));
   });
 
+  it("scopes public projection by selected track and falls back on unknown slugs", () => {
+    const state = createDemoState();
+    const selected = getPublicWallProjection(state, "amazonas");
+    const fallback = getPublicWallProjection(state, "unknown-track");
+
+    assert.equal(selected.track.slug, "amazonas");
+    assert.ok(selected.initiatives.length > 0);
+    assert.ok(
+      selected.initiatives.every(
+        (initiative) => initiative.trackId === selected.track.id,
+      ),
+    );
+    assert.ok(
+      selected.updates.every((update) =>
+        selected.initiatives.some(
+          (initiative) => initiative.name === update.initiativeName,
+        ),
+      ),
+    );
+    assert.ok(
+      selected.batches.every((batch) =>
+        selected.initiatives.some(
+          (initiative) => initiative.name === batch.initiativeName,
+        ),
+      ),
+    );
+    assert.equal(fallback.track.slug, "providencia");
+    assert.equal(fallback.activeInitiative.slug, "reforestation");
+  });
+
   it("runs application approval, update moderation, verified payout, mock SDP, and proof visibility", async () => {
     let state = createDemoState();
 

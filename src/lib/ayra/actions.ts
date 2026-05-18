@@ -18,7 +18,11 @@ import {
   safeNextPath,
   type AyraSession,
 } from "@/lib/ayra/session";
-import { createSdpGateway, type SdpGatewayEvent } from "@/lib/ayra/sdp";
+import {
+  createSdpGateway,
+  SdpGatewayError,
+  type SdpGatewayEvent,
+} from "@/lib/ayra/sdp";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const applicationSchema = z.object({
@@ -170,6 +174,10 @@ async function insertSdpEvents(
       message: event.message ?? null,
     })),
   );
+}
+
+function sdpEventsFromError(error: unknown) {
+  return error instanceof SdpGatewayError ? error.events : [];
 }
 
 export async function requestMagicLinkAction(formData: FormData) {
@@ -571,15 +579,27 @@ export async function submitBatchAction(formData: FormData) {
     redirectWithStatus("/admin", "line-item-error");
   }
 
+  const destination = await loadSdpDestination(supabase, batch.initiative_id);
+  if (!destination) redirectWithStatus("/admin", "payout-required");
+
   const gateway = createSdpGateway();
-  const sdp = await gateway.submitBatch(
-    { id: batch.id, code: batch.code, sdpBatchId: batch.sdp_batch_id },
-    lineItems.map((item) => ({
-      id: item.id,
-      category: item.category,
-      amountUsdc: Number(item.amount_usdc),
-    })),
-  );
+  let sdp;
+  try {
+    sdp = await gateway.submitBatch(
+      { id: batch.id, code: batch.code, sdpBatchId: batch.sdp_batch_id },
+      lineItems.map((item) => ({
+        id: item.id,
+        category: item.category,
+        amountUsdc: Number(item.amount_usdc),
+        receiverEmail: destination.receiverEmail,
+        walletAddress: destination.walletAddress,
+        walletAddressMemo: destination.walletAddressMemo,
+      })),
+    );
+  } catch (error) {
+    await insertSdpEvents(supabase, parsed.data.entityId, sdpEventsFromError(error));
+    redirectWithStatus("/admin", "sdp-error");
+  }
 
   const { error } = await supabase
     .from("funding_batches")
@@ -637,7 +657,7 @@ export async function syncBatchStatusAction(formData: FormData) {
   const supabase = session.supabase!;
   const { data: batch, error: batchError } = await supabase
     .from("funding_batches")
-    .select("id,code,sdp_batch_id")
+    .select("id,initiative_id,code,sdp_batch_id")
     .eq("id", parsed.data.entityId)
     .eq("status", "submitted")
     .single();
@@ -651,23 +671,36 @@ export async function syncBatchStatusAction(formData: FormData) {
     redirectWithStatus("/admin", "line-item-error");
   }
 
-  const gateway = createSdpGateway();
-  const sdp = await gateway.syncStatus(
-    { id: batch.id, code: batch.code, sdpBatchId: batch.sdp_batch_id },
-    lineItems.map((item) => ({
-      id: item.id,
-      category: item.category,
-      amountUsdc: Number(item.amount_usdc),
-    })),
-  );
+  const destination = await loadSdpDestination(supabase, batch.initiative_id);
+  if (!destination) redirectWithStatus("/admin", "payout-required");
 
+  const gateway = createSdpGateway();
+  let sdp;
+  try {
+    sdp = await gateway.syncStatus(
+      { id: batch.id, code: batch.code, sdpBatchId: batch.sdp_batch_id },
+      lineItems.map((item) => ({
+        id: item.id,
+        category: item.category,
+        amountUsdc: Number(item.amount_usdc),
+        receiverEmail: destination.receiverEmail,
+        walletAddress: destination.walletAddress,
+        walletAddressMemo: destination.walletAddressMemo,
+      })),
+    );
+  } catch (error) {
+    await insertSdpEvents(supabase, parsed.data.entityId, sdpEventsFromError(error));
+    redirectWithStatus("/admin", "sdp-error");
+  }
+
+  const settledLineItemIds = new Set(sdp.payments.map((payment) => payment.lineItemId));
   const updates = await Promise.all(
     lineItems.map((lineItem) => {
       const payment = sdp.payments.find((item) => item.lineItemId === lineItem.id);
       return supabase
         .from("batch_line_items")
         .update({
-          status: "settled",
+          status: settledLineItemIds.has(lineItem.id) ? "settled" : "processing",
           transaction_hash: payment?.transactionHash ?? null,
         })
         .eq("id", lineItem.id);
@@ -677,32 +710,35 @@ export async function syncBatchStatusAction(formData: FormData) {
     redirectWithStatus("/admin", "line-item-error");
   }
 
+  const allSettled = lineItems.every((lineItem) => settledLineItemIds.has(lineItem.id));
   const { error } = await supabase
     .from("funding_batches")
     .update({
-      status: "settled",
-      settled_at: new Date().toISOString(),
+      status: allSettled ? "settled" : "submitted",
+      settled_at: allSettled ? new Date().toISOString() : null,
     })
     .eq("id", parsed.data.entityId)
     .eq("status", "submitted");
   if (error) redirectWithStatus("/admin", "error");
 
-  await supabase
-    .from("funding_allocations")
-    .update({ status: "settled" })
-    .eq("batch_id", parsed.data.entityId);
-  await supabase
-    .from("reconciliation_items")
-    .update({ status: "reconciled", reconciled_at: new Date().toISOString() })
-    .eq("batch_id", parsed.data.entityId)
-    .eq("status", "receipt_attached");
+  if (allSettled) {
+    await supabase
+      .from("funding_allocations")
+      .update({ status: "settled" })
+      .eq("batch_id", parsed.data.entityId);
+    await supabase
+      .from("reconciliation_items")
+      .update({ status: "reconciled", reconciled_at: new Date().toISOString() })
+      .eq("batch_id", parsed.data.entityId)
+      .eq("status", "receipt_attached");
+  }
   await insertSdpEvents(supabase, parsed.data.entityId, sdp.events);
 
   await insertAudit(supabase, session, {
     action: "batch.synced",
     entityType: "batch",
     entityId: parsed.data.entityId,
-    after: { status: "settled" },
+    after: { status: allSettled ? "settled" : "submitted" },
   });
   revalidatePath("/");
   revalidatePath("/admin");
@@ -841,6 +877,44 @@ async function initiativeHasVerifiedAddress(
     .limit(1)
     .maybeSingle();
   return !error && Boolean(data);
+}
+
+async function loadSdpDestination(
+  supabase: SupabaseClient,
+  initiativeId: string,
+) {
+  const { data: address, error: addressError } = await supabase
+    .from("payout_addresses")
+    .select("address")
+    .eq("initiative_id", initiativeId)
+    .in("status", ["verified", "locked"])
+    .limit(1)
+    .maybeSingle();
+  if (addressError || !address?.address) return null;
+
+  const { data: grantee } = await supabase
+    .from("grantees")
+    .select("contact_profile_id")
+    .eq("initiative_id", initiativeId)
+    .not("contact_profile_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+
+  let receiverEmail = `receiver+${initiativeId}@ayra.example.org`;
+  if (grantee?.contact_profile_id) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", grantee.contact_profile_id)
+      .maybeSingle();
+    if (profile?.email) receiverEmail = profile.email;
+  }
+
+  return {
+    receiverEmail,
+    walletAddress: address.address as string,
+    walletAddressMemo: null,
+  };
 }
 
 function slugify(value: string) {

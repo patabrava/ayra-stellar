@@ -8,6 +8,9 @@ export type SdpLineItemRef = {
   id: string;
   category: string;
   amountUsdc: number;
+  receiverEmail: string;
+  walletAddress: string;
+  walletAddressMemo?: string | null;
 };
 
 export type SdpGatewayEvent = {
@@ -50,8 +53,74 @@ export type SdpGateway = {
   ) => Promise<SdpSyncResult>;
 };
 
+export type TestnetSdpGatewayConfig = {
+  baseUrl: string;
+  createAuthorization: string;
+  startAuthorization: string;
+  tenantName?: string;
+  assetId: string;
+  registrationContactType: string;
+};
+
+type FetchLike = typeof fetch;
+
+type SdpDisbursementResponse = {
+  id?: string;
+  name?: string;
+  status?: string;
+};
+
+type SdpPaymentResponse = {
+  id?: string;
+  status?: string;
+  stellar_transaction_id?: string;
+  external_payment_id?: string;
+};
+
+export class SdpGatewayError extends Error {
+  events: SdpGatewayEvent[];
+
+  constructor(message: string, events: SdpGatewayEvent[]) {
+    super(message);
+    this.name = "SdpGatewayError";
+    this.events = events;
+  }
+}
+
 function idCode(code: string) {
   return code.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function paymentExternalId(batch: SdpBatchRef, lineItem: SdpLineItemRef) {
+  return `${idCode(batch.code)}-${lineItem.id}`;
+}
+
+function csvValue(value: string | number | null | undefined) {
+  const text = value == null ? "" : String(value);
+  if (!/[",\n\r]/.test(text)) return text;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function amountValue(value: number) {
+  return value.toFixed(2).replace(/\.00$/, "");
+}
+
+export function buildSdpInstructionsCsv(
+  batch: SdpBatchRef,
+  lineItems: SdpLineItemRef[],
+) {
+  const rows = [
+    ["email", "walletAddress", "walletAddressMemo", "id", "amount", "paymentID"],
+    ...lineItems.map((lineItem) => [
+      lineItem.receiverEmail,
+      lineItem.walletAddress,
+      lineItem.walletAddressMemo ?? "",
+      lineItem.id,
+      amountValue(lineItem.amountUsdc),
+      paymentExternalId(batch, lineItem),
+    ]),
+  ];
+  return `${rows.map((row) => row.map(csvValue).join(",")).join("\n")}\n`;
 }
 
 export function createMockSdpGateway(): SdpGateway {
@@ -109,6 +178,292 @@ export function createMockSdpGateway(): SdpGateway {
   };
 }
 
-export function createSdpGateway() {
-  return createMockSdpGateway();
+export function createTestnetSdpGateway(
+  config: TestnetSdpGatewayConfig,
+  fetchImpl: FetchLike = fetch,
+): SdpGateway {
+  const client = new TestnetSdpClient(config, fetchImpl);
+  return {
+    async submitBatch(batch, lineItems) {
+      const events: SdpGatewayEvent[] = [];
+      try {
+        const disbursement = await client.createDisbursement(batch);
+        const externalBatchId = disbursement.id;
+        events.push({
+          provider: "stellar-sdp",
+          action: "create_batch",
+          status: "ok",
+          externalId: externalBatchId,
+        });
+
+        await client.uploadInstructions(externalBatchId, batch, lineItems);
+        events.push({
+          provider: "stellar-sdp",
+          action: "upload_instructions",
+          status: "ok",
+          externalId: externalBatchId,
+          message: `${lineItems.length} instruction(s) uploaded`,
+        });
+
+        await client.startDisbursement(externalBatchId);
+        events.push({
+          provider: "stellar-sdp",
+          action: "mark_ready",
+          status: "ok",
+          externalId: externalBatchId,
+        });
+
+        const payments = await client.lookupPayments(batch, lineItems);
+        return {
+          externalBatchId,
+          payments: payments.map(({ lineItem, payment }) => ({
+            lineItemId: lineItem.id,
+            paymentId: payment.id ?? payment.external_payment_id ?? paymentExternalId(batch, lineItem),
+          })),
+          events,
+        };
+      } catch (error) {
+        const event = toErrorEvent("stellar-sdp", "create_batch", error);
+        events.push(event);
+        throw new SdpGatewayError(event.message ?? "SDP submit failed", events);
+      }
+    },
+    async syncStatus(batch, lineItems) {
+      const events: SdpGatewayEvent[] = [];
+      try {
+        const payments = await client.lookupPayments(batch, lineItems);
+        events.push({
+          provider: "stellar-sdp",
+          action: "sync_status",
+          status: "ok",
+          externalId: batch.sdpBatchId ?? undefined,
+          message: `${payments.length} payment(s) mapped`,
+        });
+        return {
+          payments: payments
+            .filter(({ payment }) => payment.stellar_transaction_id)
+            .map(({ lineItem, payment }) => ({
+              lineItemId: lineItem.id,
+              transactionHash: payment.stellar_transaction_id!,
+            })),
+          events,
+        };
+      } catch (error) {
+        const event = toErrorEvent("stellar-sdp", "sync_status", error);
+        events.push(event);
+        throw new SdpGatewayError(event.message ?? "SDP sync failed", events);
+      }
+    },
+  };
+}
+
+class TestnetSdpClient {
+  private config: TestnetSdpGatewayConfig;
+  private fetchImpl: FetchLike;
+
+  constructor(config: TestnetSdpGatewayConfig, fetchImpl: FetchLike) {
+    this.config = config;
+    this.fetchImpl = fetchImpl;
+  }
+
+  async createDisbursement(
+    batch: SdpBatchRef,
+  ): Promise<SdpDisbursementResponse & { id: string }> {
+    const json = await this.requestJson<SdpDisbursementResponse>(
+      "/disbursements",
+      {
+        method: "POST",
+        authorization: this.config.createAuthorization,
+        json: {
+          name: batch.code,
+          asset_id: this.config.assetId,
+          registration_contact_type: this.config.registrationContactType,
+          wallet_id: "",
+          verification_field: "",
+        },
+      },
+      "create_batch",
+    );
+    if (!json.id) throw new Error("SDP create response did not include id");
+    return { ...json, id: json.id };
+  }
+
+  async uploadInstructions(
+    disbursementId: string,
+    batch: SdpBatchRef,
+    lineItems: SdpLineItemRef[],
+  ) {
+    const body = new FormData();
+    body.set(
+      "file",
+      new Blob([buildSdpInstructionsCsv(batch, lineItems)], { type: "text/csv" }),
+      `${idCode(batch.code)}.csv`,
+    );
+
+    await this.requestText(
+      `/disbursements/${encodeURIComponent(disbursementId)}/instructions`,
+      {
+        method: "POST",
+        authorization: this.config.createAuthorization,
+        body,
+      },
+      "upload_instructions",
+    );
+  }
+
+  async startDisbursement(disbursementId: string) {
+    await this.requestJson<{ message?: string }>(
+      `/disbursements/${encodeURIComponent(disbursementId)}/status`,
+      {
+        method: "PATCH",
+        authorization: this.config.startAuthorization,
+        json: { status: "STARTED" },
+      },
+      "mark_ready",
+    );
+  }
+
+  async lookupPayments(batch: SdpBatchRef, lineItems: SdpLineItemRef[]) {
+    const results: Array<{ lineItem: SdpLineItemRef; payment: SdpPaymentResponse }> = [];
+    for (const lineItem of lineItems) {
+      const expectedPaymentId = paymentExternalId(batch, lineItem);
+      const json = await this.requestJson<unknown>(
+        `/payments?q=${encodeURIComponent(expectedPaymentId)}&type=DISBURSEMENT`,
+        {
+          method: "GET",
+          authorization: this.config.createAuthorization,
+        },
+        "sync_status",
+      );
+      const payment = extractPayments(json).find(
+        (item) =>
+          item.external_payment_id === expectedPaymentId ||
+          item.id === expectedPaymentId ||
+          item.id,
+      );
+      if (payment) results.push({ lineItem, payment });
+    }
+    return results;
+  }
+
+  private headers(authorization: string, json: boolean) {
+    const headers = new Headers();
+    headers.set("Authorization", authorization);
+    if (this.config.tenantName) headers.set("SDP-Tenant-Name", this.config.tenantName);
+    if (json) headers.set("Content-Type", "application/json");
+    return headers;
+  }
+
+  private async requestJson<T>(
+    path: string,
+    init: {
+      method: string;
+      authorization: string;
+      json?: unknown;
+      body?: BodyInit;
+    },
+    action: SdpGatewayEvent["action"],
+  ): Promise<T> {
+    const response = await this.fetchImpl(this.url(path), {
+      method: init.method,
+      headers: this.headers(init.authorization, init.json !== undefined),
+      body: init.json !== undefined ? JSON.stringify(init.json) : init.body,
+    });
+    if (!response.ok) throw await sdpHttpError(action, response);
+    return (await response.json()) as T;
+  }
+
+  private async requestText(
+    path: string,
+    init: {
+      method: string;
+      authorization: string;
+      body?: BodyInit;
+    },
+    action: SdpGatewayEvent["action"],
+  ) {
+    const response = await this.fetchImpl(this.url(path), {
+      method: init.method,
+      headers: this.headers(init.authorization, false),
+      body: init.body,
+    });
+    if (!response.ok) throw await sdpHttpError(action, response);
+    return response.text();
+  }
+
+  private url(path: string) {
+    return `${this.config.baseUrl.replace(/\/+$/, "")}${path}`;
+  }
+}
+
+async function sdpHttpError(action: SdpGatewayEvent["action"], response: Response) {
+  await response.text().catch(() => "");
+  return new Error(`SDP ${action} failed with HTTP ${response.status}`);
+}
+
+function toErrorEvent(
+  provider: SdpGatewayEvent["provider"],
+  action: SdpGatewayEvent["action"],
+  error: unknown,
+): SdpGatewayEvent {
+  return {
+    provider,
+    action,
+    status: "error",
+    message: error instanceof Error ? error.message : "Unknown SDP error",
+  };
+}
+
+function extractPayments(json: unknown): SdpPaymentResponse[] {
+  if (Array.isArray(json)) return json.filter(isPayment);
+  if (json && typeof json === "object") {
+    const data = (json as { data?: unknown }).data;
+    if (Array.isArray(data)) return data.filter(isPayment);
+    if (isPayment(data)) return [data];
+    if (isPayment(json)) return [json];
+  }
+  return [];
+}
+
+function isPayment(value: unknown): value is SdpPaymentResponse {
+  return Boolean(value && typeof value === "object" && "id" in value);
+}
+
+export function createSdpGateway(
+  env: NodeJS.ProcessEnv = process.env,
+  fetchImpl: FetchLike = fetch,
+) {
+  const mode = env.AYRA_SDP_MODE ?? "mock";
+  if (mode === "mock") return createMockSdpGateway();
+  if (mode !== "testnet") {
+    throw new Error("AYRA_SDP_MODE must be mock or testnet.");
+  }
+
+  return createTestnetSdpGateway(readTestnetConfig(env), fetchImpl);
+}
+
+function readTestnetConfig(env: NodeJS.ProcessEnv): TestnetSdpGatewayConfig {
+  const config = {
+    baseUrl: requiredEnv(env, "STELLAR_SDP_BASE_URL"),
+    createAuthorization: requiredEnv(env, "STELLAR_SDP_CREATE_AUTHORIZATION"),
+    startAuthorization:
+      env.STELLAR_SDP_START_AUTHORIZATION ||
+      requiredEnv(env, "STELLAR_SDP_CREATE_AUTHORIZATION"),
+    tenantName: env.STELLAR_SDP_TENANT_NAME || undefined,
+    assetId: requiredEnv(env, "STELLAR_SDP_ASSET_ID"),
+    registrationContactType:
+      env.STELLAR_SDP_REGISTRATION_CONTACT_TYPE || "EMAIL_AND_WALLET_ADDRESS",
+  };
+  if (config.registrationContactType !== "EMAIL_AND_WALLET_ADDRESS") {
+    throw new Error(
+      "AYRA MVP supports STELLAR_SDP_REGISTRATION_CONTACT_TYPE=EMAIL_AND_WALLET_ADDRESS.",
+    );
+  }
+  return config;
+}
+
+function requiredEnv(env: NodeJS.ProcessEnv, key: string) {
+  const value = env[key]?.trim();
+  if (!value) throw new Error(`Missing ${key}.`);
+  return value;
 }

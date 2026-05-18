@@ -29,9 +29,11 @@ export default async function Home({ searchParams }: PageProps) {
   const state = await loadPublicAyraState();
   const wall = getPublicWallProjection(state, params?.track ?? "providencia");
   const active = wall.activeInitiative;
-  const clearedBatch =
-    state.batches.find((batch) => batch.status === "settled") ?? state.batches[0];
-  const proof = getProofPack(state, clearedBatch.id);
+  const proofBatch =
+    wall.batches.find((batch) => batch.status === "settled") ??
+    wall.batches[0] ??
+    state.batches[0];
+  const proof = getProofPack(state, proofBatch.id);
   const progress = percent(active.targetMetricCurrent, active.targetMetricGoal);
   const maxSpend = Math.max(...wall.spending.map((item) => item.amountUsdc), 1);
   const totalSubmitted = wall.batches.reduce(
@@ -45,7 +47,21 @@ export default async function Home({ searchParams }: PageProps) {
         <Link className="wordmark" href="#top">
           AYRA <span>{wall.track.name}</span>
         </Link>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          {state.tracks.map((track) => (
+            <Link
+              aria-current={track.slug === wall.track.slug ? "page" : undefined}
+              className={
+                track.slug === wall.track.slug
+                  ? "public-anchor active"
+                  : "public-anchor"
+              }
+              href={`/?track=${track.slug}`}
+              key={track.id}
+            >
+              {track.name}
+            </Link>
+          ))}
           <a className="public-anchor" href="#receipts">
             Receipts
           </a>

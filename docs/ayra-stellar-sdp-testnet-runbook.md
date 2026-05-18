@@ -1,0 +1,120 @@
+# AYRA Stellar SDP Testnet Runbook
+
+Purpose: prove the AYRA server-side SDP contract against a real Stellar
+Disbursement Platform testnet instance without changing app code or exposing SDP
+credentials to the browser.
+
+Official references:
+- SDP overview: https://developers.stellar.org/docs/platforms/stellar-disbursement-platform
+- SDP architecture: https://developers.stellar.org/docs/platforms/stellar-disbursement-platform/admin-guide/design-and-architecture
+- SDP getting started: https://developers.stellar.org/docs/platforms/stellar-disbursement-platform/admin-guide/getting-started
+- SDP disbursements API: https://developers.stellar.org/docs/platforms/stellar-disbursement-platform/api-reference/disbursements
+
+## Setup
+
+1. Clone and start the official SDP backend:
+
+```bash
+git clone https://github.com/stellar/stellar-disbursement-platform-backend.git
+cd stellar-disbursement-platform-backend
+make setup
+```
+
+2. In the setup wizard, choose testnet, single tenant, generated accounts, launch
+the local environment, and initialize tenants/users.
+
+3. Confirm you can log into the SDP dashboard and that the distribution account
+is funded for the asset you will disburse.
+
+4. Create or identify an API credential with Dashboard API permissions for
+creating disbursements, uploading instructions, starting disbursements, and
+reading payments.
+
+5. If the SDP instance rejects starting a disbursement by the same creator, create
+a second API credential for the approver/start step and use it as
+`STELLAR_SDP_START_AUTHORIZATION`.
+
+6. Create or reuse a Stellar testnet receiver wallet address. AYRA MVP v1 uses
+the SDP direct wallet-address CSV template:
+
+```csv
+email,walletAddress,walletAddressMemo,id,amount,paymentID
+```
+
+## Environment
+
+Use full Authorization header values. Do not paste tokens into logs or docs.
+
+```bash
+export AYRA_SDP_MODE=testnet
+export STELLAR_SDP_BASE_URL=http://localhost:8000
+export STELLAR_SDP_CREATE_AUTHORIZATION='Bearer <create-api-token>'
+export STELLAR_SDP_START_AUTHORIZATION='Bearer <start-api-token-or-same-if-allowed>'
+export STELLAR_SDP_TENANT_NAME=default
+export STELLAR_SDP_ASSET_ID='<testnet-asset-id-from-sdp>'
+export STELLAR_SDP_REGISTRATION_CONTACT_TYPE=EMAIL_AND_WALLET_ADDRESS
+export STELLAR_SDP_TEST_RECEIVER_EMAIL=ayra-sdp-smoke@example.org
+export STELLAR_SDP_TEST_WALLET_ADDRESS='<receiver-stellar-public-key>'
+export STELLAR_SDP_TEST_WALLET_ADDRESS_MEMO=''
+export STELLAR_SDP_TEST_AMOUNT_USDC=1
+```
+
+## Verify
+
+```bash
+npm run verify:sdp-testnet
+```
+
+Expected output contains only:
+
+```json
+{
+  "ayraBatchCode": "AYRA-SDP-SMOKE-...",
+  "sdpDisbursementId": "...",
+  "mappedSdpPaymentIds": ["..."],
+  "mappedTransactionIds": ["..."],
+  "finalAyraStatusMapping": "settled"
+}
+```
+
+If no transaction id is available yet, the status mapping remains `submitted`.
+Rerun after the SDP payment job advances, or increase:
+
+```bash
+export STELLAR_SDP_SYNC_ATTEMPTS=12
+export STELLAR_SDP_SYNC_DELAY_MS=10000
+```
+
+## App Persistence Path
+
+The standalone verifier proves the external SDP contract. In the app, persistence
+is performed by admin server actions:
+
+- `submitBatchAction` creates the SDP disbursement, uploads instructions, starts
+the disbursement, stores `stellar-sdp` sync events, and maps SDP payment ids to
+AYRA batch line items.
+- `syncBatchStatusAction` reads SDP payments and persists transaction hashes when
+available.
+
+Acceptance for a fully connected environment is:
+
+1. Admin creates or selects a ready AYRA batch with a locked payout address.
+2. Admin submits the batch with `AYRA_SDP_MODE=testnet`.
+3. `sdp_sync_events.provider` contains `stellar-sdp` rows.
+4. `batch_line_items.sdp_payment_id` is populated.
+5. After sync, settled line items have `transaction_hash`.
+6. Public proof pages show category-level receipts only.
+
+## Failure Signals
+
+- `Missing STELLAR_SDP_*`: local env is incomplete.
+- HTTP 401/403: credential lacks Dashboard API permissions or tenant resolution
+  is wrong.
+- HTTP 400 on create: asset id, wallet-address registration contact type, or
+  wallet/user-managed configuration is wrong.
+- HTTP 400 on upload: CSV template does not match
+  `EMAIL_AND_WALLET_ADDRESS`.
+- HTTP 403 on start: create credential cannot approve/start its own
+  disbursement. Use a second start credential.
+- Empty `mappedTransactionIds`: payment exists but TSS has not submitted or
+  completed the Stellar transaction yet.

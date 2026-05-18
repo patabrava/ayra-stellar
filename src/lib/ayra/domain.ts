@@ -424,6 +424,13 @@ export function createDemoState(): AyraState {
       localCurrency: "COP",
       theme: "Cinematic island stewardship",
     },
+    {
+      id: "track-amazonas",
+      slug: "amazonas",
+      name: "Amazonas",
+      localCurrency: "COP",
+      theme: "Synthetic forest corridor demo",
+    },
   ];
 
   const sponsors: Sponsor[] = [
@@ -491,6 +498,22 @@ export function createDemoState(): AyraState {
       targetMetricGoal: 8,
       status: "funding",
     },
+    {
+      id: "initiative-amazonas-corridor",
+      trackId: "track-amazonas",
+      code: "AYRA-AMZ-CORRIDOR",
+      slug: "forest-corridor-demo",
+      name: "Forest Corridor Demo",
+      headline: "Synthetic canopy monitoring lane for cross-track proof.",
+      description:
+        "A seeded synthetic corridor initiative used only to prove public track scoping.",
+      stewardName: "Maya Rojas",
+      leagueScore: 64,
+      targetMetricLabel: "Survey plots",
+      targetMetricCurrent: 12,
+      targetMetricGoal: 30,
+      status: "live",
+    },
   ];
 
   const milestones: Milestone[] = [
@@ -525,6 +548,14 @@ export function createDemoState(): AyraState {
       title: "Q4 survival audit",
       percentComplete: 0,
       status: "planned",
+    },
+    {
+      id: "milestone-amazonas-01",
+      initiativeId: "initiative-amazonas-corridor",
+      code: "A01",
+      title: "Synthetic corridor baseline",
+      percentComplete: 40,
+      status: "active",
     },
   ];
 
@@ -565,6 +596,17 @@ export function createDemoState(): AyraState {
       submittedAt: "2026-02-28T10:18:00.000Z",
       settledAt: "2026-02-28T15:00:00.000Z",
       sdpBatchId: "mock-batch-reforest-feb26",
+    },
+    {
+      id: "batch-amazonas-apr26",
+      initiativeId: "initiative-amazonas-corridor",
+      code: "AMZ-CORRIDOR-APR26",
+      periodLabel: "April 2026",
+      status: "submitted",
+      createdByProfileId: "profile-admin",
+      createdAt: "2026-04-26T10:00:00.000Z",
+      submittedAt: "2026-04-27T10:00:00.000Z",
+      sdpBatchId: "mock-batch-amazonas-apr26",
     },
   ];
 
@@ -730,6 +772,29 @@ export function createDemoState(): AyraState {
         sanitizedFeedback:
           "Receipts contain supplier information. Resubmit the photo without private documents in frame.",
       },
+      {
+        id: "update-amazonas-apr-18",
+        initiativeId: "initiative-amazonas-corridor",
+        milestoneId: "milestone-amazonas-01",
+        submittedByProfileId: "profile-admin",
+        source: "operator",
+        caption:
+          "Synthetic field crew logged the first corridor plots for cross-track transparency testing.",
+        publicCaption:
+          "First corridor plots are logged for the synthetic Amazonas transparency lane.",
+        status: "approved",
+        media: [
+          {
+            kind: "image",
+            url: "/globe.svg",
+            alt: "Synthetic corridor map marker.",
+            publicReady: true,
+          },
+        ],
+        submittedAt: "2026-04-18T09:00:00.000Z",
+        publishedAt: "2026-04-18T12:00:00.000Z",
+        moderatedByProfileId: "profile-admin",
+      },
     ],
     batches,
     batchLineItems: [
@@ -752,6 +817,9 @@ export function createDemoState(): AyraState {
         ["Nursery setup", 4200, 16_380_000, "settled", "mock-tx-feb-nursery"],
         ["Tools", 2700, 10_530_000, "settled", "mock-tx-feb-tools"],
         ["Crew wages", 5100, 19_890_000, "settled", "mock-tx-feb-crew"],
+      ]),
+      ...makeLineItems("batch-amazonas-apr26", [
+        ["Synthetic monitoring", 900, 3_510_000, "submitted"],
       ]),
     ],
     fundingAllocations: [

@@ -7,16 +7,45 @@ import {
 } from "../src/lib/ayra/export";
 import {
   createMockSdpGateway,
+  buildSdpInstructionsCsv,
+  createSdpGateway,
+  createTestnetSdpGateway,
+  SdpGatewayError,
+  type SdpLineItemRef,
 } from "../src/lib/ayra/sdp";
+
+const sdpLineItems: SdpLineItemRef[] = [
+  {
+    id: "line-1",
+    category: "Crew wages",
+    amountUsdc: 1200,
+    receiverEmail: "receiver@example.org",
+    walletAddress: "GBTESTWALLETADDRESS000000000000000000000000000000000001",
+  },
+  {
+    id: "line-2",
+    category: "Tools",
+    amountUsdc: 300.5,
+    receiverEmail: "receiver@example.org",
+    walletAddress: "GBTESTWALLETADDRESS000000000000000000000000000000000001",
+    walletAddressMemo: "12345678",
+  },
+];
+
+const testnetConfig = {
+  baseUrl: "https://sdp.test",
+  createAuthorization: "Bearer create-token",
+  startAuthorization: "Bearer start-token",
+  tenantName: "ayra",
+  assetId: "asset-usdc",
+  registrationContactType: "EMAIL_AND_WALLET_ADDRESS",
+};
 
 describe("AYRA SDP gateway and CSV exports", () => {
   it("maps mock SDP submission and settlement through stable external ids", async () => {
     const gateway = createMockSdpGateway();
     const batch = { id: "batch-1", code: "PV-TEST-MAY26" };
-    const lineItems = [
-      { id: "line-1", category: "Crew wages", amountUsdc: 1200 },
-      { id: "line-2", category: "Tools", amountUsdc: 300 },
-    ];
+    const lineItems = sdpLineItems;
 
     const submitted = await gateway.submitBatch(batch, lineItems);
     assert.equal(submitted.externalBatchId, "mock-sdp-pv-test-may26");
@@ -32,6 +61,133 @@ describe("AYRA SDP gateway and CSV exports", () => {
     }, lineItems);
     assert.equal(settled.events[0]?.action, "sync_status");
     assert.match(settled.payments[0]?.transactionHash ?? "", /^mock-tx-pv-test-may26-1/);
+  });
+
+  it("builds the official email and wallet-address SDP instruction CSV", () => {
+    const csv = buildSdpInstructionsCsv(
+      { id: "batch-1", code: "PV-TEST-MAY26" },
+      sdpLineItems,
+    );
+
+    assert.equal(
+      csv,
+      [
+        "email,walletAddress,walletAddressMemo,id,amount,paymentID",
+        "receiver@example.org,GBTESTWALLETADDRESS000000000000000000000000000000000001,,line-1,1200,pv-test-may26-line-1",
+        "receiver@example.org,GBTESTWALLETADDRESS000000000000000000000000000000000001,12345678,line-2,300.50,pv-test-may26-line-2",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("uses the Stellar SDP testnet API flow with separated create and start credentials", async () => {
+    const calls: Array<{ url: string; init?: RequestInit; csv?: string }> = [];
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const url = String(input);
+      const headers = new Headers(init?.headers);
+      calls.push({ url, init });
+
+      if (url.endsWith("/disbursements")) {
+        assert.equal(init?.method, "POST");
+        assert.equal(headers.get("Authorization"), "Bearer create-token");
+        assert.equal(headers.get("SDP-Tenant-Name"), "ayra");
+        assert.deepEqual(JSON.parse(String(init?.body)), {
+          name: "PV-TEST-MAY26",
+          asset_id: "asset-usdc",
+          registration_contact_type: "EMAIL_AND_WALLET_ADDRESS",
+          wallet_id: "",
+          verification_field: "",
+        });
+        return Response.json({ id: "sdp-disbursement-1", status: "DRAFT" }, { status: 201 });
+      }
+
+      if (url.endsWith("/disbursements/sdp-disbursement-1/instructions")) {
+        assert.equal(init?.method, "POST");
+        assert.equal(headers.get("Authorization"), "Bearer create-token");
+        assert.ok(init?.body instanceof FormData);
+        const file = init.body.get("file");
+        assert.ok(file && typeof file === "object" && "text" in file);
+        calls[calls.length - 1].csv = await (file as Blob).text();
+        return Response.json({ message: "File uploaded successfully" }, { status: 201 });
+      }
+
+      if (url.endsWith("/disbursements/sdp-disbursement-1/status")) {
+        assert.equal(init?.method, "PATCH");
+        assert.equal(headers.get("Authorization"), "Bearer start-token");
+        assert.deepEqual(JSON.parse(String(init?.body)), { status: "STARTED" });
+        return Response.json({ message: "Disbursement started" }, { status: 200 });
+      }
+
+      if (url.includes("/payments?")) {
+        assert.equal(init?.method, "GET");
+        assert.equal(headers.get("Authorization"), "Bearer create-token");
+        const paymentId = new URL(url).searchParams.get("q");
+        return Response.json({
+          data: [
+            {
+              id: `sdp-${paymentId}`,
+              external_payment_id: paymentId,
+              status: "SUCCESS",
+              stellar_transaction_id: `tx-${paymentId}`,
+            },
+          ],
+          pagination: { pages: 1, total: 1 },
+        });
+      }
+
+      return new Response("unexpected", { status: 500 });
+    };
+
+    const gateway = createTestnetSdpGateway(testnetConfig, fetchImpl);
+    const submitted = await gateway.submitBatch(
+      { id: "batch-1", code: "PV-TEST-MAY26" },
+      sdpLineItems,
+    );
+    const synced = await gateway.syncStatus(
+      {
+        id: "batch-1",
+        code: "PV-TEST-MAY26",
+        sdpBatchId: submitted.externalBatchId,
+      },
+      sdpLineItems,
+    );
+
+    assert.equal(submitted.externalBatchId, "sdp-disbursement-1");
+    assert.deepEqual(
+      submitted.events.map((event) => event.action),
+      ["create_batch", "upload_instructions", "mark_ready"],
+    );
+    assert.equal(submitted.payments[0]?.paymentId, "sdp-pv-test-may26-line-1");
+    assert.equal(synced.payments[1]?.transactionHash, "tx-pv-test-may26-line-2");
+    assert.match(calls.find((call) => call.csv)?.csv ?? "", /walletAddressMemo/);
+  });
+
+  it("fails fast on missing testnet env and sanitizes non-2xx SDP errors", async () => {
+    assert.throws(
+      () =>
+        createSdpGateway({
+          AYRA_SDP_MODE: "testnet",
+        } as NodeJS.ProcessEnv),
+      /Missing STELLAR_SDP_BASE_URL/,
+    );
+
+    const gateway = createTestnetSdpGateway(
+      testnetConfig,
+      async () => new Response("secret-token-value", { status: 500 }),
+    );
+    await assert.rejects(
+      () =>
+        gateway.submitBatch(
+          { id: "batch-1", code: "PV-TEST-MAY26" },
+          sdpLineItems,
+        ),
+      (error) => {
+        assert.ok(error instanceof SdpGatewayError);
+        assert.equal(error.events[0]?.status, "error");
+        assert.doesNotMatch(error.message, /secret-token-value/);
+        return true;
+      },
+    );
   });
 
   it("exports admin and steward CSV without leaking private receipt paths publicly", () => {
