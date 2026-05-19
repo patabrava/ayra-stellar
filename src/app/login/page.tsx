@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Mail } from "lucide-react";
 
-import { StatusBanner } from "@/components/ayra/ui";
+import { LoginStatusModal } from "@/components/ayra/login-status-modal";
 import { requestMagicLinkAction } from "@/lib/ayra/actions";
 import { safeNextPath } from "@/lib/ayra/session";
 
@@ -15,6 +15,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
 
   return (
     <main className="ops-shell">
+      <LoginStatusModal status={params?.status} />
       <nav className="ops-nav" aria-label="Sign in">
         <Link className="ops-brand" href="/">
           AYRA<span>/</span>login
@@ -26,7 +27,6 @@ export default async function LoginPage({ searchParams }: PageProps) {
       </nav>
 
       <div className="ops-main max-w-3xl">
-        <StatusBanner status={params?.status} />
         <section className="section-head">
           <div>
             <h1>Sign in to AYRA Stellar.</h1>
@@ -50,7 +50,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
                 className="mono"
                 id="email"
                 name="email"
-                placeholder="nicolas@ayra.haus"
+                placeholder="caposk817@gmail.com"
                 type="email"
                 required
               />

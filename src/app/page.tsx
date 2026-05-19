@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Leaf } from "lucide-react";
 
@@ -7,6 +8,31 @@ import { getPublicWallProjection } from "@/lib/ayra/domain";
 type PageProps = {
   searchParams?: Promise<{ track?: string }>;
 };
+
+const projectImages = [
+  {
+    alt: "Reforestation planting scene from the Providencia mockup",
+    src: "/mockups/reforest.jpg",
+  },
+  {
+    alt: "Dog sterilization scene from the Providencia mockup",
+    src: "/mockups/steril.jpg",
+  },
+  {
+    alt: "Reef restoration scene from the Providencia mockup",
+    src: "/mockups/reef.jpg",
+  },
+  {
+    alt: "Reforestation landscape panel from the Providencia mockup",
+    src: "/mockups/reforest-panel.jpg",
+  },
+] as const;
+
+const projectImageBySlug = {
+  reforestation: projectImages[0],
+  "dog-sterilization": projectImages[1],
+  reef: projectImages[2],
+} as const;
 
 export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -54,8 +80,9 @@ export default async function Home({ searchParams }: PageProps) {
             Funded by AYRA.
           </h1>
           <p className="mt-8 max-w-2xl text-xl leading-8 text-white/55">
-            This landing surface stays high-level. Choose a project to open its
-            dedicated page with approved updates, batch receipts, and public proof.
+            AYRA builds impact zones in places we care about. First zone:
+            Providencia, the Caribbean of Colombia where we are bringing the
+            island onto tech rails.
           </p>
         </div>
       </section>
@@ -65,37 +92,52 @@ export default async function Home({ searchParams }: PageProps) {
         aria-label="Projects"
       >
         {wall.initiatives.map((initiative, index) => (
-          <Link
-            className="initiative-tile"
-            href={`/projects/${wall.track.slug}/${initiative.slug}`}
-            key={initiative.id}
-            aria-label={`Open ${initiative.name}`}
-          >
-            <div
-              className={
-                index === 1 ? "viz viz-alt" : index === 2 ? "viz viz-reef" : "viz"
-              }
-            >
-              <span className="mono absolute left-4 top-4 text-xs text-white/75">
-                {String(index + 1).padStart(2, "0")} /{" "}
-                {String(wall.initiatives.length).padStart(2, "0")}
-              </span>
-            </div>
-            <div className="p-5">
-              <div className="flex items-start justify-between gap-4">
-                <h2 className="display text-3xl font-medium">{initiative.name}</h2>
-                <span className="score">
-                  <strong>{initiative.leagueScore}</strong> Score
-                </span>
-              </div>
-              <p className="mt-4 min-h-16 text-sm leading-6 text-white/55">
-                {initiative.description}
-              </p>
-              <div className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-white/80">
-                Open project <ArrowRight className="h-4 w-4" />
-              </div>
-            </div>
-          </Link>
+          {
+            const image =
+              projectImageBySlug[
+                initiative.slug as keyof typeof projectImageBySlug
+              ] ?? projectImages[index % projectImages.length];
+
+            return (
+              <Link
+                className="initiative-tile"
+                href={`/projects/${wall.track.slug}/${initiative.slug}`}
+                key={initiative.id}
+                aria-label={`Open ${initiative.name}`}
+              >
+                <div className="project-visual">
+                  <Image
+                    alt={image.alt}
+                    className="project-visual-image"
+                    fill
+                    priority={index === 0}
+                    sizes="(min-width: 768px) 33vw, 100vw"
+                    src={image.src}
+                  />
+                  <span className="mono absolute left-4 top-4 z-10 text-xs text-white/85">
+                    {String(index + 1).padStart(2, "0")} /{" "}
+                    {String(wall.initiatives.length).padStart(2, "0")}
+                  </span>
+                </div>
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <h2 className="display text-3xl font-medium">
+                      {initiative.name}
+                    </h2>
+                    <span className="score">
+                      <strong>{initiative.leagueScore}</strong> Score
+                    </span>
+                  </div>
+                  <p className="mt-4 min-h-16 text-sm leading-6 text-white/55">
+                    {initiative.description}
+                  </p>
+                  <div className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-white/80">
+                    Open project <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
+              </Link>
+            );
+          }
         ))}
       </section>
 

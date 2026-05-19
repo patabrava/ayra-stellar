@@ -457,7 +457,7 @@ export function createDemoState(): AyraState {
   const profiles: Profile[] = [
     {
       id: "profile-admin",
-      email: "nicolas@ayra.haus",
+      email: "caposk817@gmail.com",
       displayName: "Nicolas Alvarez",
       createdAt: "2026-01-02T09:00:00.000Z",
     },

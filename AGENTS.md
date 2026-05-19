@@ -218,3 +218,4 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Supabase email-link callbacks must normalize legacy `magiclink`/`signup` types to `email`; login hashes in this project verify as `confirmation_token` rows.
 - Supabase hosted magic-link/signup email templates must link to `/auth/callback` with `token_hash` query params; `ConfirmationURL` returns fragment sessions that server routes cannot read.
 - Keep SDP env examples, `src/lib/ayra/sdp.ts`, and `docs/ayra-stellar-sdp-testnet-runbook.md` aligned on `AYRA_SDP_MODE` plus `STELLAR_SDP_*`; stale `SDP_*` placeholders send setup down the wrong path.
+- Seeded operator email changes must be applied to live `profiles` plus `user_roles`; a successful magic-link session still redirects with `admin-required` when the authenticated profile only has `applicant`.
