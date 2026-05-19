@@ -7,10 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { canSubmitForMilestone } from "@/lib/ayra/auth";
-import {
-  createPublicSupabaseClient,
-  hasPublicSupabaseEnv,
-} from "@/lib/ayra/data";
+import { hasPublicSupabaseEnv } from "@/lib/ayra/data";
 import {
   loginPath,
   requireAdminSession,
@@ -23,6 +20,8 @@ import {
   SdpGatewayError,
   type SdpGatewayEvent,
 } from "@/lib/ayra/sdp";
+import { insertPublicApplication } from "@/lib/ayra/public-write";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const applicationSchema = z.object({
@@ -61,6 +60,11 @@ const batchSchema = z.object({
   amountUsdc: z.coerce.number().positive(),
   localAmount: z.coerce.number().nonnegative(),
   localCurrency: z.enum(["COP", "USD"]),
+});
+
+const payoutAddressSchema = z.object({
+  initiativeId: z.string().trim().min(1),
+  address: z.string().trim().regex(/^G[A-Z2-7]{55}$/, "Invalid Stellar address"),
 });
 
 const loginSchema = z.object({
@@ -225,18 +229,14 @@ export async function submitApplicationAction(formData: FormData) {
   if (!parsed.success) redirectWithStatus("/apply", "invalid");
   if (!hasPublicSupabaseEnv()) demoRedirect("/apply", "submitted");
 
-  const supabase = createPublicSupabaseClient();
-  const { error } = await supabase.from("applications").insert({
-    applicant_name: parsed.data.applicantName,
-    applicant_email: parsed.data.applicantEmail,
-    proposed_track_name: parsed.data.proposedTrackName,
-    proposed_initiative_name: parsed.data.proposedInitiativeName,
-    scope_summary: parsed.data.scopeSummary,
-    operational_notes: parsed.data.operationalNotes,
-    contact_signal: parsed.data.contactSignal,
-    status: "pending",
-  });
-  if (error) redirectWithStatus("/apply", "error");
+  const result = await insertPublicApplication(
+    {
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    },
+    parsed.data,
+  );
+  if (!result.ok) redirectWithStatus("/apply", "error");
 
   revalidatePath("/admin");
   redirectWithStatus("/apply", "submitted");
@@ -318,6 +318,49 @@ export async function submitUpdateAction(formData: FormData) {
   redirectWithStatus("/steward", "update-submitted");
 }
 
+export async function submitPayoutAddressAction(formData: FormData) {
+  const parsed = payoutAddressSchema.safeParse({
+    initiativeId: text(formData, "initiativeId"),
+    address: text(formData, "address"),
+  });
+  if (!parsed.success) redirectWithStatus("/steward", "invalid");
+
+  const session = await requireStewardSession("/steward");
+  if (session.isDemo) demoRedirect("/steward", "payout-submitted");
+  if (!session.context.scopedInitiativeIds.includes(parsed.data.initiativeId)) {
+    redirectWithStatus("/steward", "scope-denied");
+  }
+
+  const supabase = createSupabaseAdminClient();
+  await supabase
+    .from("payout_addresses")
+    .update({ status: "rejected" })
+    .eq("initiative_id", parsed.data.initiativeId)
+    .in("status", ["pending", "verified", "locked"]);
+
+  const { data, error } = await supabase
+    .from("payout_addresses")
+    .insert({
+      initiative_id: parsed.data.initiativeId,
+      address: parsed.data.address,
+      status: "pending",
+      submitted_by_profile_id: session.context.profile.id,
+    })
+    .select("id")
+    .single();
+  if (error || !data) redirectWithStatus("/steward", "error");
+
+  await insertAudit(supabase, session, {
+    action: "payout_address.submitted",
+    entityType: "payout_address",
+    entityId: data.id,
+    after: { status: "pending" },
+  });
+  revalidatePath("/admin");
+  revalidatePath("/steward");
+  redirectWithStatus("/steward", "payout-submitted");
+}
+
 export async function approveApplicationAction(formData: FormData) {
   const parsed = idActionSchema.safeParse({
     entityId: text(formData, "applicationId"),
@@ -376,6 +419,20 @@ export async function verifyPayoutAddressAction(formData: FormData) {
   if (session.isDemo) demoRedirect("/admin", "payout-verified");
 
   const supabase = session.supabase!;
+  const { data: payoutAddress, error: readError } = await supabase
+    .from("payout_addresses")
+    .select("id,initiative_id")
+    .eq("id", parsed.data.entityId)
+    .single();
+  if (readError || !payoutAddress) redirectWithStatus("/admin", "error");
+
+  await supabase
+    .from("payout_addresses")
+    .update({ status: "rejected" })
+    .eq("initiative_id", payoutAddress.initiative_id)
+    .neq("id", parsed.data.entityId)
+    .in("status", ["pending", "verified", "locked"]);
+
   const { error } = await supabase
     .from("payout_addresses")
     .update({

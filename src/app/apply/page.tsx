@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Send } from "lucide-react";
 
-import { StatusBanner } from "@/components/ayra/ui";
+import { ApplicationSubmitModal } from "@/components/ayra/application-submit-modal";
 import { submitApplicationAction } from "@/lib/ayra/actions";
 
 type PageProps = {
@@ -13,6 +13,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
 
   return (
     <main className="ops-shell">
+      <ApplicationSubmitModal status={params?.status} />
       <nav className="ops-nav" aria-label="Application">
         <Link className="ops-brand" href="/">
           AYRA<span>/</span>apply
@@ -24,7 +25,6 @@ export default async function ApplyPage({ searchParams }: PageProps) {
       </nav>
 
       <div className="ops-main max-w-5xl">
-        <StatusBanner status={params?.status} />
         <section className="section-head">
           <div>
             <h1>Apply to manage a track initiative.</h1>

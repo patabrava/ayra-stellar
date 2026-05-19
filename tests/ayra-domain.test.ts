@@ -11,6 +11,7 @@ import {
   moderateUpdate,
   mockSdpGateway,
   settleBatchFromSdp,
+  submitPayoutAddress,
   submitApplication,
   submitBatchToSdp,
   submitUpdate,
@@ -255,5 +256,42 @@ describe("AYRA Stellar domain smoke path", () => {
         }),
       /immutable/,
     );
+  });
+
+  it("lets a scoped steward replace the active payout address before admin verification", () => {
+    let state = createDemoState();
+    const oldAddress = state.payoutAddresses.find(
+      (item) => item.initiativeId === "initiative-reforest",
+    );
+
+    assert.ok(oldAddress);
+    assert.equal(oldAddress.status, "locked");
+
+    const submitted = submitPayoutAddress(state, {
+      actorProfileId: "profile-leidy",
+      initiativeId: "initiative-reforest",
+      address: "GCIRNZJOL3SHR6WOSRI4KL25IPDZPQP6LDPDDCDD2F5RABTQPOK6KBOO",
+    });
+    state = submitted.state;
+
+    assert.equal(submitted.payoutAddress.status, "pending");
+    assert.equal(
+      state.payoutAddresses.find((item) => item.id === oldAddress.id)?.status,
+      "rejected",
+    );
+
+    state = verifyPayoutAddress(state, {
+      actorProfileId: "profile-admin",
+      payoutAddressId: submitted.payoutAddress.id,
+      verificationNote: "Testnet smoke receiver confirmed.",
+    }).state;
+
+    const active = state.payoutAddresses.filter(
+      (item) =>
+        item.initiativeId === "initiative-reforest" &&
+        (item.status === "verified" || item.status === "locked"),
+    );
+    assert.equal(active.length, 1);
+    assert.equal(active[0]?.address, submitted.payoutAddress.address);
   });
 });

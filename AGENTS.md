@@ -216,4 +216,5 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - When changing `public_batch_receipts` column order or adding leading columns, drop and recreate the view instead of `create or replace view`.
 - Authenticated admin server actions need explicit admin RLS policies for every registry table they write; service-role-era assumptions surface as promotion or batch mutation errors.
 - Supabase email-link callbacks must normalize legacy `magiclink`/`signup` types to `email`; login hashes in this project verify as `confirmation_token` rows.
+- Supabase hosted magic-link/signup email templates must link to `/auth/callback` with `token_hash` query params; `ConfirmationURL` returns fragment sessions that server routes cannot read.
 - Keep SDP env examples, `src/lib/ayra/sdp.ts`, and `docs/ayra-stellar-sdp-testnet-runbook.md` aligned on `AYRA_SDP_MODE` plus `STELLAR_SDP_*`; stale `SDP_*` placeholders send setup down the wrong path.

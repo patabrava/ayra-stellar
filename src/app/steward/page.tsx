@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Download, Send } from "lucide-react";
 
 import { Chip, Hash, Money, OpsNav, StatusBanner } from "@/components/ayra/ui";
-import { submitUpdateAction } from "@/lib/ayra/actions";
+import { submitPayoutAddressAction, submitUpdateAction } from "@/lib/ayra/actions";
 import { requireStewardSession } from "@/lib/ayra/session";
 import {
   formatLocal,
@@ -32,9 +32,13 @@ export default async function StewardPage({ searchParams }: PageProps) {
     (item) => item.initiativeId === initiative.id,
   );
   const grantee = state.grantees.find((item) => item.initiativeId === initiative.id);
-  const address = state.payoutAddresses.find(
+  const addresses = state.payoutAddresses.filter(
     (item) => item.initiativeId === initiative.id,
   );
+  const address =
+    addresses.find((item) =>
+      ["pending", "verified", "locked"].includes(item.status),
+    ) ?? addresses[0];
   const milestones = state.milestones.filter(
     (item) => item.initiativeId === initiative.id,
   );
@@ -146,6 +150,22 @@ export default async function StewardPage({ searchParams }: PageProps) {
                   first disbursement.
                 </p>
               </div>
+              <form action={submitPayoutAddressAction} className="mt-5 grid gap-3 border border-rule bg-white p-4">
+                <input name="initiativeId" type="hidden" value={initiative.id} />
+                <div className="field">
+                  <label htmlFor="address">Replacement Stellar address</label>
+                  <input
+                    className="mono"
+                    id="address"
+                    name="address"
+                    placeholder="G..."
+                    required
+                  />
+                </div>
+                <button className="btn primary justify-self-start" type="submit">
+                  Submit address <Send className="h-4 w-4" />
+                </button>
+              </form>
             </div>
           </div>
         </section>

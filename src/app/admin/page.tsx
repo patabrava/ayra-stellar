@@ -57,6 +57,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
     state.batches.find((batch) => batch.status === "submitted") ??
     state.batches[0]!;
   const proof = getProofPack(state, proofBatch.id);
+  const sdpMode = process.env.AYRA_SDP_MODE === "testnet" ? "Testnet" : "Mock";
 
   return (
     <main className="ops-shell">
@@ -120,7 +121,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
             </div>
             <div className="stat">
               <div className="stat-k">SDP mode</div>
-              <div className="stat-v text-2xl">Mock</div>
+              <div className="stat-v text-2xl">{sdpMode}</div>
               <div className="stat-d">server boundary only</div>
             </div>
           </div>

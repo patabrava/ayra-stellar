@@ -573,6 +573,71 @@ select {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.ops-modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in oklab, var(--ink) 26%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.ops-modal {
+  position: relative;
+  width: min(100%, 520px);
+  border: 1px solid var(--rule);
+  background: oklch(99% 0.002 80);
+  box-shadow: 0 24px 80px oklch(10% 0.02 60 / 0.18);
+  padding: 24px;
+}
+
+.ops-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  padding: 6px;
+}
+
+.ops-modal-close:hover {
+  color: var(--ink);
+}
+
+.ops-modal-close:focus-visible {
+  border-color: var(--accent-admin);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: 0;
+}
+
+.ops-modal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--rule);
+  margin-bottom: 14px;
+}
+
+.ops-modal-icon[data-tone="ok"] {
+  background: var(--ok-bg);
+  border-color: oklch(80% 0.08 150);
+  color: var(--ok);
+}
+
+.ops-modal-icon[data-tone="err"] {
+  background: var(--err-bg);
+  border-color: oklch(82% 0.1 28);
+  color: var(--err);
+}
+
 @media (max-width: 900px) {
   .grid-2,
   .grid-3 {

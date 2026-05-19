@@ -418,6 +418,29 @@ function requireAdmin(state: AyraState, actorProfileId: string) {
   }
 }
 
+function requireInitiativeAccess(
+  state: AyraState,
+  actorProfileId: string,
+  initiativeId: string,
+) {
+  const scopedGranteeIds = new Set(
+    state.grantees
+      .filter((grantee) => grantee.initiativeId === initiativeId)
+      .map((grantee) => grantee.id),
+  );
+  const hasAccess = state.userRoles.some(
+    (role) =>
+      role.profileId === actorProfileId &&
+      ((role.role === "steward" && role.initiativeId === initiativeId) ||
+        (role.role === "grantee_contact" &&
+          role.granteeId &&
+          scopedGranteeIds.has(role.granteeId))),
+  );
+  if (!hasAccess) {
+    throw new Error("Scoped initiative access required for this mutation.");
+  }
+}
+
 function requireVerifiedPayoutAddress(state: AyraState, initiativeId: string) {
   const address = state.payoutAddresses.find(
     (item) =>
@@ -1108,6 +1131,44 @@ export function approveApplication(
   };
 }
 
+export function submitPayoutAddress(
+  state: AyraState,
+  input: {
+    actorProfileId: string;
+    initiativeId: string;
+    address: string;
+  },
+) {
+  requireInitiativeAccess(state, input.actorProfileId, input.initiativeId);
+  const next = cloneState(state);
+  next.payoutAddresses = next.payoutAddresses.map((item) =>
+    item.initiativeId === input.initiativeId && item.status !== "rejected"
+      ? { ...item, status: "rejected" }
+      : item,
+  );
+
+  const payoutAddress: PayoutAddress = {
+    id: idFor("payout", `${input.initiativeId}-${next.payoutAddresses.length + 1}`),
+    initiativeId: input.initiativeId,
+    address: input.address,
+    status: "pending",
+    submittedByProfileId: input.actorProfileId,
+    submittedAt: stamp(next.payoutAddresses.length),
+  };
+  next.payoutAddresses.push(payoutAddress);
+
+  return {
+    state: appendAudit(next, {
+      actorProfileId: input.actorProfileId,
+      action: "payout_address.submitted",
+      entityType: "payout_address",
+      entityId: payoutAddress.id,
+      after: { status: payoutAddress.status },
+    }),
+    payoutAddress,
+  };
+}
+
 export function verifyPayoutAddress(
   state: AyraState,
   input: {
@@ -1123,6 +1184,15 @@ export function verifyPayoutAddress(
   );
   if (!payoutAddress) throw new Error("Payout address not found.");
   const before = { status: payoutAddress.status };
+  next.payoutAddresses.forEach((item) => {
+    if (
+      item.initiativeId === payoutAddress.initiativeId &&
+      item.id !== payoutAddress.id &&
+      item.status !== "rejected"
+    ) {
+      item.status = "rejected";
+    }
+  });
   payoutAddress.status = "verified";
   payoutAddress.verifiedAt = stamp(next.auditLogs.length);
   payoutAddress.verifiedByProfileId = input.actorProfileId;
