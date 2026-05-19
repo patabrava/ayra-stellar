@@ -266,10 +266,46 @@ export type PublicWallProjection = {
   }>;
 };
 
+export type PublicInitiativeProjection = {
+  track: Track;
+  initiative: Initiative;
+  siblingInitiatives: Initiative[];
+  milestones: Milestone[];
+  updates: Array<{
+    id: string;
+    initiativeName: string;
+    milestoneCode: string;
+    caption: string;
+    media: UpdateMedia[];
+    status: "approved";
+    publishedAt: string;
+  }>;
+  spending: Array<{
+    batchCode: string;
+    category: string;
+    amountUsdc: number;
+    localAmount: number;
+    localCurrency: string;
+    recipientName?: never;
+  }>;
+  batches: Array<{
+    id: string;
+    code: string;
+    initiativeName: string;
+    periodLabel: string;
+    amountUsdc: number;
+    sponsorName?: string;
+    status: BatchStatus;
+    publicLabel: "In flight" | "Cleared";
+  }>;
+};
+
 export type ProofPack = {
   batchId: string;
   batchCode: string;
   initiativeName: string;
+  initiativeSlug: string;
+  trackSlug: string;
   sponsorName?: string;
   periodLabel: string;
   publicLabel: "In flight" | "Cleared";
@@ -1495,6 +1531,9 @@ export function getProofPack(state: AyraState, batchId: string): ProofPack {
     batchId: batch.id,
     batchCode: batch.code,
     initiativeName: initiative.name,
+    initiativeSlug: initiative.slug,
+    trackSlug:
+      state.tracks.find((item) => item.id === initiative.trackId)?.slug ?? "providencia",
     sponsorName: state.sponsors.find((item) => item.id === batch.sponsorId)?.name,
     periodLabel: batch.periodLabel,
     publicLabel: batch.status === "settled" ? "Cleared" : "In flight",
@@ -1509,6 +1548,30 @@ export function getProofPack(state: AyraState, batchId: string): ProofPack {
         transactionHash: lineItem.transactionHash,
         sdpPaymentId: lineItem.sdpPaymentId,
       })),
+  };
+}
+
+export function getPublicInitiativeProjection(
+  state: AyraState,
+  trackSlug: string,
+  initiativeSlug: string,
+): PublicInitiativeProjection {
+  const wall = getPublicWallProjection(state, trackSlug);
+  const initiative =
+    wall.initiatives.find((item) => item.slug === initiativeSlug) ?? wall.activeInitiative;
+
+  return {
+    track: wall.track,
+    initiative,
+    siblingInitiatives: wall.initiatives,
+    milestones: state.milestones.filter((milestone) => milestone.initiativeId === initiative.id),
+    updates: wall.updates.filter((update) => update.initiativeName === initiative.name),
+    spending: wall.spending.filter((item) =>
+      wall.batches.some(
+        (batch) => batch.code === item.batchCode && batch.initiativeName === initiative.name,
+      ),
+    ),
+    batches: wall.batches.filter((batch) => batch.initiativeName === initiative.name),
   };
 }
 

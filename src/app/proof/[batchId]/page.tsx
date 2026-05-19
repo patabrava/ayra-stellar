@@ -25,8 +25,11 @@ export default async function ProofPage({ params }: PageProps) {
   return (
     <main className="min-h-screen bg-ink text-white">
       <div className="mx-auto max-w-5xl px-4 py-8 md:py-12">
-        <Link className="btn ghost border-white/20 text-white" href="/#receipts">
-          <ArrowLeft className="h-4 w-4" /> Public wall
+        <Link
+          className="btn ghost border-white/20 text-white"
+          href={`/projects/${proof.trackSlug}/${proof.initiativeSlug}`}
+        >
+          <ArrowLeft className="h-4 w-4" /> Project page
         </Link>
 
         <section className="mt-8 border border-white/15 bg-white/[0.04] p-6 md:p-8">

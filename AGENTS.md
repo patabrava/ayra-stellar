@@ -208,6 +208,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - 
 
 3) Specific repo rules
+- Public landing stays overview-only: hero plus project entry points belong on `/`, while initiative updates, receipts, and proof context belong on `/projects/[trackSlug]/[initiativeSlug]` or `/proof/[batchId]`.
 - Public transparency projections are track-scoped feeds: keep the hero default on Reforestation, but include approved public records from all initiatives in the selected track.
 - Browser smoke selectors for public track controls must scope or exact-match nav links because the wordmark repeats the active track name.
 - Browser smoke privacy assertions must be route-specific: public/proof pages must exclude private contact and receipt data, while steward pages may show scoped private contacts but still must hide raw receipt paths.
@@ -215,3 +216,4 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - When changing `public_batch_receipts` column order or adding leading columns, drop and recreate the view instead of `create or replace view`.
 - Authenticated admin server actions need explicit admin RLS policies for every registry table they write; service-role-era assumptions surface as promotion or batch mutation errors.
 - Supabase email-link callbacks must normalize legacy `magiclink`/`signup` types to `email`; login hashes in this project verify as `confirmation_token` rows.
+- Keep SDP env examples, `src/lib/ayra/sdp.ts`, and `docs/ayra-stellar-sdp-testnet-runbook.md` aligned on `AYRA_SDP_MODE` plus `STELLAR_SDP_*`; stale `SDP_*` placeholders send setup down the wrong path.

@@ -5,6 +5,7 @@ import {
   approveApplication,
   createDemoState,
   createFundingBatch,
+  getPublicInitiativeProjection,
   getProofPack,
   getPublicWallProjection,
   moderateUpdate,
@@ -72,6 +73,28 @@ describe("AYRA Stellar domain smoke path", () => {
     );
     assert.equal(fallback.track.slug, "providencia");
     assert.equal(fallback.activeInitiative.slug, "reforestation");
+  });
+
+  it("builds project pages from one initiative while keeping proof privacy-safe", () => {
+    const state = createDemoState();
+    const project = getPublicInitiativeProjection(
+      state,
+      "providencia",
+      "reforestation",
+    );
+
+    assert.equal(project.track.slug, "providencia");
+    assert.equal(project.initiative.slug, "reforestation");
+    assert.ok(project.updates.length > 0);
+    assert.ok(project.batches.length > 0);
+    assert.ok(
+      project.updates.every((update) => update.initiativeName === "Reforestation"),
+    );
+    assert.ok(
+      project.batches.every((batch) => batch.initiativeName === "Reforestation"),
+    );
+    assert.ok(project.spending.every((item) => !item.recipientName));
+    assert.ok(!JSON.stringify(project).includes("leidy@ecoparque.co"));
   });
 
   it("runs application approval, update moderation, verified payout, mock SDP, and proof visibility", async () => {
@@ -210,6 +233,8 @@ describe("AYRA Stellar domain smoke path", () => {
 
     const proof = getProofPack(state, batchResult.batch.id);
     assert.equal(proof.publicLabel, "Cleared");
+    assert.equal(proof.trackSlug, "providencia");
+    assert.equal(proof.initiativeSlug, "mangrove-nursery");
     assert.equal(proof.receipts[0]?.category, "Nursery materials");
     assert.match(proof.receipts[0]?.transactionHash ?? "", /^mock-tx-/);
   });
