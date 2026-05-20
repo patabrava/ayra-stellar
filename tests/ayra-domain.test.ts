@@ -5,6 +5,7 @@ import {
   approveApplication,
   createDemoState,
   createFundingBatch,
+  getCurrentProofBatch,
   getPublicInitiativeProjection,
   getProofPack,
   getPublicWallProjection,
@@ -97,6 +98,20 @@ describe("AYRA Stellar domain smoke path", () => {
     );
     assert.ok(project.spending.every((item) => !item.recipientName));
     assert.ok(!JSON.stringify(project).includes("leidy@ecoparque.co"));
+  });
+
+  it("does not select a current proof batch before payouts are submitted", () => {
+    const state = createDemoState();
+    const emptyScope = state.batches.filter(
+      (batch) => batch.initiativeId === "initiative-without-batches",
+    );
+    const draftBatch = state.batches.find((batch) => batch.status === "draft");
+    const settledBatch = state.batches.find((batch) => batch.status === "settled");
+    const submittedBatch = state.batches.find((batch) => batch.status === "submitted");
+
+    assert.equal(getCurrentProofBatch(emptyScope), null);
+    assert.equal(draftBatch ? getCurrentProofBatch([draftBatch]) : null, null);
+    assert.equal(getCurrentProofBatch([settledBatch!, submittedBatch!])?.id, submittedBatch?.id);
   });
 
   it("runs application approval, update moderation, verified payout, mock SDP, and proof visibility", async () => {

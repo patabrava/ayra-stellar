@@ -6,6 +6,7 @@ import { submitPayoutAddressAction, submitUpdateAction } from "@/lib/ayra/action
 import { requireStewardSession } from "@/lib/ayra/session";
 import {
   formatLocal,
+  getCurrentProofBatch,
   getProofPack,
 } from "@/lib/ayra/domain";
 
@@ -48,13 +49,22 @@ export default async function StewardPage({ searchParams }: PageProps) {
     .filter((item) => item.initiativeId === initiative.id)
     .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt));
   const batches = state.batches.filter((item) => item.initiativeId === initiative.id);
-  const currentBatch =
-    batches.find((batch) => batch.status === "submitted") ?? batches[0]!;
-  const currentProof = getProofPack(state, currentBatch.id);
+  const currentBatch = getCurrentProofBatch(batches);
+  const currentProof = currentBatch ? getProofPack(state, currentBatch.id) : null;
+  const currentBatchLineItems = currentBatch
+    ? state.batchLineItems.filter((line) => line.batchId === currentBatch.id)
+    : [];
+  const settledBatches = batches.filter((batch) => batch.status === "settled");
   const totalReceived = state.batchLineItems
     .filter((line) => {
       const batch = state.batches.find((item) => item.id === line.batchId);
       return batch?.initiativeId === initiative.id && line.status === "settled";
+    })
+    .reduce((sum, line) => sum + line.amountUsdc, 0);
+  const inFlightTotal = state.batchLineItems
+    .filter((line) => {
+      const batch = state.batches.find((item) => item.id === line.batchId);
+      return batch?.initiativeId === initiative.id && batch.status === "submitted";
     })
     .reduce((sum, line) => sum + line.amountUsdc, 0);
 
@@ -306,7 +316,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
             <div className="stat">
               <div className="stat-k">In flight</div>
               <div className="stat-v">
-                <Money amount={8460} />
+                <Money amount={inFlightTotal} />
               </div>
             </div>
             <div className="stat">
@@ -316,63 +326,85 @@ export default async function StewardPage({ searchParams }: PageProps) {
             </div>
           </div>
 
-          <div className="panel overflow-x-auto">
-            <div className="panel-head">
-              <span className="panel-title">{currentProof.batchCode} · current batch</span>
-              <Chip tone="warn">Submitted</Chip>
-            </div>
-            <table className="t min-w-[720px]">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Category</th>
-                  <th>Amount</th>
-                  <th>Local</th>
-                  <th>Status</th>
-                  <th>Proof</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.batchLineItems
-                  .filter((line) => line.batchId === currentBatch.id)
-                  .map((line) => (
-                    <tr key={line.id}>
-                      <td className="mono">2026-04-30</td>
-                      <td>{line.category}</td>
-                      <td>
-                        <Money amount={line.amountUsdc} />
-                      </td>
-                      <td className="mono">
-                        {formatLocal(line.localAmount, line.localCurrency)}
-                      </td>
-                      <td>
-                        <Chip tone={line.status === "settled" ? "ok" : "info"}>
-                          {line.status}
-                        </Chip>
-                      </td>
-                      <td>
-                        {line.transactionHash ? (
-                          <Link className="btn" href={`/proof/${currentBatch.id}`}>
-                            Verified
-                          </Link>
-                        ) : (
-                          <Hash value={line.sdpPaymentId} />
-                        )}
+          {currentBatch && currentProof ? (
+            <div className="panel overflow-x-auto">
+              <div className="panel-head">
+                <span className="panel-title">{currentProof.batchCode} · current batch</span>
+                <Chip tone={currentBatch.status === "settled" ? "ok" : "warn"}>
+                  {currentProof.publicLabel}
+                </Chip>
+              </div>
+              <table className="t min-w-[720px]">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Local</th>
+                    <th>Status</th>
+                    <th>Proof</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentBatchLineItems.length > 0 ? (
+                    currentBatchLineItems.map((line) => (
+                      <tr key={line.id}>
+                        <td className="mono">2026-04-30</td>
+                        <td>{line.category}</td>
+                        <td>
+                          <Money amount={line.amountUsdc} />
+                        </td>
+                        <td className="mono">
+                          {formatLocal(line.localAmount, line.localCurrency)}
+                        </td>
+                        <td>
+                          <Chip tone={line.status === "settled" ? "ok" : "info"}>
+                            {line.status}
+                          </Chip>
+                        </td>
+                        <td>
+                          {line.transactionHash ? (
+                            <Link className="btn" href={`/proof/${currentBatch.id}`}>
+                              Verified
+                            </Link>
+                          ) : (
+                            <Hash value={line.sdpPaymentId} />
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td className="text-ink-muted" colSpan={6}>
+                        No line items are visible for this batch yet.
                       </td>
                     </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title">Current batch</span>
+                <Chip tone="info">Not submitted</Chip>
+              </div>
+              <div className="panel-body">
+                <p className="text-sm leading-6 text-ink-muted">
+                  No submitted payout batch exists for this initiative yet. You can still update
+                  milestones and submit the Stellar address AYRA will verify before disbursement.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="panel mt-4">
             <div className="panel-head">
               <span className="panel-title">Past batches</span>
             </div>
             <div className="panel-body grid gap-3">
-              {batches
-                .filter((batch) => batch.status === "settled")
-                .map((batch) => (
+              {settledBatches.length > 0 ? (
+                settledBatches.map((batch) => (
                   <div
                     className="flex flex-wrap items-center justify-between gap-3 border border-rule bg-[var(--ops-surface)] p-3"
                     key={batch.id}
@@ -386,7 +418,12 @@ export default async function StewardPage({ searchParams }: PageProps) {
                       Proof
                     </Link>
                   </div>
-                ))}
+                ))
+              ) : (
+                <p className="text-sm leading-6 text-ink-muted">
+                  No settled batches are visible for this initiative yet.
+                </p>
+              )}
             </div>
           </div>
         </section>

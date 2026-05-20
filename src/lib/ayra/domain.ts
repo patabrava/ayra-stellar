@@ -1617,8 +1617,15 @@ export function getProofPack(state: AyraState, batchId: string): ProofPack {
         localCurrency: lineItem.localCurrency,
         transactionHash: lineItem.transactionHash,
         sdpPaymentId: lineItem.sdpPaymentId,
-      })),
+    })),
   };
+}
+
+export function getCurrentProofBatch(batches: Batch[]) {
+  const proofBatches = [...batches]
+    .filter((batch) => batch.status === "submitted" || batch.status === "settled")
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  return proofBatches.find((batch) => batch.status === "submitted") ?? proofBatches[0] ?? null;
 }
 
 export function getPublicInitiativeProjection(

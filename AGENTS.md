@@ -222,3 +222,4 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Supabase `link-error` on `/login` can be built-in mailer throttling, not role denial; check auth logs for `over_email_send_rate_limit`, and configure custom SMTP before raising `rate_limit_email_sent`.
 - Keep SDP env examples, `src/lib/ayra/sdp.ts`, and `docs/ayra-stellar-sdp-testnet-runbook.md` aligned on `AYRA_SDP_MODE` plus `STELLAR_SDP_*`; stale `SDP_*` placeholders send setup down the wrong path.
 - Seeded operator email changes must be applied to live `profiles` plus `user_roles`; a successful magic-link session still redirects with `admin-required` when the authenticated profile only has `applicant`.
+- Steward portal pages must render an empty payout state for scoped initiatives with no submitted/settled batches; never dereference `currentBatch` before a batch exists.
