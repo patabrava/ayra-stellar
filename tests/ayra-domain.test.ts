@@ -52,6 +52,7 @@ describe("AYRA Stellar domain smoke path", () => {
     const fallback = getPublicWallProjection(state, "unknown-track");
 
     assert.equal(selected.track.slug, "amazonas");
+    assert.equal(selected.track.name, "Futuromundo");
     assert.ok(selected.initiatives.length > 0);
     assert.ok(
       selected.initiatives.every(

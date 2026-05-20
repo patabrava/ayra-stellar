@@ -10,7 +10,7 @@ test("seeded MVP journey from application intake to public disbursement proof", 
   await expect(
     page.getByRole("link", { name: "Providencia", exact: true }),
   ).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("link", { name: "Amazonas", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Futuromundo", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Providencia,/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open Reforestation" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Latest first");
@@ -32,7 +32,7 @@ test("seeded MVP journey from application intake to public disbursement proof", 
 
   await page.goto("/?track=amazonas");
   await expect(page).toHaveURL(/track=amazonas/);
-  await expect(page.getByRole("link", { name: "Amazonas", exact: true })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Futuromundo", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
   );

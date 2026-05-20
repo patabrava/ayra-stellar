@@ -486,7 +486,7 @@ export function createDemoState(): AyraState {
     {
       id: "track-amazonas",
       slug: "amazonas",
-      name: "Amazonas",
+      name: "Futuromundo",
       localCurrency: "COP",
       theme: "Synthetic forest corridor demo",
     },
@@ -840,7 +840,7 @@ export function createDemoState(): AyraState {
         caption:
           "Synthetic field crew logged the first corridor plots for cross-track transparency testing.",
         publicCaption:
-          "First corridor plots are logged for the synthetic Amazonas transparency lane.",
+          "First corridor plots are logged for the synthetic Futuromundo transparency lane.",
         status: "approved",
         media: [
           {
