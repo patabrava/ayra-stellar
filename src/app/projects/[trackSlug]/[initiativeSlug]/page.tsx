@@ -77,7 +77,7 @@ export default async function InitiativePage({ params }: PageProps) {
           <AyraLogo alt="" />
           <span>AYRA</span>
         </Link>
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="public-nav-actions flex flex-wrap justify-end gap-2">
           {project.siblingInitiatives.map((initiative) => (
             <Link
               aria-current={
@@ -135,51 +135,58 @@ export default async function InitiativePage({ params }: PageProps) {
               />
             </div>
 
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              <div className="chart-card">
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="public-muted">
+            <div className="project-dossier">
+              <section className="progress-rail" aria-label="Project progress">
+                <div>
+                  <div className="public-muted text-sm">
                     {project.initiative.targetMetricLabel}
-                  </span>
-                  <span className="mono public-dim">
-                    Goal ·{" "}
-                    {project.initiative.targetMetricGoal.toLocaleString("en-US")}
-                  </span>
+                  </div>
+                  <div className="display mt-4 text-5xl font-medium">
+                    {progress}%
+                  </div>
                 </div>
-                <div className="bar-track mt-6">
-                  <div className="bar-fill" style={widthVar(progress)} />
+                <div>
+                  <div className="bar-track">
+                    <div className="bar-fill" style={widthVar(progress)} />
+                  </div>
+                  <div className="public-dim mt-3 flex justify-between text-sm">
+                    <span>
+                      {project.initiative.targetMetricCurrent.toLocaleString(
+                        "en-US",
+                      )}{" "}
+                      today
+                    </span>
+                    <span>
+                      Goal ·{" "}
+                      {project.initiative.targetMetricGoal.toLocaleString(
+                        "en-US",
+                      )}
+                    </span>
+                  </div>
                 </div>
-                <div className="public-dim mt-3 flex justify-between text-sm">
-                  <span>
-                    {project.initiative.targetMetricCurrent.toLocaleString("en-US")} today
-                  </span>
-                  <span>{progress}%</span>
-                </div>
-              </div>
+              </section>
 
-              <div className="chart-card">
-                <div className="public-muted text-sm">Visible batch volume</div>
-                <div className="display mt-4 text-4xl font-medium">
-                  {formatUsdc(totalSubmitted)}
-                </div>
-                <p className="public-dim mt-3 text-sm leading-6">
-                  Submitted and settled batches only. Drafts, failures, and
-                  operational exceptions stay internal.
-                </p>
-              </div>
-
-              <div className="chart-card">
+              <section className="proof-rule" aria-label="Public proof rule">
                 <div className="public-muted text-sm">Public proof rule</div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="proof-rule-list">
                   <Chip tone="info">Category spend</Chip>
                   <Chip tone="ok">Approved updates</Chip>
                   <Chip>Batch receipts</Chip>
                 </div>
-                <p className="public-dim mt-4 text-sm leading-6">
+                <p className="public-dim text-sm leading-6">
                   Private contacts, raw receipts, and internal reconciliation
                   never appear on this project page.
                 </p>
-              </div>
+              </section>
+
+              <section className="batch-volume" aria-label="Visible batch volume">
+                <span className="public-muted text-sm">Visible batch volume</span>
+                <strong>{formatUsdc(totalSubmitted)}</strong>
+                <span>
+                  Submitted and settled batches only. Drafts, failures, and
+                  operational exceptions stay internal.
+                </span>
+              </section>
             </div>
 
             <div className="mt-10 grid gap-3">
@@ -203,15 +210,15 @@ export default async function InitiativePage({ params }: PageProps) {
             </div>
           </div>
 
-          <aside aria-label="Project updates">
+          <aside className="updates-timeline" aria-label="Project updates">
             <div className="mb-4 flex items-end justify-between border-b border-[var(--dark-rule)] pb-3">
               <h2 className="display text-3xl font-medium">Updates</h2>
               <span className="mono public-dim text-xs">Latest first</span>
             </div>
-            <div className="space-y-4">
+            <div className="updates-timeline-list">
               {project.updates.map((update) => (
                 <article
-                  className="border border-[var(--dark-rule)] bg-[var(--public-panel)] p-5"
+                  className="updates-timeline-item"
                   key={update.id}
                 >
                   <div className="mono public-dim text-xs uppercase">
@@ -290,14 +297,7 @@ export default async function InitiativePage({ params }: PageProps) {
         </p>
       </section>
 
-      <SiteFooter
-        detail={
-          <>
-            {project.track.name} · {project.initiative.name}
-          </>
-        }
-        sectionLabel="Project page"
-      />
+      <SiteFooter />
     </main>
   );
 }

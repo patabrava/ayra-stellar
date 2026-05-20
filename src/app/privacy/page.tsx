@@ -83,10 +83,7 @@ export default function PrivacyPage() {
         </div>
       </section>
 
-      <SiteFooter
-        detail="Public pages show approved data only."
-        sectionLabel="Privacy page"
-      />
+      <SiteFooter />
     </main>
   );
 }

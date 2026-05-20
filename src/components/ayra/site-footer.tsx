@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Heart } from "lucide-react";
 
 function XIcon() {
   return (
@@ -47,21 +48,20 @@ function SocialLink({
   );
 }
 
-export function SiteFooter({
-  detail,
-  sectionLabel,
-}: {
-  detail: ReactNode;
-  sectionLabel: string;
-}) {
+export function SiteFooter() {
   return (
     <footer className="border-t border-[var(--dark-rule)] px-[var(--pad-page)] py-8 text-sm text-[var(--public-dim)]">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="font-medium text-[var(--public-fg)]">
-            AYRA Stellar · public transparency wall
-          </div>
-          <div>{detail}</div>
+        <div className="flex flex-wrap items-center gap-4 text-xs uppercase tracking-[0.16em]">
+          <Link className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)]" href="/privacy">
+            Privacy
+          </Link>
+          <a
+            className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)] normal-case tracking-normal"
+            href="mailto:contact@ayra.haus"
+          >
+            contact@ayra.haus
+          </a>
         </div>
 
         <div className="flex items-center gap-2">
@@ -80,20 +80,18 @@ export function SiteFooter({
         </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dark-rule)] pt-4 text-xs uppercase tracking-[0.16em]">
-        <div className="flex flex-wrap items-center gap-4">
-          <Link className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)]" href="/privacy">
-            Privacy
-          </Link>
-          <a
-            className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)] normal-case tracking-normal"
-            href="mailto:contact@ayra.haus"
-          >
-            contact@ayra.haus
-          </a>
-        </div>
-        <span>{sectionLabel}</span>
-      </div>
+      <p className="mt-5 text-xs tracking-[0.08em]">
+        By{" "}
+        <a
+          className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)]"
+          href="https://www.ayra.haus"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Ayra
+        </a>{" "}
+        <Heart aria-hidden="true" className="inline-block h-3 w-3 align-[-0.15em]" />
+      </p>
     </footer>
   );
 }

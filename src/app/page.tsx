@@ -40,6 +40,21 @@ export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams;
   const state = await loadPublicAyraState();
   const wall = getPublicWallProjection(state, params?.track ?? "providencia");
+  const leadInitiative =
+    wall.initiatives.find((initiative) => initiative.slug === "reforestation") ??
+    wall.initiatives[0];
+  const leadIndex = wall.initiatives.findIndex(
+    (initiative) => initiative.id === leadInitiative?.id,
+  );
+  const leadImage =
+    leadInitiative
+      ? projectImageBySlug[
+          leadInitiative.slug as keyof typeof projectImageBySlug
+        ] ?? projectImages[Math.max(leadIndex, 0) % projectImages.length]
+      : projectImages[0];
+  const secondaryInitiatives = wall.initiatives.filter(
+    (initiative) => initiative.id !== leadInitiative?.id,
+  );
 
   return (
     <main className="public-shell">
@@ -48,7 +63,7 @@ export default async function Home({ searchParams }: PageProps) {
           <AyraLogo alt="" />
           <span>AYRA</span>
         </Link>
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="public-nav-actions flex flex-wrap justify-end gap-2">
           {state.tracks.map((track) => (
             <Link
               aria-current={track.slug === wall.track.slug ? "page" : undefined}
@@ -72,8 +87,11 @@ export default async function Home({ searchParams }: PageProps) {
         </div>
       </nav>
 
-      <section id="top" className="px-[var(--pad-page)] py-14 md:py-20">
-        <div className="max-w-6xl">
+      <section
+        id="top"
+        className="public-hero px-[var(--pad-page)] py-14 md:py-20"
+      >
+        <div className="relative z-10 max-w-6xl">
           <div className="place-line">{wall.track.name} · 2026</div>
           <h1 className="hero-title mt-7">
             {wall.track.name},
@@ -90,63 +108,85 @@ export default async function Home({ searchParams }: PageProps) {
         </div>
       </section>
 
-      <section
-        className="grid gap-4 px-[var(--pad-page)] pb-24 md:grid-cols-3"
-        aria-label="Projects"
-      >
-        {wall.initiatives.map((initiative, index) => {
-          const image =
-            projectImageBySlug[
-              initiative.slug as keyof typeof projectImageBySlug
-            ] ?? projectImages[index % projectImages.length];
-
-          return (
+      <section className="project-wall" aria-label="Projects">
+        {leadInitiative ? (
+          <div className="lead-project-frame">
             <Link
-              className="initiative-tile"
-              href={`/projects/${wall.track.slug}/${initiative.slug}`}
-              key={initiative.id}
-              aria-label={`Open ${initiative.name}`}
+              aria-label={`Open ${leadInitiative.name}`}
+              className="lead-project"
+              href={`/projects/${wall.track.slug}/${leadInitiative.slug}`}
             >
-              <div className="project-visual">
-                <Image
-                  alt={image.alt}
-                  className="project-visual-image"
-                  height={1152}
-                  priority={index === 0}
-                  sizes="(min-width: 768px) 33vw, 100vw"
-                  src={image.src}
-                  width={928}
-                />
-                <span className="mono absolute left-4 top-4 z-10 text-xs text-[var(--public-fg)]">
-                  {String(index + 1).padStart(2, "0")} /{" "}
-                  {String(wall.initiatives.length).padStart(2, "0")}
-                </span>
-              </div>
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <h2 className="display text-3xl font-medium">
-                    {initiative.name}
-                  </h2>
-                  <span className="score">
-                    <strong>{initiative.leagueScore}</strong> Score
-                  </span>
-                </div>
-                <p className="public-muted mt-4 min-h-16 text-sm leading-6">
-                  {initiative.description}
+              <div className="lead-project-copy">
+                <div className="place-line">Field anchor</div>
+                <h2 className="display mt-5 text-5xl font-medium md:text-7xl">
+                  {leadInitiative.name}
+                </h2>
+                <p className="public-muted mt-5 max-w-xl text-lg leading-8">
+                  {leadInitiative.description}
                 </p>
+                <div className="lead-project-facts">
+                  <span>
+                    {leadInitiative.targetMetricCurrent.toLocaleString("en-US")} /{" "}
+                    {leadInitiative.targetMetricGoal.toLocaleString("en-US")}
+                  </span>
+                  <span>{leadInitiative.targetMetricLabel}</span>
+                  <span>{leadInitiative.leagueScore} score</span>
+                </div>
                 <div className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-[var(--public-fg)]">
                   Open project <ArrowRight className="h-4 w-4" />
                 </div>
               </div>
+              <div className="lead-project-visual">
+                <Image
+                  alt={leadImage.alt}
+                  className="project-visual-image"
+                  height={1152}
+                  priority
+                  sizes="(min-width: 1024px) 46vw, 100vw"
+                  src={leadImage.src}
+                  width={928}
+                />
+              </div>
             </Link>
-          );
-        })}
+          </div>
+        ) : null}
+
+        {secondaryInitiatives.length > 0 ? (
+          <div className="project-index" aria-label="More projects">
+            <div>
+              <div className="place-line">Proof lanes</div>
+              <p className="public-dim mt-4 max-w-md leading-7">
+                Active and planned Providencia workstreams with public updates,
+                batch receipts, and project-level proof when records are approved.
+              </p>
+            </div>
+            <div className="project-index-list">
+              {secondaryInitiatives.map((initiative, index) => (
+                <Link
+                  aria-label={`Open ${initiative.name}`}
+                  className="project-index-row"
+                  href={`/projects/${wall.track.slug}/${initiative.slug}`}
+                  key={initiative.id}
+                >
+                  <span className="mono public-dim text-xs">
+                    {String(index + 2).padStart(2, "0")}
+                  </span>
+                  <span>
+                    <strong>{initiative.name}</strong>
+                    <small>{initiative.headline}</small>
+                  </span>
+                  <span className="project-index-metric">
+                    {initiative.leagueScore}
+                  </span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
-      <SiteFooter
-        detail="Project pages hold receipts and proof."
-        sectionLabel="Public transparency wall"
-      />
+      <SiteFooter />
     </main>
   );
 }
