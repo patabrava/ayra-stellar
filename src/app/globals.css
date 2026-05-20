@@ -102,7 +102,7 @@ select {
 
 .wordmark {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   font-family: var(--font-display), ui-sans-serif;
   font-size: 17px;
@@ -110,12 +110,25 @@ select {
   letter-spacing: -0.01em;
 }
 
+.ayra-logo {
+  display: block;
+  flex: 0 0 auto;
+  height: 24px;
+  width: 24px;
+}
+
+.public-shell .ayra-logo {
+  filter: invert(1);
+  height: 26px;
+  width: 26px;
+}
+
 .wordmark span {
-  color: oklch(58% 0.012 60);
-  font-family: var(--font-body), ui-sans-serif;
-  font-size: 13px;
-  font-weight: 400;
-  letter-spacing: 0.02em;
+  color: var(--foreground);
+  font-family: var(--font-display), ui-sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .public-anchor {
@@ -201,6 +214,41 @@ select {
     radial-gradient(circle at 20% 20%, oklch(95% 0.014 80 / 0.25), transparent 35%);
 }
 
+.project-visual {
+  aspect-ratio: 4 / 5;
+  min-height: 230px;
+  overflow: hidden;
+  position: relative;
+}
+
+.project-visual::after {
+  background: linear-gradient(
+    180deg,
+    oklch(8% 0.01 60 / 0.08) 0%,
+    oklch(8% 0.01 60 / 0.58) 100%
+  );
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.project-visual-image {
+  filter: saturate(0.94) contrast(1.03) brightness(0.92);
+  height: 100%;
+  object-fit: cover;
+  transition:
+    filter 180ms,
+    transform 240ms;
+  width: 100%;
+}
+
+.initiative-tile:hover .project-visual-image {
+  filter: saturate(1) contrast(1.05) brightness(0.98);
+  transform: scale(1.025);
+}
+
 .score {
   border: 1px solid color-mix(in oklab, var(--accent) 65%, transparent);
   color: var(--accent);
@@ -260,16 +308,19 @@ select {
 }
 
 .ops-brand {
+  align-items: center;
+  display: inline-flex;
   font-family: var(--font-display), ui-sans-serif;
   font-size: 16px;
   font-weight: 600;
+  gap: 6px;
   letter-spacing: -0.02em;
 }
 
 .ops-brand span {
   color: var(--ink-muted);
   font-weight: 400;
-  margin: 0 6px;
+  margin: 0 2px;
 }
 
 .ops-pill,

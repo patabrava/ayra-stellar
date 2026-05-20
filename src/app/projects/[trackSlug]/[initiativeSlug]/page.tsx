@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink, Leaf } from "lucide-react";
 
-import { Chip, Hash } from "@/components/ayra/ui";
+import { AyraLogo, Chip, Hash } from "@/components/ayra/ui";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
   formatLocal,
@@ -53,7 +53,8 @@ export default async function InitiativePage({ params }: PageProps) {
     <main className="public-shell">
       <nav className="public-nav" aria-label="Project page">
         <Link className="wordmark" href={`/?track=${project.track.slug}`}>
-          AYRA <span>{project.track.name}</span>
+          <AyraLogo alt="" />
+          <span>AYRA</span>
         </Link>
         <div className="flex flex-wrap justify-end gap-2">
           {project.siblingInitiatives.map((initiative) => (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Send } from "lucide-react";
 
+import { AyraLogo } from "@/components/ayra/ui";
 import { ApplicationSubmitModal } from "@/components/ayra/application-submit-modal";
 import { submitApplicationAction } from "@/lib/ayra/actions";
 
@@ -16,7 +17,8 @@ export default async function ApplyPage({ searchParams }: PageProps) {
       <ApplicationSubmitModal status={params?.status} />
       <nav className="ops-nav" aria-label="Application">
         <Link className="ops-brand" href="/">
-          AYRA<span>/</span>apply
+          <AyraLogo />
+          <span>/</span>apply
         </Link>
         <span className="ops-pill">Steward and initiative intake</span>
         <Link className="btn ghost ml-auto" href="/">

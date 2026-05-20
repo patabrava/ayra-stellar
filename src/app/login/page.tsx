@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Mail } from "lucide-react";
 
+import { AyraLogo } from "@/components/ayra/ui";
 import { LoginStatusModal } from "@/components/ayra/login-status-modal";
 import { requestMagicLinkAction } from "@/lib/ayra/actions";
 import { safeNextPath } from "@/lib/ayra/session";
@@ -18,7 +19,8 @@ export default async function LoginPage({ searchParams }: PageProps) {
       <LoginStatusModal status={params?.status} />
       <nav className="ops-nav" aria-label="Sign in">
         <Link className="ops-brand" href="/">
-          AYRA<span>/</span>login
+          <AyraLogo />
+          <span>/</span>login
         </Link>
         <span className="ops-pill">Magic-link access</span>
         <Link className="btn ghost ml-auto" href="/">

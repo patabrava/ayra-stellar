@@ -1,7 +1,26 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { signOutAction } from "@/lib/ayra/actions";
+
+export function AyraLogo({
+  alt = "AYRA",
+  className = "",
+}: {
+  alt?: string;
+  className?: string;
+}) {
+  return (
+    <Image
+      alt={alt}
+      className={className ? `ayra-logo ${className}` : "ayra-logo"}
+      height={100}
+      src="/ayra-logo.svg"
+      width={100}
+    />
+  );
+}
 
 export function Chip({
   children,
@@ -45,7 +64,8 @@ export function OpsNav({
     <>
       <nav className="ops-nav" aria-label={`${role} shell`}>
         <Link className="ops-brand" href="/">
-          AYRA<span>/</span>{role.toLowerCase()}
+          <AyraLogo />
+          <span>/</span>{role.toLowerCase()}
         </Link>
         <span className="ops-pill">{scope}</span>
         <span className="ml-auto hidden items-center gap-2 md:inline-flex">
