@@ -6,7 +6,12 @@ import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-import { canSubmitForMilestone } from "@/lib/ayra/auth";
+import {
+  buildAuthCallbackUrl,
+  canSubmitForMilestone,
+  googleProviderEnabledFromSettings,
+} from "@/lib/ayra/auth";
+import { applicationSchema } from "@/lib/ayra/application-intake";
 import { hasPublicSupabaseEnv } from "@/lib/ayra/data";
 import {
   loginPath,
@@ -24,16 +29,6 @@ import { insertPublicApplication } from "@/lib/ayra/public-write";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loginStatusForAuthError } from "@/lib/ayra/status";
-
-const applicationSchema = z.object({
-  applicantName: z.string().trim().min(2),
-  applicantEmail: z.string().trim().email(),
-  proposedTrackName: z.string().trim().min(2),
-  proposedInitiativeName: z.string().trim().min(2),
-  scopeSummary: z.string().trim().min(20),
-  operationalNotes: z.string().trim().min(10),
-  contactSignal: z.string().trim().min(5),
-});
 
 const updateSchema = z.object({
   milestoneId: z.string().trim().min(1),
@@ -185,6 +180,24 @@ function sdpEventsFromError(error: unknown) {
   return error instanceof SdpGatewayError ? error.events : [];
 }
 
+async function isGoogleProviderEnabled() {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/settings`,
+      {
+        cache: "no-store",
+        headers: {
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+      },
+    );
+    if (!response.ok) return false;
+    return googleProviderEnabledFromSettings(await response.json());
+  } catch {
+    return false;
+  }
+}
+
 export async function requestMagicLinkAction(formData: FormData) {
   const parsed = loginSchema.safeParse({
     email: text(formData, "email"),
@@ -200,12 +213,36 @@ export async function requestMagicLinkAction(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
     options: {
-      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      emailRedirectTo: buildAuthCallbackUrl(origin, next),
       shouldCreateUser: true,
     },
   });
 
   redirect(loginPath(next, error ? loginStatusForAuthError(error) : "link-sent"));
+}
+
+export async function requestGoogleLoginAction(formData: FormData) {
+  const next = safeNextPath(optionalText(formData, "next"), "/login");
+  if (!hasPublicSupabaseEnv()) redirect(loginPath(next, "supabase-not-configured"));
+  if (!(await isGoogleProviderEnabled())) {
+    redirect(loginPath(next, "google-provider-unavailable"));
+  }
+
+  const headerStore = await headers();
+  const origin = headerStore.get("origin") ?? "http://localhost:3000";
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: buildAuthCallbackUrl(origin, next),
+    },
+  });
+
+  if (error || !data.url) {
+    redirect(loginPath(next, "google-provider-unavailable"));
+  }
+
+  redirect(data.url);
 }
 
 export async function submitApplicationAction(formData: FormData) {

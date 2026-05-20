@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, Mail, ShieldCheck } from "lucide-react";
 
-import { AyraLogo } from "@/components/ayra/ui";
+import { AyraLogo, Chip } from "@/components/ayra/ui";
 import { LoginStatusModal } from "@/components/ayra/login-status-modal";
-import { requestMagicLinkAction } from "@/lib/ayra/actions";
+import {
+  requestGoogleLoginAction,
+  requestMagicLinkAction,
+} from "@/lib/ayra/actions";
 import { safeNextPath } from "@/lib/ayra/session";
 
 type PageProps = {
@@ -15,7 +18,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
   const next = safeNextPath(params?.next, "/login");
 
   return (
-    <main className="ops-shell">
+    <main className="ops-shell login-stage">
       <LoginStatusModal status={params?.status} />
       <nav className="ops-nav" aria-label="Sign in">
         <Link className="ops-brand" href="/">
@@ -27,46 +30,67 @@ export default async function LoginPage({ searchParams }: PageProps) {
         </Link>
       </nav>
 
-      <div className="ops-main max-w-3xl">
-        <section className="section-head">
-          <div>
-            <h1>Sign in to AYRA Stellar.</h1>
-            <p className="section-sub">
-              AYRA portals use Supabase magic links. After sign-in, your role
-              records route you to the operator console or steward portal.
+      <div className="login-modal-wrap">
+        <section
+          aria-describedby="login-modal-description"
+          aria-labelledby="login-modal-title"
+          className="login-modal-card"
+        >
+          <div className="login-modal-copy">
+            <Chip tone="info">Supabase Auth</Chip>
+            <h1 id="login-modal-title">Sign in to AYRA Stellar.</h1>
+            <p id="login-modal-description">
+              Choose Google for a browser-based OAuth session, or use the
+              existing magic-link path. Both routes return through AYRA&apos;s
+              role-aware callback before opening admin or steward access.
             </p>
-          </div>
-        </section>
-
-        <form action={requestMagicLinkAction} className="panel">
-          <div className="panel-head">
-            <span className="panel-title">Email link</span>
-            <span className="chip info">No password</span>
-          </div>
-          <div className="panel-body grid gap-4">
-            <input name="next" type="hidden" value={next} />
-            <div className="field">
-              <label htmlFor="email">Email</label>
-              <input
-                className="mono"
-                id="email"
-                name="email"
-                placeholder="caposk817@gmail.com"
-                type="email"
-                required
-              />
+            <div className="login-assurance">
+              <ShieldCheck className="h-4 w-4" />
+              <span>
+                Access is granted by live profile and role records, not by
+                the sign-in method alone.
+              </span>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
-              <p className="max-w-md text-sm text-ink-muted">
+          </div>
+
+          <div className="login-modal-actions">
+            <form action={requestGoogleLoginAction}>
+              <input name="next" type="hidden" value={next} />
+              <button className="btn google-login-btn" type="submit">
+                <span className="google-mark" aria-hidden="true">
+                  G
+                </span>
+                Continue with Google
+              </button>
+            </form>
+
+            <div className="login-divider">
+              <span>or request a magic link</span>
+            </div>
+
+            <form action={requestMagicLinkAction} className="login-email-form">
+              <input name="next" type="hidden" value={next} />
+              <div className="field">
+                <label htmlFor="email">Email</label>
+                <input
+                  className="mono"
+                  id="email"
+                  name="email"
+                  placeholder="caposk817@gmail.com"
+                  type="email"
+                  required
+                />
+              </div>
+              <p className="text-sm leading-6 text-ink-muted">
                 Use the email connected to your application or operator role.
                 AYRA will open the portal your account is allowed to use.
               </p>
               <button className="btn primary" type="submit">
-                Send link <Mail className="h-4 w-4" />
+                Send magic link <Mail className="h-4 w-4" />
               </button>
-            </div>
+            </form>
           </div>
-        </form>
+        </section>
       </div>
     </main>
   );

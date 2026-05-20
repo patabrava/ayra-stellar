@@ -4,6 +4,7 @@ import { ArrowLeft, Send } from "lucide-react";
 import { AyraLogo } from "@/components/ayra/ui";
 import { ApplicationSubmitModal } from "@/components/ayra/application-submit-modal";
 import { submitApplicationAction } from "@/lib/ayra/actions";
+import { APPLICATION_FIELD_LIMITS } from "@/lib/ayra/application-intake";
 
 type PageProps = {
   searchParams?: Promise<{ status?: string }>;
@@ -31,8 +32,10 @@ export default async function ApplyPage({ searchParams }: PageProps) {
           <div>
             <h1>Apply to manage a track initiative.</h1>
             <p className="section-sub">
-              Approval grants scoped portal access only. Funding approval and
-              payout execution remain separate admin-controlled steps.
+              Approval grants scoped portal access only. If approved, the
+              steward portal will ask for the first Stellar payout address
+              before any batch can be created. Funding approval and payout
+              execution remain separate admin-controlled steps.
             </p>
           </div>
         </section>
@@ -49,6 +52,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                   <label htmlFor="applicantName">Applicant name</label>
                   <input
                     id="applicantName"
+                    minLength={APPLICATION_FIELD_LIMITS.applicantName}
                     name="applicantName"
                     placeholder="Leidy Mendoza"
                     required
@@ -72,6 +76,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                   <label htmlFor="proposedTrackName">Track</label>
                   <input
                     id="proposedTrackName"
+                    minLength={APPLICATION_FIELD_LIMITS.proposedTrackName}
                     name="proposedTrackName"
                     defaultValue="Providencia"
                     required
@@ -81,6 +86,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                   <label htmlFor="proposedInitiativeName">Initiative</label>
                   <input
                     id="proposedInitiativeName"
+                    minLength={APPLICATION_FIELD_LIMITS.proposedInitiativeName}
                     name="proposedInitiativeName"
                     placeholder="Mangrove nursery"
                     required
@@ -92,6 +98,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                 <label htmlFor="scopeSummary">Scope</label>
                 <textarea
                   id="scopeSummary"
+                  minLength={APPLICATION_FIELD_LIMITS.scopeSummary}
                   name="scopeSummary"
                   placeholder="What the initiative does, who operates it, and what public progress can be shown."
                   rows={4}
@@ -103,6 +110,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                 <label htmlFor="operationalNotes">Operational details</label>
                 <textarea
                   id="operationalNotes"
+                  minLength={APPLICATION_FIELD_LIMITS.operationalNotes}
                   name="operationalNotes"
                   placeholder="Milestones, contact model, update cadence, payout-address readiness, known risks."
                   rows={4}
@@ -115,6 +123,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                 <input
                   className="mono"
                   id="contactSignal"
+                  minLength={APPLICATION_FIELD_LIMITS.contactSignal}
                   name="contactSignal"
                   placeholder="+57 ..."
                   required
@@ -152,7 +161,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                 [
                   "3",
                   "Payout address check",
-                  "One Stellar address is manually verified before any batch can be submitted.",
+                  "After approval, the steward submits the first Stellar address from their portal. AYRA manually verifies it before any batch can be submitted.",
                 ],
                 [
                   "4",

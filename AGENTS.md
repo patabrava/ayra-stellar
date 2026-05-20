@@ -206,6 +206,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 
 2) Specific harness rules (Codex)
 - Vercel deploys must preserve existing domain ownership: keep `ayra.haus`/`www.ayra.haus` on `AYRA LANDING/ayra-epoch-vision`, and deploy this transparency app only to `ayra-transparency`/`transparency.ayra.haus` unless explicitly replacing the landing.
+- Before Vercel production deploys, keep `.vercelignore` excluding `.env*`, build outputs, and browser artifacts; Vercel CLI can otherwise upload local env files despite `.gitignore`.
 
 3) Specific repo rules
 - Public landing stays overview-only: hero plus project entry points belong on `/`, while initiative updates, receipts, and proof context belong on `/projects/[trackSlug]/[initiativeSlug]` or `/proof/[batchId]`.
@@ -221,5 +222,11 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Supabase SSR logout must post to a route handler that owns the redirect response and cookie clearing; server-action sign-out can leave the live admin session sticky.
 - Supabase `link-error` on `/login` can be built-in mailer throttling, not role denial; check auth logs for `over_email_send_rate_limit`, and configure custom SMTP before raising `rate_limit_email_sent`.
 - Keep SDP env examples, `src/lib/ayra/sdp.ts`, and `docs/ayra-stellar-sdp-testnet-runbook.md` aligned on `AYRA_SDP_MODE` plus `STELLAR_SDP_*`; stale `SDP_*` placeholders send setup down the wrong path.
+- Playwright fallback advisor smokes must blank `GEMINI_API_KEY` in `webServer.command`; Next loads `.env`, so local keys otherwise bypass deterministic fallback.
+- Gemini Developer API REST structured output must use `generationConfig.responseMimeType` plus `responseSchema`; `responseFormat.text.mimeType` can 400 even when SDK examples show it.
+- Gemini Developer API `responseSchema` rejects unsupported JSON Schema fields such as `additionalProperties`; keep schemas to the accepted subset and validate extra fields locally with Zod.
 - Seeded operator email changes must be applied to live `profiles` plus `user_roles`; a successful magic-link session still redirects with `admin-required` when the authenticated profile only has `applicant`.
 - Steward portal pages must render an empty payout state for scoped initiatives with no submitted/settled batches; never dereference `currentBatch` before a batch exists.
+- Steward portal copy and banners must distinguish first-time payout-address setup from later replacements, and the post-submit state must name pending AYRA verification.
+- Status-driven modal components must SSR the dialog on first paint and only portal after client mount; returning `null` until hydration hides server-action feedback.
+- Application intake browser constraints must mirror `applicationSchema`; otherwise short fields reach `/apply?status=invalid` with no field-level correction path.

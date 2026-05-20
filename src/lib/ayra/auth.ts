@@ -93,6 +93,25 @@ export function resolveEmailOtpType(value?: string | null) {
   return "email";
 }
 
+export function buildAuthCallbackUrl(origin: string, next?: string) {
+  const callbackUrl = new URL("/auth/callback", normalizedOrigin(origin));
+  const safeNext =
+    next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  callbackUrl.searchParams.set("next", safeNext);
+  return callbackUrl.toString();
+}
+
+export function googleProviderEnabledFromSettings(settings: unknown) {
+  if (!settings || typeof settings !== "object") return false;
+  const external = (settings as { external?: unknown }).external;
+  if (!external || typeof external !== "object") return false;
+  return (external as { google?: unknown }).google === true;
+}
+
+function normalizedOrigin(origin: string) {
+  return origin.endsWith("/") ? origin : `${origin}/`;
+}
+
 export function canSubmitForMilestone(
   context: RoleContext,
   milestone: Pick<Milestone, "initiativeId">,

@@ -274,6 +274,45 @@ describe("AYRA Stellar domain smoke path", () => {
     );
   });
 
+  it("lets a scoped steward submit the first payout address after approval", () => {
+    let state = createDemoState();
+    state = {
+      ...state,
+      payoutAddresses: state.payoutAddresses.filter(
+        (item) => item.initiativeId !== "initiative-reforest",
+      ),
+    };
+
+    const submitted = submitPayoutAddress(state, {
+      actorProfileId: "profile-leidy",
+      initiativeId: "initiative-reforest",
+      address: "GCIRNZJOL3SHR6WOSRI4KL25IPDZPQP6LDPDDCDD2F5RABTQPOK6KBOO",
+    });
+
+    assert.equal(submitted.payoutAddress.status, "pending");
+    assert.equal(
+      submitted.state.payoutAddresses.filter(
+        (item) =>
+          item.initiativeId === "initiative-reforest" &&
+          item.status !== "rejected",
+      ).length,
+      1,
+    );
+    assert.equal(
+      submitted.state.payoutAddresses.find(
+        (item) =>
+          item.initiativeId === "initiative-reforest" &&
+          item.status === "pending",
+      )?.address,
+      submitted.payoutAddress.address,
+    );
+    assert.ok(
+      submitted.state.auditLogs.some(
+        (entry) => entry.action === "payout_address.submitted",
+      ),
+    );
+  });
+
   it("lets a scoped steward replace the active payout address before admin verification", () => {
     let state = createDemoState();
     const oldAddress = state.payoutAddresses.find(

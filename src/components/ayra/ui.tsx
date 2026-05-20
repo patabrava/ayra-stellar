@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { getJourneyStatus, type JourneySurface } from "@/lib/ayra/status";
+
 export function AyraLogo({
   alt = "AYRA",
   className = "",
@@ -36,13 +38,34 @@ export function Hash({ value }: { value?: string }) {
 }
 
 export function StatusBanner({ status }: { status?: string }) {
-  if (!status) return null;
+  return <StatusBannerForSurface status={status} surface="admin" />;
+}
+
+export function StatusBannerForSurface({
+  status,
+  surface,
+}: {
+  status?: string;
+  surface: JourneySurface;
+}) {
+  const journeyStatus = getJourneyStatus(surface, status);
+  if (!journeyStatus) return null;
+
   return (
-    <div className="mb-5 border border-rule bg-[var(--ops-surface)] px-4 py-3 text-sm text-ink-soft">
-      <span className="mono text-xs uppercase text-ink-muted">
-        Server action
-      </span>{" "}
-      {status.replaceAll("-", " ")}
+    <div
+      aria-live="polite"
+      className="mb-5 border border-rule bg-[var(--ops-surface)] px-4 py-4 text-sm text-ink-soft"
+      role="status"
+    >
+      <div className="flex flex-wrap items-start gap-3">
+        <Chip tone={journeyStatus.tone}>{journeyStatus.label}</Chip>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-medium text-ink-soft">{journeyStatus.title}</div>
+          <p className="mt-1 max-w-3xl leading-6 text-ink-muted">
+            {journeyStatus.body}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

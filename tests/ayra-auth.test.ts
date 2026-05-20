@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  buildAuthCallbackUrl,
   canSubmitForMilestone,
+  googleProviderEnabledFromSettings,
   requireAdminRole,
   resolveRoleContext,
   resolveEmailOtpType,
@@ -98,5 +100,32 @@ describe("AYRA auth role resolution", () => {
     assert.equal(resolveRoleHomePath(stewardContext), "/steward");
     assert.equal(resolveRoleHomePath(stewardContext, "/admin"), "/steward");
     assert.equal(resolveRoleHomePath(adminContext, "/steward"), "/admin");
+  });
+
+  it("builds one safe callback URL for magic links and Google OAuth", () => {
+    assert.equal(
+      buildAuthCallbackUrl("https://transparency.ayra.haus", "/admin"),
+      "https://transparency.ayra.haus/auth/callback?next=%2Fadmin",
+    );
+    assert.equal(
+      buildAuthCallbackUrl("https://transparency.ayra.haus/", "/steward?tab=updates"),
+      "https://transparency.ayra.haus/auth/callback?next=%2Fsteward%3Ftab%3Dupdates",
+    );
+    assert.equal(
+      buildAuthCallbackUrl("https://transparency.ayra.haus", "https://evil.test"),
+      "https://transparency.ayra.haus/auth/callback?next=%2F",
+    );
+  });
+
+  it("reads Google provider availability from Supabase auth settings", () => {
+    assert.equal(
+      googleProviderEnabledFromSettings({ external: { google: true } }),
+      true,
+    );
+    assert.equal(
+      googleProviderEnabledFromSettings({ external: { google: false } }),
+      false,
+    );
+    assert.equal(googleProviderEnabledFromSettings({ external: null }), false);
   });
 });

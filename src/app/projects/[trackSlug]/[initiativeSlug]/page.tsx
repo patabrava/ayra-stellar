@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
+import { AiAdvisor } from "@/components/ayra/ai-advisor";
 import { SiteFooter } from "@/components/ayra/site-footer";
 import { AyraLogo, Chip, Hash } from "@/components/ayra/ui";
 import { loadPublicAyraState } from "@/lib/ayra/data";
@@ -298,6 +299,10 @@ export default async function InitiativePage({ params }: PageProps) {
         </p>
       </section>
 
+      <AiAdvisor
+        initiativeSlug={project.initiative.slug}
+        trackSlug={project.track.slug}
+      />
       <SiteFooter />
     </main>
   );

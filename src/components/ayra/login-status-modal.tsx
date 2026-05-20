@@ -8,6 +8,19 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Chip } from "@/components/ayra/ui";
 import { getLoginStatus } from "@/lib/ayra/status";
 
+function subscribeToClientMount(onStoreChange: () => void) {
+  queueMicrotask(onStoreChange);
+  return () => {};
+}
+
+function getClientMountSnapshot() {
+  return true;
+}
+
+function getServerMountSnapshot() {
+  return false;
+}
+
 export function LoginStatusModal({ status }: { status?: string }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -15,9 +28,9 @@ export function LoginStatusModal({ status }: { status?: string }) {
   const loginStatus = useMemo(() => getLoginStatus(status), [status]);
   const dialogRef = useRef<HTMLDivElement>(null);
   const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
+    subscribeToClientMount,
+    getClientMountSnapshot,
+    getServerMountSnapshot,
   );
 
   const dismiss = useCallback(() => {
@@ -30,7 +43,7 @@ export function LoginStatusModal({ status }: { status?: string }) {
   }, [pathname, router, searchParams]);
 
   useEffect(() => {
-    if (!loginStatus) return;
+    if (!loginStatus || !mounted) return;
 
     const dialog = dialogRef.current;
     const previousFocus =
@@ -92,13 +105,11 @@ export function LoginStatusModal({ status }: { status?: string }) {
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus({ preventScroll: true });
     };
-  }, [dismiss, loginStatus]);
+  }, [dismiss, loginStatus, mounted]);
 
   if (!loginStatus) return null;
 
-  if (!mounted) return null;
-
-  return createPortal(
+  const modal = (
     <div className="ops-modal-scrim" onClick={dismiss} role="presentation">
       <div
         aria-describedby="login-status-body"
@@ -143,7 +154,10 @@ export function LoginStatusModal({ status }: { status?: string }) {
           </button>
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   );
+
+  if (!mounted) return modal;
+
+  return createPortal(modal, document.body);
 }

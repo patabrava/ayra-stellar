@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { Check, Download, ExternalLink, Send, ShieldCheck } from "lucide-react";
 
-import { Chip, Hash, Money, OpsNav, StatusBanner } from "@/components/ayra/ui";
+import {
+  Chip,
+  Hash,
+  Money,
+  OpsNav,
+  StatusBannerForSurface,
+} from "@/components/ayra/ui";
 import {
   approveApplicationAction,
   createBatchAction,
@@ -76,7 +82,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
       />
 
       <div className="ops-main">
-        <StatusBanner status={params?.status} />
+        <StatusBannerForSurface status={params?.status} surface="admin" />
 
         <section id="overview" className="mb-10">
           <div className="section-head">
@@ -237,8 +243,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <div>
               <h2>Applications</h2>
               <p className="section-sub">
-                Application approval grants portal access only. It does not approve
-                funding or submit payout batches.
+                Application approval grants portal access only. After approval,
+                the steward uses their portal to submit the first Stellar payout
+                address. Funding approval and payout batches remain separate.
               </p>
             </div>
           </div>

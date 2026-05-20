@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { Download, Send } from "lucide-react";
 
-import { Chip, Hash, Money, OpsNav, StatusBanner } from "@/components/ayra/ui";
+import {
+  Chip,
+  Hash,
+  Money,
+  OpsNav,
+  StatusBannerForSurface,
+} from "@/components/ayra/ui";
 import { submitPayoutAddressAction, submitUpdateAction } from "@/lib/ayra/actions";
 import { requireStewardSession } from "@/lib/ayra/session";
 import {
@@ -36,10 +42,34 @@ export default async function StewardPage({ searchParams }: PageProps) {
   const addresses = state.payoutAddresses.filter(
     (item) => item.initiativeId === initiative.id,
   );
-  const address =
-    addresses.find((item) =>
-      ["pending", "verified", "locked"].includes(item.status),
-    ) ?? addresses[0];
+  const verifiedAddress = addresses.find((item) =>
+    ["verified", "locked"].includes(item.status),
+  );
+  const pendingAddress = addresses.find((item) => item.status === "pending");
+  const activeAddress = verifiedAddress ?? pendingAddress ?? null;
+  const hasAddressOnFile = Boolean(activeAddress);
+  const addressChipTone = verifiedAddress ? "ok" : "warn";
+  const addressChipLabel = verifiedAddress
+    ? "Verified · locked"
+    : pendingAddress
+      ? "Pending review"
+      : "Needs setup";
+  const addressHeading = hasAddressOnFile
+    ? "Stellar payout address"
+    : "Set up your first Stellar payout address";
+  const addressStatLabel = hasAddressOnFile ? "Current address" : "First step";
+  const addressStatBody = activeAddress?.address ?? "No payout address on file yet. Use the form below to submit the first one.";
+  const addressStatNote = verifiedAddress
+    ? `Verified ${verifiedAddress.verifiedAt?.slice(0, 10) ?? "pending"} by AYRA. Locked on first disbursement.`
+    : pendingAddress
+      ? "Submitted by the steward and waiting for AYRA to verify it before the first disbursement. You can keep working on updates while it is pending."
+      : "After approval, this portal asks the steward to submit the first Stellar address they control. AYRA verifies and locks it before payout.";
+  const addressFieldLabel = hasAddressOnFile
+    ? "Replacement Stellar address"
+    : "First Stellar payout address";
+  const addressButtonLabel = hasAddressOnFile
+    ? "Replace address"
+    : "Submit first address";
   const milestones = state.milestones.filter(
     (item) => item.initiativeId === initiative.id,
   );
@@ -82,15 +112,17 @@ export default async function StewardPage({ searchParams }: PageProps) {
       />
 
       <div className="ops-main max-w-6xl">
-        <StatusBanner status={params?.status} />
+        <StatusBannerForSurface status={params?.status} surface="steward" />
 
         <section id="profile" className="mb-10">
           <div className="section-head">
             <div>
               <h1>Steward portal</h1>
               <p className="section-sub">
-                Scoped to one initiative. Contact data and raw receipt handling
-                stay internal; public media still requires admin moderation.
+                Scoped to one initiative. After approval, this is where the
+                steward submits the first Stellar payout address. Contact data
+                and raw receipt handling stay internal; public media still
+                requires admin moderation.
               </p>
             </div>
             <Link className="btn ghost" href="/">
@@ -125,13 +157,17 @@ export default async function StewardPage({ searchParams }: PageProps) {
 
           <div className="panel">
             <div className="panel-head">
-              <span className="panel-title">Stellar payout address</span>
-              <Chip tone="ok">Verified · locked</Chip>
+              <span className="panel-title">{addressHeading}</span>
+              <Chip tone={addressChipTone}>{addressChipLabel}</Chip>
             </div>
             <div className="panel-body">
               <div className="grid-3">
                 {[
-                  ["Step 1 · You", "Paste address", "Submit the Stellar address you control."],
+                  [
+                    "Step 1 · You",
+                    "Paste address",
+                    "Submit the Stellar address you control. This is the first payout address if the initiative has not set one up yet.",
+                  ],
                   [
                     "Step 2 · You + Horizon",
                     "Prove ownership",
@@ -140,7 +176,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
                   [
                     "Step 3 · Operator",
                     "Out-of-band confirm",
-                    "AYRA manually verifies and locks the address at first disbursement.",
+                    "AYRA manually verifies and locks the address before the first disbursement.",
                   ],
                 ].map(([step, title, body]) => (
                   <div className="border border-rule bg-[var(--ops-surface)] p-4" key={step}>
@@ -151,19 +187,18 @@ export default async function StewardPage({ searchParams }: PageProps) {
                 ))}
               </div>
               <div className="mt-5 border border-rule bg-surface-3 p-4">
-                <div className="stat-k">Current address</div>
+                <div className="stat-k">{addressStatLabel}</div>
                 <div className="mono mt-2 break-all text-sm">
-                  {address?.address ?? "Pending operator verification"}
+                  {addressStatBody}
                 </div>
                 <p className="mt-2 text-sm text-ink-muted">
-                  Verified {address?.verifiedAt?.slice(0, 10) ?? "pending"} by AYRA. Locked on
-                  first disbursement.
+                  {addressStatNote}
                 </p>
               </div>
               <form action={submitPayoutAddressAction} className="mt-5 grid gap-3 border border-rule bg-[var(--ops-surface)] p-4">
                 <input name="initiativeId" type="hidden" value={initiative.id} />
                 <div className="field">
-                  <label htmlFor="address">Replacement Stellar address</label>
+                  <label htmlFor="address">{addressFieldLabel}</label>
                   <input
                     className="mono"
                     id="address"
@@ -173,7 +208,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
                   />
                 </div>
                 <button className="btn primary justify-self-start" type="submit">
-                  Submit address <Send className="h-4 w-4" />
+                  {addressButtonLabel} <Send className="h-4 w-4" />
                 </button>
               </form>
             </div>
@@ -384,18 +419,20 @@ export default async function StewardPage({ searchParams }: PageProps) {
               </table>
             </div>
           ) : (
-            <div className="panel">
-              <div className="panel-head">
-                <span className="panel-title">Current batch</span>
-                <Chip tone="info">Not submitted</Chip>
+              <div className="panel">
+                <div className="panel-head">
+                  <span className="panel-title">Current batch</span>
+                  <Chip tone="info">Not submitted</Chip>
+                </div>
+                <div className="panel-body">
+                  <p className="text-sm leading-6 text-ink-muted">
+                  No submitted payout batch exists for this initiative yet. That is
+                  expected until AYRA verifies the first Stellar payout address.
+                  You can still update milestones now; once the address is locked,
+                  the admin console can create the first batch.
+                  </p>
+                </div>
               </div>
-              <div className="panel-body">
-                <p className="text-sm leading-6 text-ink-muted">
-                  No submitted payout batch exists for this initiative yet. You can still update
-                  milestones and submit the Stellar address AYRA will verify before disbursement.
-                </p>
-              </div>
-            </div>
           )}
 
           <div className="panel mt-4">
@@ -421,7 +458,8 @@ export default async function StewardPage({ searchParams }: PageProps) {
                 ))
               ) : (
                 <p className="text-sm leading-6 text-ink-muted">
-                  No settled batches are visible for this initiative yet.
+                  No settled batches are visible for this initiative yet. Once the
+                  first batch clears, the proof link will appear here.
                 </p>
               )}
             </div>

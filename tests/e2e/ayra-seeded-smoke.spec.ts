@@ -78,16 +78,16 @@ test("seeded MVP journey from application intake to public disbursement proof", 
   await expect(page).toHaveURL(/status=demo-application-approved/, {
     timeout: 30_000,
   });
-  await expect(page.getByText("demo application approved")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Application approved.");
 
   await page.goto("/admin#batches");
   await page.getByRole("button", { name: "Sync status" }).first().click();
   await expect(page).toHaveURL(/status=demo-batch-synced/, { timeout: 30_000 });
-  await expect(page.getByText("demo batch synced")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Batch status synced.");
   await page.goto("/admin#batches");
   await page.getByRole("button", { name: "Create ready batch" }).click();
   await expect(page).toHaveURL(/status=demo-batch-created/, { timeout: 30_000 });
-  await expect(page.getByText("demo batch created")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Batch draft created.");
 
   await page.goto("/steward");
   await expect(page.getByRole("heading", { name: "Steward portal" })).toBeVisible();
