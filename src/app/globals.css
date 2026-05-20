@@ -136,15 +136,15 @@ select {
 
 .public-hero::after {
   background:
-    linear-gradient(115deg, transparent 0 42%, color-mix(in oklab, var(--public-earth) 24%, transparent) 42% 42.4%, transparent 42.4% 100%),
-    linear-gradient(155deg, transparent 0 62%, color-mix(in oklab, var(--public-water) 20%, transparent) 62% 62.35%, transparent 62.35% 100%);
+    linear-gradient(115deg, transparent 0 42%, color-mix(in oklab, var(--public-earth) 14%, transparent) 42% 42.18%, transparent 42.18% 100%),
+    linear-gradient(155deg, transparent 0 62%, color-mix(in oklab, var(--public-water) 12%, transparent) 62% 62.16%, transparent 62.16% 100%);
   content: "";
   inset: 0 var(--pad-page) auto auto;
   height: 100%;
-  opacity: 0.52;
+  opacity: 0.16;
   pointer-events: none;
   position: absolute;
-  width: min(42vw, 560px);
+  width: min(30vw, 420px);
 }
 
 .public-nav {
