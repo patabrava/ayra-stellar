@@ -1,0 +1,171 @@
+name: ayra-sdp-testnet
+
+services:
+  db:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sdp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres-db:/data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sdp -d ${DATABASE_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  sdp-api:
+    image: stellar/stellar-disbursement-platform-backend:latest
+    restart: unless-stopped
+    entrypoint: ""
+    environment:
+      ADMIN_ACCOUNT: ${ADMIN_ACCOUNT}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      ADMIN_PORT: "8003"
+      BASE_URL: https://${SDP_API_HOST}
+      SDP_UI_BASE_URL: https://${SDP_DASHBOARD_HOST}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_URL: postgres://sdp:${POSTGRES_PASSWORD}@db:5432/${DATABASE_NAME}?sslmode=disable
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+      PORT: "8000"
+      METRICS_PORT: "8002"
+      METRICS_TYPE: PROMETHEUS
+      EMAIL_SENDER_TYPE: DRY_RUN
+      SMS_SENDER_TYPE: DRY_RUN
+      HORIZON_URL: https://horizon-testnet.stellar.org
+      RPC_URL: https://soroban-testnet.stellar.org
+      RPC_REQUEST_AUTH_HEADER_KEY: ""
+      RPC_REQUEST_AUTH_HEADER_VALUE: ""
+      NETWORK_TYPE: testnet
+      NETWORK_PASSPHRASE: "Test SDF Network ; September 2015"
+      SEP10_SIGNING_PUBLIC_KEY: ${SEP10_SIGNING_PUBLIC_KEY}
+      SEP10_SIGNING_PRIVATE_KEY: ${SEP10_SIGNING_PRIVATE_KEY}
+      SEP10_CLIENT_ATTRIBUTION_REQUIRED: "true"
+      SEP24_JWT_SECRET: ${SEP24_JWT_SECRET}
+      DISTRIBUTION_PUBLIC_KEY: ${DISTRIBUTION_PUBLIC_KEY}
+      DISTRIBUTION_SEED: ${DISTRIBUTION_SEED}
+      DISTRIBUTION_ACCOUNT_ENCRYPTION_PASSPHRASE: ${DISTRIBUTION_ACCOUNT_ENCRYPTION_PASSPHRASE}
+      CHANNEL_ACCOUNT_ENCRYPTION_PASSPHRASE: ${CHANNEL_ACCOUNT_ENCRYPTION_PASSPHRASE}
+      DEFAULT_TENANT_DISTRIBUTION_ACCOUNT_TYPE: DISTRIBUTION_ACCOUNT.STELLAR.ENV
+      DEFAULT_TENANT_OWNER_EMAIL: ${DEFAULT_TENANT_OWNER_EMAIL}
+      DEFAULT_TENANT_OWNER_FIRST_NAME: AYRA
+      DEFAULT_TENANT_OWNER_LAST_NAME: Operator
+      INSTANCE_NAME: AYRA SDP Testnet
+      SINGLE_TENANT_MODE: "true"
+      TENANT_XLM_BOOTSTRAP_AMOUNT: "5"
+      CAPTCHA_TYPE: GOOGLE_RECAPTCHA_V3
+      RECAPTCHA_SITE_KEY: ""
+      RECAPTCHA_SITE_SECRET_KEY: ""
+      DISABLE_MFA: "true"
+      DISABLE_RECAPTCHA: "true"
+      CORS_ALLOWED_ORIGINS: https://transparency.ayra.haus,https://${SDP_DASHBOARD_HOST}
+      SCHEDULER_RECEIVER_INVITATION_JOB_SECONDS: "30"
+      SCHEDULER_PAYMENT_JOB_SECONDS: "30"
+      ENABLE_SEP45: "false"
+      ENABLE_EMBEDDED_WALLETS: "false"
+      EC256_PRIVATE_KEY: ${EC256_PRIVATE_KEY}
+    command:
+      - sh
+      - -c
+      - |
+        ./stellar-disbursement-platform db admin migrate up
+        ./stellar-disbursement-platform db tss migrate up
+        ./stellar-disbursement-platform db auth migrate up --all
+        ./stellar-disbursement-platform db sdp migrate up --all
+        ./stellar-disbursement-platform db setup-for-network --all
+        ./stellar-disbursement-platform tenants ensure-default \
+          --sdp-ui-base-url "https://${SDP_DASHBOARD_HOST}" \
+          --base-url "https://${SDP_API_HOST}" \
+          --database-url "postgres://sdp:${POSTGRES_PASSWORD}@db:5432/${DATABASE_NAME}?sslmode=disable" \
+          --default-tenant-owner-email "${DEFAULT_TENANT_OWNER_EMAIL}" \
+          --default-tenant-owner-first-name "AYRA" \
+          --default-tenant-owner-last-name "Operator" \
+          --distribution-public-key "${DISTRIBUTION_PUBLIC_KEY}" \
+          --distribution-seed "${DISTRIBUTION_SEED}" \
+          --network-passphrase "Test SDF Network ; September 2015" \
+          --horizon-url "https://horizon-testnet.stellar.org" \
+          --default-tenant-distribution-account-type "DISTRIBUTION_ACCOUNT.STELLAR.ENV" \
+          --distribution-account-encryption-passphrase "${DISTRIBUTION_ACCOUNT_ENCRYPTION_PASSPHRASE}" \
+          --channel-account-encryption-passphrase "${CHANNEL_ACCOUNT_ENCRYPTION_PASSPHRASE}" \
+          --disable-mfa \
+          --disable-recaptcha
+        ./stellar-disbursement-platform serve
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.ayra-sdp-api.rule: Host(`${SDP_API_HOST}`)
+      traefik.http.routers.ayra-sdp-api.entrypoints: websecure
+      traefik.http.routers.ayra-sdp-api.tls.certresolver: letsencrypt
+      traefik.http.services.ayra-sdp-api.loadbalancer.server.port: "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  sdp-tss:
+    image: stellar/stellar-disbursement-platform-backend:latest
+    restart: unless-stopped
+    entrypoint: ""
+    environment:
+      DATABASE_URL: postgres://sdp:${POSTGRES_PASSWORD}@db:5432/${DATABASE_NAME}?sslmode=disable
+      NETWORK_PASSPHRASE: "Test SDF Network ; September 2015"
+      HORIZON_URL: https://horizon-testnet.stellar.org
+      RPC_URL: https://soroban-testnet.stellar.org
+      RPC_REQUEST_AUTH_HEADER_KEY: ""
+      RPC_REQUEST_AUTH_HEADER_VALUE: ""
+      NUM_CHANNEL_ACCOUNTS: "3"
+      MAX_BASE_FEE: "1000000"
+      TSS_METRICS_PORT: "9002"
+      TSS_METRICS_TYPE: TSS_PROMETHEUS
+      DISTRIBUTION_PUBLIC_KEY: ${DISTRIBUTION_PUBLIC_KEY}
+      DISTRIBUTION_SEED: ${DISTRIBUTION_SEED}
+      DISTRIBUTION_ACCOUNT_ENCRYPTION_PASSPHRASE: ${DISTRIBUTION_ACCOUNT_ENCRYPTION_PASSPHRASE}
+      CHANNEL_ACCOUNT_ENCRYPTION_PASSPHRASE: ${CHANNEL_ACCOUNT_ENCRYPTION_PASSPHRASE}
+    command:
+      - sh
+      - -c
+      - |
+        sleep 10
+        ./stellar-disbursement-platform channel-accounts ensure 1
+        ./stellar-disbursement-platform tss
+    depends_on:
+      db:
+        condition: service_healthy
+      sdp-api:
+        condition: service_started
+
+  sdp-frontend:
+    image: stellar/stellar-disbursement-platform-frontend:edge
+    restart: unless-stopped
+    environment:
+      SDP_API_HOST: ${SDP_API_HOST}
+    command:
+      - sh
+      - -c
+      - |
+        mkdir -p /usr/share/nginx/html/settings
+        cat >/usr/share/nginx/html/settings/env-config.js <<EOF
+        window._env_ = {
+          API_URL: "https://${SDP_API_HOST}",
+          STELLAR_EXPERT_URL: "https://stellar.expert/explorer/testnet",
+          HORIZON_URL: "https://horizon-testnet.stellar.org",
+          RPC_ENABLED: false,
+          RECAPTCHA_SITE_KEY: "",
+          SINGLE_TENANT_MODE: true
+        };
+        EOF
+        nginx -g 'daemon off;'
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.ayra-sdp-dashboard.rule: Host(`${SDP_DASHBOARD_HOST}`)
+      traefik.http.routers.ayra-sdp-dashboard.entrypoints: websecure
+      traefik.http.routers.ayra-sdp-dashboard.tls.certresolver: letsencrypt
+      traefik.http.services.ayra-sdp-dashboard.loadbalancer.server.port: "80"
+    depends_on:
+      sdp-api:
+        condition: service_started
+
+volumes:
+  postgres-db:

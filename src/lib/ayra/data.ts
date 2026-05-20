@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import WebSocket from "ws";
 
 import {
   createSupabaseAdminClient,
@@ -59,6 +60,11 @@ type OperatorRows = PublicRows & {
 };
 
 type AyraSupabaseClient = Pick<SupabaseClient, "from">;
+
+const canonicalTrackNames: Record<string, string> = {
+  providencia: "Providencia",
+  amazonas: "Futuromundo",
+};
 
 type TrackRow = {
   id: string;
@@ -284,10 +290,6 @@ type AuditLogRow = {
   created_at: string;
 };
 
-const CANONICAL_TRACK_NAMES: Record<string, string> = {
-  providencia: "Providencia",
-};
-
 export function hasPublicSupabaseEnv() {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -304,6 +306,9 @@ export function createPublicSupabaseClient() {
         autoRefreshToken: false,
         persistSession: false,
       },
+      realtime: {
+        transport: WebSocket as unknown as typeof globalThis.WebSocket,
+      },
     },
   );
 }
@@ -311,7 +316,33 @@ export function createPublicSupabaseClient() {
 export async function loadPublicAyraState() {
   if (!hasPublicSupabaseEnv()) return createDemoState();
 
-  const supabase = createPublicSupabaseClient();
+  return loadPublicAyraStateFromClient(createPublicSupabaseClient(), {
+    fallbackToDemo: true,
+  });
+}
+
+export async function loadStrictPublicAyraState() {
+  if (!hasPublicSupabaseEnv()) {
+    throw new Error("Public Supabase environment is not configured.");
+  }
+
+  return loadPublicAyraStateFromClient(createPublicSupabaseClient(), {
+    fallbackToDemo: false,
+  });
+}
+
+export async function loadOperatorAyraState() {
+  if (!hasSupabaseAdminEnv()) return createDemoState();
+
+  return loadOperatorAyraStateFromClient(createSupabaseAdminClient(), {
+    fallbackToDemo: true,
+  });
+}
+
+async function loadPublicAyraStateFromClient(
+  supabase: AyraSupabaseClient,
+  { fallbackToDemo }: { fallbackToDemo: boolean },
+) {
   const [
     tracks,
     sponsors,
@@ -322,8 +353,14 @@ export async function loadPublicAyraState() {
     batches,
     receipts,
   ] = await Promise.all([
-    supabase.from("tracks").select("id,slug,name,local_currency,theme").order("name"),
-    supabase.from("sponsors").select("id,slug,name,public_attribution").order("name"),
+    supabase
+      .from("tracks")
+      .select("id,slug,name,local_currency,theme")
+      .order("name"),
+    supabase
+      .from("sponsors")
+      .select("id,slug,name,public_attribution")
+      .order("name"),
     supabase
       .from("initiatives")
       .select(
@@ -369,8 +406,14 @@ export async function loadPublicAyraState() {
     batches.error ||
     receipts.error
   ) {
-    console.error("Falling back to AYRA demo state after public Supabase read failure.");
-    return createDemoState();
+    if (fallbackToDemo) {
+      console.error(
+        "Falling back to AYRA demo state after public Supabase read failure.",
+      );
+      return createDemoState();
+    }
+
+    throw new Error("Public Supabase read failed.");
   }
 
   return stateFromPublicRows({
@@ -382,14 +425,6 @@ export async function loadPublicAyraState() {
     media: (media.data ?? []) as MediaRow[],
     batches: (batches.data ?? []) as BatchRow[],
     receipts: (receipts.data ?? []) as ReceiptRow[],
-  });
-}
-
-export async function loadOperatorAyraState() {
-  if (!hasSupabaseAdminEnv()) return createDemoState();
-
-  return loadOperatorAyraStateFromClient(createSupabaseAdminClient(), {
-    fallbackToDemo: true,
   });
 }
 
@@ -592,7 +627,7 @@ function mapTrack(row: TrackRow): Track {
   return {
     id: row.id,
     slug: row.slug,
-    name: CANONICAL_TRACK_NAMES[row.slug] ?? row.name.trim(),
+    name: canonicalTrackNames[row.slug] ?? row.name,
     localCurrency: currency(row.local_currency),
     theme: row.theme,
   };

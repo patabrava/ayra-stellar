@@ -1362,6 +1362,258 @@ select {
   flex: 0 0 auto;
 }
 
+.advisor-launcher {
+  align-items: center;
+  background: color-mix(in oklab, var(--public-chip) 74%, black);
+  border: 1px solid color-mix(in oklab, var(--public-leaf) 72%, var(--public-rule));
+  box-shadow: 0 10px 30px color-mix(in oklab, black 35%, transparent);
+  color: var(--foreground);
+  display: inline-flex;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  position: fixed;
+  right: var(--pad-page);
+  top: clamp(92px, 16vh, 152px);
+  z-index: 35;
+}
+
+.advisor-launcher:hover {
+  background: color-mix(in oklab, var(--public-chip) 86%, var(--public-leaf));
+  border-color: var(--public-leaf);
+}
+
+.advisor-launcher span {
+  font-family: var(--font-mono), ui-monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.advisor-scrim {
+  background: oklch(6% 0.01 84 / 0.72);
+  inset: 0;
+  overflow-y: auto;
+  padding: clamp(12px, 4vw, 40px);
+  position: fixed;
+  z-index: 60;
+}
+
+.advisor-panel {
+  border: 1px solid var(--public-rule);
+  background:
+    linear-gradient(180deg, oklch(14% 0.014 84 / 0.96), oklch(11% 0.012 84 / 0.98)),
+    var(--public-bg-low);
+  box-shadow: 0 24px 64px oklch(0% 0 0 / 0.45);
+  margin-left: auto;
+  max-width: 100%;
+  padding: 18px;
+  position: relative;
+  width: min(480px, 100%);
+}
+
+.advisor-close {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--public-rule);
+  color: var(--public-muted);
+  display: inline-flex;
+  height: 40px;
+  justify-content: center;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  width: 40px;
+}
+
+.advisor-close:hover {
+  color: var(--foreground);
+  border-color: var(--public-leaf);
+}
+
+.advisor-kicker {
+  color: var(--public-dim);
+  font-family: var(--font-mono), ui-monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.advisor-title {
+  color: var(--foreground);
+  font-family: var(--font-display), ui-sans-serif;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 500;
+  line-height: 0.95;
+  margin-top: 8px;
+}
+
+.advisor-divider {
+  background: var(--public-rule);
+  height: 1px;
+  margin-top: 14px;
+}
+
+.advisor-quick-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.advisor-quick-action,
+.advisor-followup {
+  border: 1px solid var(--public-rule);
+  background: color-mix(in oklab, var(--public-chip) 92%, transparent);
+  color: var(--public-muted);
+  min-height: 44px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.advisor-quick-action:hover,
+.advisor-followup:hover {
+  background: color-mix(in oklab, var(--public-leaf) 14%, var(--public-chip));
+  border-color: color-mix(in oklab, var(--public-leaf) 70%, var(--public-rule));
+  color: var(--foreground);
+}
+
+.advisor-note {
+  border: 1px solid var(--public-rule);
+  color: var(--public-muted);
+  line-height: 1.6;
+  margin-top: 14px;
+  padding: 14px;
+  background: color-mix(in oklab, var(--public-bg) 88%, var(--public-chip));
+}
+
+.advisor-transcript {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.advisor-empty,
+.advisor-turn,
+.advisor-answer-shell,
+.advisor-error {
+  border: 1px solid var(--public-rule);
+}
+
+.advisor-empty {
+  color: var(--public-dim);
+  padding: 12px;
+}
+
+.advisor-turn {
+  background: color-mix(in oklab, var(--public-bg) 82%, var(--public-chip));
+  padding: 12px;
+}
+
+.advisor-turn-response {
+  border-color: color-mix(in oklab, var(--public-leaf) 40%, var(--public-rule));
+}
+
+.advisor-turn-role {
+  color: var(--public-dim);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.advisor-answer-shell {
+  background: color-mix(in oklab, var(--public-bg) 84%, var(--public-chip));
+  margin-top: 14px;
+  padding: 14px;
+}
+
+.advisor-answer-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.advisor-mode {
+  color: var(--public-dim);
+  font-family: var(--font-mono), ui-monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.advisor-answer {
+  color: var(--public-muted);
+  line-height: 1.7;
+  margin-top: 10px;
+  white-space: pre-wrap;
+}
+
+.advisor-citations,
+.advisor-followups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.advisor-citation {
+  border: 1px solid var(--public-rule);
+  color: var(--public-leaf);
+  font-family: var(--font-mono), ui-monospace;
+  font-size: 11px;
+  min-height: 36px;
+  padding: 8px 10px;
+}
+
+.advisor-error {
+  background: var(--err-bg);
+  color: var(--public-paper-ink);
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.advisor-form {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: 14px;
+}
+
+.advisor-form input {
+  background: color-mix(in oklab, var(--public-chip) 88%, black);
+  border: 1px solid var(--public-rule);
+  color: var(--foreground);
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.advisor-form input::placeholder {
+  color: var(--public-dim);
+}
+
+.advisor-submit {
+  align-items: center;
+  background: var(--public-leaf);
+  border: 1px solid var(--public-leaf);
+  color: oklch(13% 0.015 100);
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.advisor-submit:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--public-leaf) 86%, white);
+}
+
+.advisor-submit:disabled,
+.advisor-quick-action:disabled,
+.advisor-followup:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 @media (max-width: 900px) {
   .grid-2,
   .grid-3 {
@@ -1444,6 +1696,20 @@ select {
     inset: auto 0 0 auto;
     height: 42%;
     width: 78vw;
+  }
+
+  .advisor-launcher {
+    right: 12px;
+    top: 86px;
+  }
+
+  .advisor-panel {
+    padding: 16px;
+    width: 100%;
+  }
+
+  .advisor-scrim {
+    padding: 10px;
   }
 
   .proof-pack-head,

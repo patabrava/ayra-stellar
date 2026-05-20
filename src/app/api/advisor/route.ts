@@ -5,6 +5,9 @@ import {
   buildAdvisorSources,
   fallbackAdvisorAnswer,
   isApprovedProjectsQuestion,
+  loadStoredAdvisorSources,
+  mergeAdvisorSources,
+  selectAdvisorSourcesForQuestion,
 } from "@/lib/ayra/advisor";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
@@ -55,7 +58,15 @@ export async function POST(request: Request) {
   }
 
   const state = await loadPublicAyraState();
-  const sources = buildAdvisorSources(state, parsed.data.route ?? {});
+  const runtimeSources = buildAdvisorSources(state, parsed.data.route ?? {});
+  const storedSources = await loadStoredAdvisorSources();
+  const sources = mergeAdvisorSources(storedSources, runtimeSources);
+  const retrievalSources = selectAdvisorSourcesForQuestion(
+    parsed.data.question,
+    sources,
+    parsed.data.route ?? {},
+    parsed.data.question.split(/\s+/).length > 10 ? 18 : 12,
+  );
   const fallbackAnswer = fallbackAdvisorAnswer(parsed.data.question, sources);
 
   if (isApprovedProjectsQuestion(parsed.data.question)) {
@@ -74,7 +85,11 @@ export async function POST(request: Request) {
 
   try {
     return advisorJson({
-      ...(await generateGeminiAdvisorAnswer(parsed.data.question, sources)),
+      ...(await generateGeminiAdvisorAnswer(
+        parsed.data.question,
+        retrievalSources,
+        parsed.data.history ?? [],
+      )),
       mode: "gemini",
     });
   } catch {

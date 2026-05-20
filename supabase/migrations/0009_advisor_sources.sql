@@ -1,71 +1,29 @@
-create extension if not exists vector with schema extensions;
-
-create table public.advisor_sources (
-  id uuid primary key default gen_random_uuid(),
-  source_key text not null unique,
+create table if not exists public.advisor_sources (
+  id text primary key,
   title text not null,
   href text,
   track_slug text,
   initiative_slug text,
-  visibility text not null default 'public' check (visibility = 'public'),
   content text not null,
   content_hash text not null,
-  embedding extensions.vector(768),
-  created_at timestamptz not null default now(),
+  embedding jsonb not null default '[]'::jsonb,
+  source_kind text not null default 'generated' check (source_kind in ('generated', 'synced')),
+  synced_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 alter table public.advisor_sources enable row level security;
 
-create policy advisor_sources_public_read
-on public.advisor_sources
-for select
-to anon, authenticated
-using (visibility = 'public');
+drop policy if exists "public read advisor sources" on public.advisor_sources;
+create policy "public read advisor sources" on public.advisor_sources
+for select using (true);
 
-create or replace function public.match_advisor_sources(
-  query_embedding extensions.vector(768),
-  match_threshold double precision,
-  match_count integer,
-  filter_track_slug text default null,
-  filter_initiative_slug text default null
-)
-returns table (
-  source_key text,
-  title text,
-  href text,
-  track_slug text,
-  initiative_slug text,
-  content text,
-  similarity double precision
-)
-language sql
-stable
-security definer
-set search_path = public, extensions
-as $$
-  select
-    advisor_sources.source_key,
-    advisor_sources.title,
-    advisor_sources.href,
-    advisor_sources.track_slug,
-    advisor_sources.initiative_slug,
-    advisor_sources.content,
-    1 - (advisor_sources.embedding <=> query_embedding) as similarity
-  from public.advisor_sources
-  where advisor_sources.visibility = 'public'
-    and advisor_sources.embedding is not null
-    and (filter_track_slug is null or advisor_sources.track_slug is null or advisor_sources.track_slug = filter_track_slug)
-    and (filter_initiative_slug is null or advisor_sources.initiative_slug is null or advisor_sources.initiative_slug = filter_initiative_slug)
-    and 1 - (advisor_sources.embedding <=> query_embedding) > match_threshold
-  order by advisor_sources.embedding <=> query_embedding
-  limit match_count;
-$$;
+drop policy if exists "admins manage advisor sources" on public.advisor_sources;
+create policy "admins manage advisor sources" on public.advisor_sources
+for all using (public.is_admin()) with check (public.is_admin());
 
-grant execute on function public.match_advisor_sources(
-  extensions.vector(768),
-  double precision,
-  integer,
-  text,
-  text
-) to anon, authenticated, service_role;
+create index if not exists advisor_sources_track_idx
+  on public.advisor_sources (track_slug, initiative_slug);
+
+create index if not exists advisor_sources_updated_idx
+  on public.advisor_sources (updated_at desc);

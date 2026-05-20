@@ -131,6 +131,28 @@ describe("AYRA Supabase row mapping", () => {
     assert.ok(!JSON.stringify(wall).includes("profile-private"));
   });
 
+  it("normalizes canonical track display names from live rows", () => {
+    const state = stateFromPublicRows({
+      ...publicRows,
+      tracks: [
+        {
+          ...publicRows.tracks[0],
+          name: "pROVIDENCIA",
+        },
+        {
+          id: "track-2",
+          slug: "amazonas",
+          name: "fUTUROMUNDO",
+          local_currency: "USD",
+          theme: "Forest corridor",
+        },
+      ],
+    });
+
+    assert.equal(state.tracks[0]?.name, "Providencia");
+    assert.equal(state.tracks[1]?.name, "Futuromundo");
+  });
+
   it("maps operator-only scoped records, including grantee contacts", () => {
     const state = stateFromOperatorRows({
       ...publicRows,

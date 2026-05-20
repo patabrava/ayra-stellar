@@ -1,5 +1,11 @@
+import { createHash } from "node:crypto";
+
 import { z } from "zod";
 
+import {
+  createPublicSupabaseClient,
+  hasPublicSupabaseEnv,
+} from "@/lib/ayra/data";
 import {
   formatUsdc,
   getPublicInitiativeProjection,
@@ -23,10 +29,22 @@ export type AdvisorSource = {
   content: string;
 };
 
+export type AdvisorSourceRow = AdvisorSource & {
+  contentHash: string;
+  embedding: string[];
+  sourceKind: "generated" | "synced";
+  syncedAt: string;
+};
+
 export type AdvisorCitation = {
   sourceId: string;
   label: string;
   href?: string;
+};
+
+export type AdvisorConversationTurn = {
+  role: "user" | "advisor";
+  text: string;
 };
 
 export type AdvisorAnswer = {
@@ -125,6 +143,60 @@ const privateContentPatterns = [
   /\bprofile-[a-z0-9-]+\b/i,
 ] as const;
 
+const advisorStopWords = new Set([
+  "a",
+  "about",
+  "after",
+  "all",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "been",
+  "but",
+  "by",
+  "for",
+  "from",
+  "how",
+  "i",
+  "if",
+  "in",
+  "is",
+  "it",
+  "list",
+  "me",
+  "of",
+  "on",
+  "or",
+  "public",
+  "show",
+  "that",
+  "the",
+  "this",
+  "to",
+  "what",
+  "which",
+  "who",
+  "why",
+  "with",
+  "would",
+  "can",
+  "could",
+  "have",
+  "has",
+  "haste",
+  "does",
+  "do",
+  "done",
+  "list",
+  "active",
+  "approved",
+  "funded",
+  "funding",
+  "live",
+]);
+
 function hasPrivateContent(input: string) {
   return privateContentPatterns.some((pattern) => pattern.test(input));
 }
@@ -157,9 +229,7 @@ export function isApprovedProjectsQuestion(question: string) {
   );
 }
 
-function isPubliclyApprovedInitiative(
-  initiative: Pick<Initiative, "status">,
-) {
+function isPubliclyApprovedInitiative(initiative: Pick<Initiative, "status">) {
   return initiative.status === "live" || initiative.status === "funding";
 }
 
@@ -312,7 +382,85 @@ export function buildAdvisorSources(
   });
 }
 
-export function buildAdvisorPrompt(question: string, sources: AdvisorSource[]) {
+export function buildAdvisorSourceRows(
+  state: AyraState,
+  route: AdvisorRouteContext = {},
+): AdvisorSourceRow[] {
+  return buildAdvisorSources(state, route).map((source) => ({
+    ...source,
+    contentHash: hashAdvisorSource(source.content),
+    embedding: buildAdvisorEmbedding(source),
+    sourceKind: "generated",
+    syncedAt: new Date().toISOString(),
+  }));
+}
+
+export async function loadStoredAdvisorSources(): Promise<AdvisorSource[]> {
+  if (!hasPublicSupabaseEnv()) return [];
+
+  try {
+    const supabase = createPublicSupabaseClient();
+    const { data, error } = await supabase
+      .from("advisor_sources")
+      .select(
+        "id,title,href,track_slug,initiative_slug,content,embedding,source_kind",
+      )
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      console.error("AYRA advisor source-table read failed; falling back to runtime sources.");
+      return [];
+    }
+
+    const sources: AdvisorSource[] = [];
+    for (const row of data ?? []) {
+      const source = mapStoredAdvisorSource(row);
+      if (source) sources.push(source);
+    }
+    return sources;
+  } catch {
+    console.error("AYRA advisor source-table read threw; falling back to runtime sources.");
+    return [];
+  }
+}
+
+export function mergeAdvisorSources(
+  primary: AdvisorSource[],
+  secondary: AdvisorSource[],
+) {
+  const seen = new Set<string>();
+  const merged: AdvisorSource[] = [];
+
+  for (const source of [...primary, ...secondary]) {
+    if (seen.has(source.id)) continue;
+    seen.add(source.id);
+    merged.push(source);
+  }
+
+  return merged;
+}
+
+export function selectAdvisorSourcesForQuestion(
+  question: string,
+  sources: AdvisorSource[],
+  route: AdvisorRouteContext = {},
+  limit = 18,
+) {
+  return [...sources]
+    .sort((a, b) => {
+      const scoreDiff =
+        scoreSourceForQuestion(b, question, route) -
+        scoreSourceForQuestion(a, question, route);
+      return scoreDiff === 0 ? a.id.localeCompare(b.id) : scoreDiff;
+    })
+    .slice(0, limit);
+}
+
+export function buildAdvisorPrompt(
+  question: string,
+  sources: AdvisorSource[],
+  history: AdvisorConversationTurn[] = [],
+) {
   const sourcePack = sources
     .slice(0, 18)
     .map(
@@ -320,6 +468,15 @@ export function buildAdvisorPrompt(question: string, sources: AdvisorSource[]) {
         `SOURCE ID: ${item.id}\nTITLE: ${item.title}\nHREF: ${item.href ?? ""}\nFACTS: ${item.content}`,
     )
     .join("\n\n");
+
+  const historyPack =
+    history.length > 0
+      ? [
+          "Conversation history:",
+          ...history.map((turn) => `${turn.role.toUpperCase()}: ${turn.text}`),
+          "",
+        ].join("\n")
+      : "";
 
   return [
     "You are the AYRA public advisor embedded in the transparency app.",
@@ -331,10 +488,13 @@ export function buildAdvisorPrompt(question: string, sources: AdvisorSource[]) {
     "If the sources do not support the answer, set status to grounded_decline and say what public page to inspect instead.",
     "Every answered response must cite one to three source IDs copied exactly from the source pack.",
     "",
+    historyPack,
     sourcePack,
     "",
     `Question: ${question}`,
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function normalizeAdvisorAnswer(
@@ -483,6 +643,24 @@ function scoreSource(sourceItem: AdvisorSource, route: AdvisorRouteContext) {
   return score;
 }
 
+function scoreSourceForQuestion(
+  sourceItem: AdvisorSource,
+  question: string,
+  route: AdvisorRouteContext,
+) {
+  const baseScore = scoreSource(sourceItem, route);
+  const questionTokens = new Set(tokenizeAdvisorText(question));
+  const sourceTokens = new Set(
+    tokenizeAdvisorText([sourceItem.title, sourceItem.id, sourceItem.content].join(" ")),
+  );
+  let overlap = 0;
+  for (const token of questionTokens) {
+    if (sourceTokens.has(token)) overlap += 1;
+  }
+
+  return baseScore + overlap * 3;
+}
+
 function groundedDecline(answer: string): AdvisorAnswer {
   return {
     answer,
@@ -496,4 +674,46 @@ function groundedDecline(answer: string): AdvisorAnswer {
     ],
     status: "grounded_decline",
   };
+}
+
+function tokenizeAdvisorText(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter((token) => token.length > 2 && !advisorStopWords.has(token));
+}
+
+function buildAdvisorEmbedding(source: AdvisorSource) {
+  return Array.from(
+    new Set(tokenizeAdvisorText([source.title, source.id, source.content].join(" "))),
+  ).slice(0, 48);
+}
+
+function hashAdvisorSource(content: string) {
+  return createHash("sha256").update(content).digest("hex");
+}
+
+function mapStoredAdvisorSource(row: {
+  id: string;
+  title: string;
+  href: string | null;
+  track_slug: string | null;
+  initiative_slug: string | null;
+  content: string;
+  embedding: unknown;
+  source_kind?: string | null;
+}): AdvisorSource | null {
+  if (!row.id || !row.title || !row.content) return null;
+  if (hasPrivateContent(row.content)) return null;
+
+  return {
+    id: row.id,
+    title: row.title,
+    href: row.href ?? undefined,
+    trackSlug: row.track_slug ?? undefined,
+    initiativeSlug: row.initiative_slug ?? undefined,
+    content: row.content,
+  } satisfies AdvisorSource;
 }

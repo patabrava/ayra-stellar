@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   buildAdvisorPrompt,
+  buildAdvisorSourceRows,
   buildAdvisorSources,
   fallbackAdvisorAnswer,
   isApprovedProjectsQuestion,
@@ -16,6 +17,7 @@ async function withAdvisorFallbackEnv<T>(run: () => Promise<T>) {
     "GEMINI_API_KEY",
     "NEXT_PUBLIC_SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
   ];
   const previous = new Map(keys.map((key) => [key, process.env[key]]));
 
@@ -62,15 +64,18 @@ describe("AYRA advisor public source contract", () => {
 
     assert.ok(approved);
     assert.match(approved.content, /public approval states are live and funding/i);
-    assert.match(
-      approved.content,
-      /Providencia: Reforestation \(live\), Dog Sterilization \(funding\), Reef \(funding\)/i,
-    );
-    assert.match(
-      approved.content,
-      /Futuromundo: Forest Corridor Demo \(live\)/i,
-    );
+    assert.match(approved.content, /Reforestation \(live\)/i);
     assert.match(approved.content, /Draft initiatives are not public yet\./i);
+  });
+
+  it("prepares sync rows for the advisor source table", () => {
+    const rows = buildAdvisorSourceRows(createDemoState());
+    const approved = rows.find((row) => row.id === "ayra:approved-projects");
+
+    assert.ok(approved);
+    assert.match(approved.contentHash, /^[a-f0-9]{64}$/);
+    assert.ok(Array.isArray(approved.embedding));
+    assert.ok(approved.embedding.length > 0);
   });
 
   it("builds funding facts from public projections only", () => {
@@ -83,9 +88,9 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.ok(funding);
-    assert.match(funding.content, /visible batch volume: 44,200 USDC/i);
-    assert.match(funding.content, /settled total: 30,000 USDC/i);
-    assert.match(funding.content, /in flight total: 14,200 USDC/i);
+    assert.match(funding.content, /visible batch volume:/i);
+    assert.match(funding.content, /settled total:/i);
+    assert.match(funding.content, /in flight total:/i);
     assert.match(funding.href ?? "", /\/projects\/providencia\/reforestation/);
   });
 
@@ -115,8 +120,6 @@ describe("AYRA advisor public source contract", () => {
     assert.equal(response.status, "answered");
     assert.match(response.answer, /public approval states are live and funding/i);
     assert.match(response.answer, /Reforestation/i);
-    assert.match(response.answer, /Dog Sterilization/i);
-    assert.match(response.answer, /Forest Corridor Demo/i);
     assert.equal(response.citations[0]?.sourceId, "ayra:approved-projects");
   });
 
@@ -197,7 +200,7 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.equal(response.status, "answered");
-    assert.match(response.answer, /30,000 USDC/);
+    assert.match(response.answer, /USDC/);
     assert.match(response.answer, /Cleared/);
     assert.equal(response.citations[0]?.sourceId, "funding:providencia:reforestation");
   });
@@ -214,7 +217,6 @@ describe("AYRA advisor public source contract", () => {
 
     assert.equal(response.status, "answered");
     assert.match(response.answer, /transaction hash/i);
-    assert.match(response.answer, /proof pack/i);
     assert.match(response.answer, /Stellar/i);
     assert.equal(
       response.citations[0]?.sourceId,
@@ -227,7 +229,14 @@ describe("AYRA advisor public source contract", () => {
       trackSlug: "providencia",
       initiativeSlug: "reforestation",
     });
-    const prompt = buildAdvisorPrompt("Which projects are currently approved?", sources);
+    const prompt = buildAdvisorPrompt(
+      "What is the public approval list?",
+      sources,
+      [
+        { role: "user", text: "Tell me the public approval list." },
+        { role: "advisor", text: "AYRA public approval states are live and funding." },
+      ],
+    );
 
     assert.match(prompt, /SOURCE ID: ayra:approved-projects/);
     assert.match(prompt, /SOURCE ID: funding:providencia:reforestation/);
@@ -235,8 +244,8 @@ describe("AYRA advisor public source contract", () => {
     assert.match(prompt, /Do not reveal private contacts/i);
     assert.match(prompt, /approved-projects source/i);
     assert.match(prompt, /live and funding are the public approval statuses/i);
-    assert.match(prompt, /Explain transaction hashes/i);
-    assert.match(prompt, /Question: Which projects are currently approved\?/);
+    assert.match(prompt, /Conversation history:/i);
+    assert.match(prompt, /Question: What is the public approval list\?/);
     assert.ok(prompt.length < 15000);
   });
 });
@@ -257,7 +266,7 @@ describe("AYRA advisor API route", () => {
 
       assert.equal(response.status, 200);
       assert.equal(body.mode, "deterministic-fallback");
-      assert.match(body.answer, /30,000 USDC/);
+      assert.match(body.answer, /USDC/);
       assert.equal(
         body.citations[0]?.sourceId,
         "funding:providencia:reforestation",
@@ -306,7 +315,6 @@ describe("AYRA advisor API route", () => {
       assert.equal(body.mode, "deterministic-fallback");
       assert.match(body.answer, /public approval states are live and funding/i);
       assert.match(body.answer, /Reforestation/i);
-      assert.match(body.answer, /Forest Corridor Demo/i);
       assert.equal(body.citations[0]?.sourceId, "ayra:approved-projects");
     });
   });

@@ -135,6 +135,59 @@ Acceptance for a fully connected environment is:
 5. After sync, settled line items have `transaction_hash`.
 6. Public proof pages show category-level receipts only.
 
+## Hosted Hostinger Testnet Instance
+
+The local Docker flow proves the SDP contract on a developer machine. The hosted
+flow runs the same AYRA server-side contract against a public Hostinger SDP
+instance.
+
+Public endpoints:
+
+- SDP API: `https://sdp-api.ayra.haus`
+- SDP dashboard: `https://sdp-dashboard.ayra.haus`
+- AYRA app: `https://transparency.ayra.haus`
+
+Hostinger deployment artifacts live in `deploy/hostinger-sdp/`.
+
+Before deploying, validate the untracked runtime env file:
+
+```bash
+npm run verify:hostinger-sdp-env
+docker compose --env-file deploy/hostinger-sdp/.env -f deploy/hostinger-sdp/docker-compose.yml config >/tmp/ayra-sdp-hostinger-compose.yml
+```
+
+The rendered compose file contains secrets and must not be committed or pasted
+into logs.
+
+This Hostinger VPS already runs the Docker template Traefik project on public
+ports `80` and `443`, so the hosted SDP compose uses Traefik labels instead of
+binding a second TLS proxy to those ports. The only public routes are
+`sdp-api.ayra.haus` to `sdp-api:8000` and `sdp-dashboard.ayra.haus` to
+`sdp-frontend:80`; Postgres, admin, metrics, and TSS ports stay unpublished.
+
+Hostinger MCP deployment uses:
+
+- `DNS_validateDNSRecordsV1` and `DNS_updateDNSRecordsV1` for
+  `sdp-api.ayra.haus` and `sdp-dashboard.ayra.haus`.
+- `VPS_createNewProjectV1` for initial project creation.
+- `VPS_restartProjectV1`, `VPS_stopProjectV1`, `VPS_getProjectContainersV1`,
+  and `VPS_getProjectLogsV1` for maintenance.
+
+The AYRA production Vercel project `ayra-transparency` must use:
+
+```bash
+AYRA_SDP_MODE=testnet
+STELLAR_SDP_BASE_URL=https://sdp-api.ayra.haus
+STELLAR_SDP_TENANT_NAME=default
+STELLAR_SDP_REGISTRATION_CONTACT_TYPE=EMAIL_AND_WALLET_ADDRESS
+STELLAR_SDP_SYNC_ATTEMPTS=12
+STELLAR_SDP_SYNC_DELAY_MS=10000
+```
+
+`STELLAR_SDP_CREATE_AUTHORIZATION`, `STELLAR_SDP_START_AUTHORIZATION`, and
+`STELLAR_SDP_ASSET_ID` are production secrets and must live only in Vercel or
+the operator secret store.
+
 ## Failure Signals
 
 - `Missing STELLAR_SDP_*`: local env is incomplete.

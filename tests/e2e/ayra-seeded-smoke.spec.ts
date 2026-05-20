@@ -16,6 +16,19 @@ test("seeded MVP journey from application intake to public disbursement proof", 
   await expect(page.locator("body")).not.toContainText("Latest first");
   await expect(page.locator("body")).not.toContainText("Receipts ·");
 
+  await page.getByRole("button", { name: "Ask AYRA" }).click();
+  await expect(page.getByRole("dialog", { name: "Ask AYRA" })).toBeVisible();
+  await page
+    .getByRole("button", { name: "What is the public approval list?" })
+    .click();
+  await expect(page.locator(".advisor-answer")).toContainText(
+    "AYRA public approval states are live and funding.",
+  );
+  await expect(page.getByText("AYRA approved projects")).toBeVisible();
+  await expect(page.getByText("DETERMINISTIC FALLBACK")).toBeVisible();
+  await page.getByRole("button", { name: "Close advisor" }).click();
+  await expect(page.getByRole("dialog", { name: "Ask AYRA" })).toBeHidden();
+
   await page.getByRole("link", { name: "Open Reforestation" }).click();
   await page.waitForURL(/\/projects\/providencia\/reforestation$/, {
     timeout: 240_000,

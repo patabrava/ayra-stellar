@@ -6,6 +6,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import { AiAdvisor } from "@/components/ayra/ai-advisor";
 import { SiteFooter } from "@/components/ayra/site-footer";
+import { AdvisorPanel } from "@/components/ayra/advisor-panel";
 import { AyraLogo, Chip, Hash } from "@/components/ayra/ui";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
@@ -100,6 +101,11 @@ export default async function InitiativePage({ params }: PageProps) {
           </Link>
         </div>
       </nav>
+
+      <AdvisorPanel
+        initiativeSlug={project.initiative.slug}
+        trackSlug={project.track.slug}
+      />
 
       <section className="px-[var(--pad-page)] py-16 md:py-20">
         <Link
