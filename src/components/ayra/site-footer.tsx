@@ -38,7 +38,7 @@ function SocialLink({
   return (
     <a
       aria-label={label}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--dark-rule)] text-[var(--public-muted)] transition hover:border-[var(--public-muted)] hover:text-[var(--public-fg)]"
+      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--dark-rule)] text-[var(--public-muted)] transition hover:border-[var(--public-muted)] hover:text-[var(--public-fg)]"
       href={href}
       rel="noopener noreferrer"
       target="_blank"
@@ -52,12 +52,12 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-[var(--dark-rule)] px-[var(--pad-page)] py-8 text-sm text-[var(--public-dim)]">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4 text-xs uppercase tracking-[0.16em]">
-          <Link className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)]" href="/privacy">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs uppercase tracking-[0.16em]">
+          <Link className="inline-flex min-h-11 items-center transition text-[var(--public-muted)] hover:text-[var(--public-fg)]" href="/privacy">
             Privacy
           </Link>
           <a
-            className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)] normal-case tracking-normal"
+            className="inline-flex min-h-11 items-center transition text-[var(--public-muted)] hover:text-[var(--public-fg)] normal-case tracking-normal"
             href="mailto:contact@ayra.haus"
           >
             contact@ayra.haus
@@ -83,7 +83,7 @@ export function SiteFooter() {
       <p className="mt-5 text-xs tracking-[0.08em]">
         By{" "}
         <a
-          className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)]"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center transition text-[var(--public-muted)] hover:text-[var(--public-fg)]"
           href="https://www.ayra.haus"
           rel="noopener noreferrer"
           target="_blank"

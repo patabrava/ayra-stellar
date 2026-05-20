@@ -174,8 +174,8 @@ export default async function InitiativePage({ params }: PageProps) {
                   <Chip>Batch receipts</Chip>
                 </div>
                 <p className="public-dim text-sm leading-6">
-                  Private contacts, raw receipts, and internal reconciliation
-                  never appear on this project page.
+                  Project pages show approved field updates and category spend,
+                  never private contacts or raw receipt files.
                 </p>
               </section>
 
@@ -292,8 +292,9 @@ export default async function InitiativePage({ params }: PageProps) {
           </table>
         </div>
         <p className="public-dim mt-5 max-w-3xl text-sm leading-6">
-          Recipient-level names, private receipt files, failed payment details,
-          and reconciliation notes remain inside the admin console.
+          Public receipt rows show category, amount, local snapshot, and
+          chain/payment reference. Recipient names, private files, failed
+          payments, and reconciliation notes stay in the admin console.
         </p>
       </section>
 

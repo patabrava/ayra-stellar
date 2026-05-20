@@ -70,6 +70,9 @@ test("seeded MVP journey from application intake to public disbursement proof", 
   await expect(page.getByText("SDP mode").first()).toBeVisible();
   await expect(page.getByText("Mock").first()).toBeVisible();
   await expect(page.getByRole("link", { name: /Export CSV/ })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText(
+    "receipts/batch-reforest-apr26/crew.pdf",
+  );
 
   await page.getByRole("button", { name: /Approve/ }).first().click();
   await expect(page).toHaveURL(/status=demo-application-approved/, {

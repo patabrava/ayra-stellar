@@ -561,7 +561,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
                         </Chip>
                       </td>
                       <td>
-                        <Hash value={item.privateReceiptPath ?? "admin-only"} />
+                        <Chip tone={item.privateReceiptPath ? "ok" : "warn"}>
+                          {item.privateReceiptPath ? "attached" : "missing"}
+                        </Chip>
                       </td>
                     </tr>
                   );

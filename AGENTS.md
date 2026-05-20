@@ -211,7 +211,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Public landing stays overview-only: hero plus project entry points belong on `/`, while initiative updates, receipts, and proof context belong on `/projects/[trackSlug]/[initiativeSlug]` or `/proof/[batchId]`.
 - Public transparency projections are track-scoped feeds: keep the hero default on Reforestation, but include approved public records from all initiatives in the selected track.
 - Browser smoke selectors for public track controls must scope or exact-match nav links because the wordmark repeats the active track name.
-- Browser smoke privacy assertions must be route-specific: public/proof pages must exclude private contact and receipt data, while steward pages may show scoped private contacts but still must hide raw receipt paths.
+- Browser smoke privacy assertions must be route-specific: public/proof pages must exclude private contact and receipt data, while steward/admin pages may show scoped private contacts but still must hide raw receipt paths.
 - Anonymous application inserts must use return-minimal writes unless a privileged client can also read `applications`; selecting inserted ids will fail RLS.
 - When changing `public_batch_receipts` column order or adding leading columns, drop and recreate the view instead of `create or replace view`.
 - Authenticated admin server actions need explicit admin RLS policies for every registry table they write; service-role-era assumptions surface as promotion or batch mutation errors.
