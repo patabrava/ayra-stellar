@@ -2,8 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { signOutAction } from "@/lib/ayra/actions";
-
 export function AyraLogo({
   alt = "AYRA",
   className = "",
@@ -71,7 +69,7 @@ export function OpsNav({
         <span className="ml-auto hidden items-center gap-2 md:inline-flex">
           <Chip tone={role === "ADMIN" ? "info" : "ok"}>{role}</Chip>
           <span className="mono text-xs text-ink-muted">{user}</span>
-          <form action={signOutAction}>
+          <form action="/auth/signout" method="post">
             <button className="btn ghost" type="submit">
               Sign out
             </button>

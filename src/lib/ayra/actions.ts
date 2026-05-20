@@ -208,14 +208,6 @@ export async function requestMagicLinkAction(formData: FormData) {
   redirect(loginPath(next, error ? loginStatusForAuthError(error) : "link-sent"));
 }
 
-export async function signOutAction() {
-  if (hasPublicSupabaseEnv()) {
-    const supabase = await createSupabaseServerClient();
-    await supabase.auth.signOut();
-  }
-  redirectWithStatus("/login", "signed-out");
-}
-
 export async function submitApplicationAction(formData: FormData) {
   const parsed = applicationSchema.safeParse({
     applicantName: text(formData, "applicantName"),
