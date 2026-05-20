@@ -10,6 +10,12 @@ export type LoginStatus = {
   body: string;
 };
 
+type AuthErrorShape = {
+  status?: number;
+  code?: string;
+  message?: string;
+};
+
 export function getApplicationSubmitStatus(
   status?: string,
 ): ApplicationSubmitStatus | null {
@@ -58,6 +64,13 @@ export function getLoginStatus(status?: string): LoginStatus | null {
         body:
           "The email step failed before Supabase finished the request. Check the address, then try again.",
       };
+    case "link-rate-limited":
+      return {
+        tone: "err",
+        title: "Magic-link email limit reached.",
+        body:
+          "Supabase accepted this admin account, but the built-in mailer has temporarily blocked more emails to this address. Wait before requesting another link, or configure custom SMTP for production auth email.",
+      };
     case "signed-out":
       return {
         tone: "ok",
@@ -96,4 +109,20 @@ export function getLoginStatus(status?: string): LoginStatus | null {
     default:
       return null;
   }
+}
+
+export function loginStatusForAuthError(error: unknown) {
+  const authError = error as AuthErrorShape | null;
+  const code = authError?.code ?? "";
+  const message = authError?.message ?? "";
+
+  if (
+    authError?.status === 429 ||
+    code === "over_email_send_rate_limit" ||
+    /rate limit/i.test(message)
+  ) {
+    return "link-rate-limited";
+  }
+
+  return "link-error";
 }

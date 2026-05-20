@@ -23,6 +23,7 @@ import {
 import { insertPublicApplication } from "@/lib/ayra/public-write";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { loginStatusForAuthError } from "@/lib/ayra/status";
 
 const applicationSchema = z.object({
   applicantName: z.string().trim().min(2),
@@ -204,7 +205,7 @@ export async function requestMagicLinkAction(formData: FormData) {
     },
   });
 
-  redirect(loginPath(next, error ? "link-error" : "link-sent"));
+  redirect(loginPath(next, error ? loginStatusForAuthError(error) : "link-sent"));
 }
 
 export async function signOutAction() {

@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   getApplicationSubmitStatus,
   getLoginStatus,
+  loginStatusForAuthError,
 } from "../src/lib/ayra/status";
 
 describe("AYRA application submit status copy", () => {
@@ -55,6 +56,24 @@ describe("AYRA login status copy", () => {
       title: "Your account does not have steward access yet.",
       body:
         "The email matched, but the role records do not include steward or grantee access for this portal.",
+    });
+  });
+
+  it("maps Supabase email rate limits to a delivery-specific login status", () => {
+    assert.equal(
+      loginStatusForAuthError({
+        status: 429,
+        code: "over_email_send_rate_limit",
+        message: "email rate limit exceeded",
+      }),
+      "link-rate-limited",
+    );
+
+    assert.deepEqual(getLoginStatus("link-rate-limited"), {
+      tone: "err",
+      title: "Magic-link email limit reached.",
+      body:
+        "Supabase accepted this admin account, but the built-in mailer has temporarily blocked more emails to this address. Wait before requesting another link, or configure custom SMTP for production auth email.",
     });
   });
 
