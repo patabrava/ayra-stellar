@@ -12,7 +12,7 @@ const publicRows = {
     {
       id: "track-1",
       slug: "providencia",
-      name: "Providencia",
+      name: "pROVIDENCIA",
       local_currency: "COP",
       theme: "Cinematic island stewardship",
     },

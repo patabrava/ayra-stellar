@@ -211,6 +211,8 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 3) Specific repo rules
 - Public landing stays overview-only: hero plus project entry points belong on `/`, while initiative updates, receipts, and proof context belong on `/projects/[trackSlug]/[initiativeSlug]` or `/proof/[batchId]`.
 - Public transparency projections are track-scoped feeds: keep the hero default on Reforestation, but include approved public records from all initiatives in the selected track.
+- AYRA advisor approval-list questions must short-circuit to the approved-projects source and treat `live`/`funding` as the public approved set; do not rely on Gemini to infer it.
+- Canonical track display names are normalized at ingest; do not let live row casing change `Providencia` in public or operator shells.
 - Browser smoke selectors for public track controls must scope or exact-match nav links because the wordmark repeats the active track name.
 - Browser smoke privacy assertions must be route-specific: public/proof pages must exclude private contact and receipt data, while steward/admin pages may show scoped private contacts but still must hide raw receipt paths.
 - Anonymous application inserts must use return-minimal writes unless a privileged client can also read `applications`; selecting inserted ids will fail RLS.

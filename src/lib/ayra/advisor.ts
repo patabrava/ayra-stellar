@@ -4,6 +4,7 @@ import {
   formatUsdc,
   getPublicInitiativeProjection,
   getPublicWallProjection,
+  type Initiative,
   type AyraState,
   type BatchStatus,
 } from "@/lib/ayra/domain";
@@ -145,6 +146,48 @@ function publicBatchLabel(status: BatchStatus) {
   return status === "settled" ? "Cleared" : "In flight";
 }
 
+export function isApprovedProjectsQuestion(question: string) {
+  const lowered = question.toLowerCase();
+  return (
+    /\b(public approval list|approval list|approved projects?|active projects?|live projects?|funded projects?|active initiatives?|live initiatives?|funded initiatives?|active programs?|live programs?|funded programs?)\b/.test(
+      lowered,
+    ) ||
+    (/\b(projects?|initiatives?|programs?)\b/.test(lowered) &&
+      /\b(approved|active|live|funded|funding)\b/.test(lowered))
+  );
+}
+
+function isPubliclyApprovedInitiative(
+  initiative: Pick<Initiative, "status">,
+) {
+  return initiative.status === "live" || initiative.status === "funding";
+}
+
+function buildApprovedProjectsContent(state: AyraState) {
+  const trackSummaries = state.tracks
+    .map((track) => {
+      const approvedInitiatives = state.initiatives
+        .filter(
+          (initiative) =>
+            initiative.trackId === track.id &&
+            isPubliclyApprovedInitiative(initiative),
+        )
+        .map((initiative) => `${initiative.name} (${initiative.status})`);
+
+      if (approvedInitiatives.length === 0) return null;
+      return `${track.name}: ${approvedInitiatives.join(", ")}`;
+    })
+    .filter((value): value is string => value !== null);
+
+  return [
+    "AYRA public approval states are live and funding.",
+    trackSummaries.length > 0
+      ? `Publicly approved and active projects: ${trackSummaries.join("; ")}.`
+      : "No publicly approved or active projects are listed yet.",
+    "Draft initiatives are not public yet.",
+  ].join(" ");
+}
+
 export function buildAdvisorSources(
   state: AyraState,
   route: AdvisorRouteContext = {},
@@ -166,6 +209,11 @@ export function buildAdvisorSources(
       title: "AYRA payment language",
       content:
         "AYRA public payment labels use In flight for submitted batches and Cleared for settled batches. Funding numbers must come from public batch and line-item totals, not estimates.",
+    }),
+    publicSource({
+      id: "ayra:approved-projects",
+      title: "AYRA approved projects",
+      content: buildApprovedProjectsContent(state),
     }),
     publicSource({
       id: "stellar:trace-rules",
@@ -278,6 +326,7 @@ export function buildAdvisorPrompt(question: string, sources: AdvisorSource[]) {
     "Answer only from the source pack below.",
     "Do not reveal private contacts, emails, phone numbers, payout addresses, raw receipt paths, failed payment details, or internal reconciliation notes.",
     "For funding questions, answer exact public totals when the source pack provides them. Use the terms Cleared and In flight.",
+    "For approved, active, live, or funded project questions, use the approved-projects source. In AYRA public state, live and funding are the public approval statuses; draft is not public yet.",
     "Explain transaction hashes in plain public language: how to watch them, what they do, where they resolve, and which proof pack or explorer page to open.",
     "If the sources do not support the answer, set status to grounded_decline and say what public page to inspect instead.",
     "Every answered response must cite one to three source IDs copied exactly from the source pack.",
@@ -327,6 +376,7 @@ export function fallbackAdvisorAnswer(
   sources: AdvisorSource[],
 ): AdvisorAnswer {
   const loweredQuestion = question.toLowerCase();
+  const asksApprovedProjects = isApprovedProjectsQuestion(question);
   const asksFunding =
     /\b(paid|settled|cleared|funded|funding|money|amount|batch|sponsor)\b/.test(
       loweredQuestion,
@@ -335,12 +385,34 @@ export function fallbackAdvisorAnswer(
     /\b(stellar|transaction hash|tx hash|hash|ledger|explorer|watch|trace|payment track|where can it go)\b/.test(
       loweredQuestion,
     );
+  const approvedProjectsSource =
+    sources.find((item) => item.id === "ayra:approved-projects") ??
+    sources.find((item) => item.id.startsWith("approved-projects:"));
   const fundingSource =
     sources.find((item) => item.id.startsWith("funding:")) ??
     sources.find((item) => item.id === "ayra:payment-language");
   const stellarSource =
     sources.find((item) => item.id.startsWith("stellar:")) ??
     sources.find((item) => item.id === "stellar:trace-rules");
+
+  if (asksApprovedProjects && approvedProjectsSource) {
+    return {
+      answer: approvedProjectsSource.content,
+      citations: [
+        {
+          sourceId: approvedProjectsSource.id,
+          label: approvedProjectsSource.title,
+          href: approvedProjectsSource.href,
+        },
+      ],
+      followups: [
+        "Show me the public project pages",
+        "Which projects are still funding?",
+        "What does live vs funding mean?",
+      ],
+      status: "answered",
+    };
+  }
 
   if (asksFunding && fundingSource) {
     return {
@@ -404,6 +476,7 @@ function scoreSource(sourceItem: AdvisorSource, route: AdvisorRouteContext) {
   ) {
     score += 8;
   }
+  if (sourceItem.id.startsWith("approved-projects:")) score += 6;
   if (sourceItem.id.startsWith("funding:")) score += 2;
   if (sourceItem.id.startsWith("stellar:")) score += 2;
   if (sourceItem.id === "ayra:public-boundary") score += 1;
@@ -415,6 +488,7 @@ function groundedDecline(answer: string): AdvisorAnswer {
     answer,
     citations: [],
     followups: [
+      "Which projects are currently approved?",
       "What is AYRA funding?",
       "How do public proof packs work?",
       "How do I become a sponsor?",

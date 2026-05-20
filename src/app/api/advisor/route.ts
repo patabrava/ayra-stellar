@@ -4,6 +4,7 @@ import {
   advisorRequestSchema,
   buildAdvisorSources,
   fallbackAdvisorAnswer,
+  isApprovedProjectsQuestion,
 } from "@/lib/ayra/advisor";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
@@ -55,10 +56,18 @@ export async function POST(request: Request) {
 
   const state = await loadPublicAyraState();
   const sources = buildAdvisorSources(state, parsed.data.route ?? {});
+  const fallbackAnswer = fallbackAdvisorAnswer(parsed.data.question, sources);
+
+  if (isApprovedProjectsQuestion(parsed.data.question)) {
+    return advisorJson({
+      ...fallbackAnswer,
+      mode: "deterministic-fallback",
+    });
+  }
 
   if (!hasGeminiEnv()) {
     return advisorJson({
-      ...fallbackAdvisorAnswer(parsed.data.question, sources),
+      ...fallbackAnswer,
       mode: "deterministic-fallback",
     });
   }
@@ -71,7 +80,7 @@ export async function POST(request: Request) {
   } catch {
     console.error("AYRA advisor Gemini generation failed; using fallback.");
     return advisorJson({
-      ...fallbackAdvisorAnswer(parsed.data.question, sources),
+      ...fallbackAnswer,
       mode: "deterministic-fallback",
     });
   }

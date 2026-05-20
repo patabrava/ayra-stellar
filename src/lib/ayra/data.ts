@@ -284,6 +284,10 @@ type AuditLogRow = {
   created_at: string;
 };
 
+const CANONICAL_TRACK_NAMES: Record<string, string> = {
+  providencia: "Providencia",
+};
+
 export function hasPublicSupabaseEnv() {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -588,7 +592,7 @@ function mapTrack(row: TrackRow): Track {
   return {
     id: row.id,
     slug: row.slug,
-    name: row.name,
+    name: CANONICAL_TRACK_NAMES[row.slug] ?? row.name.trim(),
     localCurrency: currency(row.local_currency),
     theme: row.theme,
   };

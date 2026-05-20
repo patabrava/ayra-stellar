@@ -5,6 +5,7 @@ import {
   buildAdvisorPrompt,
   buildAdvisorSources,
   fallbackAdvisorAnswer,
+  isApprovedProjectsQuestion,
   normalizeAdvisorAnswer,
 } from "../src/lib/ayra/advisor";
 import { POST as postAdvisor } from "../src/app/api/advisor/route";
@@ -45,6 +46,33 @@ function advisorRequest(body: unknown) {
 }
 
 describe("AYRA advisor public source contract", () => {
+  it("classifies approval-list questions broadly", () => {
+    assert.equal(isApprovedProjectsQuestion("What is the public approval list?"), true);
+    assert.equal(isApprovedProjectsQuestion("Which initiatives are live?"), true);
+    assert.equal(isApprovedProjectsQuestion("Which programs are funded?"), true);
+    assert.equal(isApprovedProjectsQuestion("List active initiatives."), true);
+    assert.equal(isApprovedProjectsQuestion("How much has been paid for Reforestation?"), false);
+  });
+
+  it("builds approved-project facts from public initiative statuses only", () => {
+    const sources = buildAdvisorSources(createDemoState(), {});
+    const approved = sources.find(
+      (source) => source.id === "ayra:approved-projects",
+    );
+
+    assert.ok(approved);
+    assert.match(approved.content, /public approval states are live and funding/i);
+    assert.match(
+      approved.content,
+      /Providencia: Reforestation \(live\), Dog Sterilization \(funding\), Reef \(funding\)/i,
+    );
+    assert.match(
+      approved.content,
+      /Futuromundo: Forest Corridor Demo \(live\)/i,
+    );
+    assert.match(approved.content, /Draft initiatives are not public yet\./i);
+  });
+
   it("builds funding facts from public projections only", () => {
     const sources = buildAdvisorSources(createDemoState(), {
       trackSlug: "providencia",
@@ -75,6 +103,21 @@ describe("AYRA advisor public source contract", () => {
     assert.match(stellar.content, /watch/i);
     assert.match(stellar.content, /proof pack/i);
     assert.match(stellar.content, /Stellar/i);
+  });
+
+  it("falls back deterministically for approved-project questions", () => {
+    const sources = buildAdvisorSources(createDemoState(), {});
+    const response = fallbackAdvisorAnswer(
+      "Which projects are currently approved?",
+      sources,
+    );
+
+    assert.equal(response.status, "answered");
+    assert.match(response.answer, /public approval states are live and funding/i);
+    assert.match(response.answer, /Reforestation/i);
+    assert.match(response.answer, /Dog Sterilization/i);
+    assert.match(response.answer, /Forest Corridor Demo/i);
+    assert.equal(response.citations[0]?.sourceId, "ayra:approved-projects");
   });
 
   it("does not include private records in any source text", () => {
@@ -184,13 +227,16 @@ describe("AYRA advisor public source contract", () => {
       trackSlug: "providencia",
       initiativeSlug: "reforestation",
     });
-    const prompt = buildAdvisorPrompt("What does cleared mean?", sources);
+    const prompt = buildAdvisorPrompt("Which projects are currently approved?", sources);
 
+    assert.match(prompt, /SOURCE ID: ayra:approved-projects/);
     assert.match(prompt, /SOURCE ID: funding:providencia:reforestation/);
     assert.match(prompt, /SOURCE ID: stellar:providencia:reforestation/);
     assert.match(prompt, /Do not reveal private contacts/i);
+    assert.match(prompt, /approved-projects source/i);
+    assert.match(prompt, /live and funding are the public approval statuses/i);
     assert.match(prompt, /Explain transaction hashes/i);
-    assert.match(prompt, /Question: What does cleared mean\?/);
+    assert.match(prompt, /Question: Which projects are currently approved\?/);
     assert.ok(prompt.length < 15000);
   });
 });
@@ -240,6 +286,28 @@ describe("AYRA advisor API route", () => {
         body.citations[0]?.sourceId,
         "stellar:providencia:reforestation",
       );
+    });
+  });
+
+  it("returns deterministic fallback approved-project answers without GEMINI_API_KEY", async () => {
+    await withAdvisorFallbackEnv(async () => {
+      const response = await postAdvisor(
+        advisorRequest({
+          question: "List active initiatives.",
+          route: {
+            trackSlug: "providencia",
+            initiativeSlug: "reforestation",
+          },
+        }),
+      );
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(body.mode, "deterministic-fallback");
+      assert.match(body.answer, /public approval states are live and funding/i);
+      assert.match(body.answer, /Reforestation/i);
+      assert.match(body.answer, /Forest Corridor Demo/i);
+      assert.equal(body.citations[0]?.sourceId, "ayra:approved-projects");
     });
   });
 
