@@ -38,7 +38,7 @@ function SocialLink({
   return (
     <a
       aria-label={label}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--dark-rule)] text-[var(--public-muted)] transition hover:border-[var(--public-muted)] hover:text-[var(--public-fg)]"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--dark-rule)] text-[var(--public-muted)] transition hover:border-[var(--public-muted)] hover:text-[var(--public-fg)]"
       href={href}
       rel="noopener noreferrer"
       target="_blank"
@@ -50,21 +50,35 @@ function SocialLink({
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-[var(--dark-rule)] px-[var(--pad-page)] py-8 text-sm text-[var(--public-dim)]">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs uppercase tracking-[0.16em]">
-          <Link className="inline-flex min-h-11 items-center transition text-[var(--public-muted)] hover:text-[var(--public-fg)]" href="/privacy">
+    <footer className="border-t border-[var(--dark-rule)] px-[var(--pad-page)] py-7 text-sm text-[var(--public-dim)]">
+      <div className="grid items-center gap-5 md:grid-cols-[1fr_auto_1fr]">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs uppercase tracking-[0.16em] md:justify-start">
+          <Link className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)]" href="/privacy">
             Privacy
           </Link>
           <a
-            className="inline-flex min-h-11 items-center transition text-[var(--public-muted)] hover:text-[var(--public-fg)] normal-case tracking-normal"
+            className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)] normal-case tracking-normal"
             href="mailto:contact@ayra.haus"
           >
             contact@ayra.haus
           </a>
         </div>
 
-        <div className="flex items-center gap-2">
+        <p className="order-first flex items-center justify-center gap-1.5 text-sm tracking-normal text-[var(--public-muted)] md:order-none">
+          <span>By</span>
+          <a
+            className="font-medium transition text-[var(--public-fg)] hover:text-[var(--public-muted)]"
+            href="https://www.ayra.haus"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Ayra
+          </a>
+          <span>with</span>
+          <Heart aria-hidden="true" className="h-3.5 w-3.5 fill-current text-[var(--public-fg)]" />
+        </p>
+
+        <div className="flex items-center justify-center gap-2 md:justify-end">
           <SocialLink href="https://x.com/ayra_haus" label="Twitter">
             <XIcon />
           </SocialLink>
@@ -79,19 +93,6 @@ export function SiteFooter() {
           </SocialLink>
         </div>
       </div>
-
-      <p className="mt-5 text-xs tracking-[0.08em]">
-        By{" "}
-        <a
-          className="inline-flex min-h-11 min-w-11 items-center justify-center transition text-[var(--public-muted)] hover:text-[var(--public-fg)]"
-          href="https://www.ayra.haus"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          Ayra
-        </a>{" "}
-        <Heart aria-hidden="true" className="inline-block h-3 w-3 align-[-0.15em]" />
-      </p>
     </footer>
   );
 }
