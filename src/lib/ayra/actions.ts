@@ -192,7 +192,7 @@ export async function requestMagicLinkAction(formData: FormData) {
   if (!parsed.success) redirectWithStatus("/login", "invalid");
   if (!hasPublicSupabaseEnv()) redirectWithStatus("/login", "supabase-not-configured");
 
-  const next = safeNextPath(parsed.data.next, "/admin");
+  const next = safeNextPath(parsed.data.next, "/login");
   const headerStore = await headers();
   const origin = headerStore.get("origin") ?? "http://localhost:3000";
   const supabase = await createSupabaseServerClient();

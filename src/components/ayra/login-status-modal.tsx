@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { CircleAlert, CircleCheckBig, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -12,7 +12,8 @@ export function LoginStatusModal({ status }: { status?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const loginStatus = getLoginStatus(status);
+  const loginStatus = useMemo(() => getLoginStatus(status), [status]);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -31,20 +32,65 @@ export function LoginStatusModal({ status }: { status?: string }) {
   useEffect(() => {
     if (!loginStatus) return;
 
+    const dialog = dialogRef.current;
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    const getFocusable = () => {
+      if (!dialog) return [];
+      return Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          [
+            "a[href]",
+            "button:not([disabled])",
+            "textarea:not([disabled])",
+            "input:not([disabled])",
+            "select:not([disabled])",
+            '[tabindex]:not([tabindex="-1"])',
+          ].join(","),
+        ),
+      ).filter((element) => element.offsetParent !== null);
+    };
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         dismiss();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusable = getFocusable();
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialog?.focus();
+        return;
+      }
+
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
+    requestAnimationFrame(() => {
+      getFocusable()[0]?.focus();
+    });
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
+      previousFocus?.focus({ preventScroll: true });
     };
   }, [dismiss, loginStatus]);
 
@@ -59,8 +105,10 @@ export function LoginStatusModal({ status }: { status?: string }) {
         aria-labelledby="login-status-title"
         aria-modal="true"
         className="ops-modal"
+        ref={dialogRef}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
+        tabIndex={-1}
       >
         <button
           aria-label="Close sign-in message"

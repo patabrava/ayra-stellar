@@ -1,8 +1,10 @@
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ExternalLink, Leaf } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 
+import { SiteFooter } from "@/components/ayra/site-footer";
 import { AyraLogo, Chip, Hash } from "@/components/ayra/ui";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
@@ -15,6 +17,21 @@ import {
 type PageProps = {
   params: Promise<{ trackSlug: string; initiativeSlug: string }>;
 };
+
+const projectImageBySlug = {
+  reforestation: {
+    alt: "Reforestation crew planting seedlings on Providencia",
+    src: "/mockups/reforest.jpg",
+  },
+  "dog-sterilization": {
+    alt: "Dog sterilization field clinic on Providencia",
+    src: "/mockups/steril.jpg",
+  },
+  reef: {
+    alt: "Reef restoration field work off Providencia",
+    src: "/mockups/reef.jpg",
+  },
+} as const;
 
 function percent(current: number, goal: number) {
   if (goal <= 0) return 0;
@@ -48,6 +65,10 @@ export default async function InitiativePage({ params }: PageProps) {
     project.batches.find((batch) => batch.status === "settled") ??
     project.batches[0];
   const proof = proofBatch ? getProofPack(state, proofBatch.id) : null;
+  const image =
+    projectImageBySlug[
+      project.initiative.slug as keyof typeof projectImageBySlug
+    ] ?? projectImageBySlug.reforestation;
 
   return (
     <main className="public-shell">
@@ -81,7 +102,7 @@ export default async function InitiativePage({ params }: PageProps) {
 
       <section className="px-[var(--pad-page)] py-16 md:py-20">
         <Link
-          className="mb-6 inline-flex items-center gap-2 text-sm text-white/45"
+          className="public-dim mb-6 inline-flex items-center gap-2 text-sm"
           href={`/?track=${project.track.slug}`}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -89,14 +110,13 @@ export default async function InitiativePage({ params }: PageProps) {
         </Link>
         <div className="grid gap-10 lg:grid-cols-[1fr_0.72fr]">
           <div>
-            <div className="viz min-h-[360px] border border-[var(--dark-rule)]" />
-            <div className="mt-8 flex flex-wrap items-start justify-between gap-6">
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-6">
               <div>
                 <div className="place-line">{project.initiative.name}</div>
-                <h1 className="display mt-6 max-w-3xl text-5xl font-medium md:text-7xl">
+                <h1 className="display mt-5 max-w-3xl text-5xl font-medium md:text-6xl">
                   {project.initiative.headline}
                 </h1>
-                <p className="mt-6 max-w-2xl text-lg leading-8 text-white/58">
+                <p className="public-muted mt-5 max-w-2xl text-lg leading-8">
                   {project.initiative.description}
                 </p>
               </div>
@@ -104,14 +124,24 @@ export default async function InitiativePage({ params }: PageProps) {
                 <strong>{project.initiative.leagueScore}</strong> / 99
               </span>
             </div>
+            <div className="project-detail-visual">
+              <Image
+                alt={image.alt}
+                height={1152}
+                priority
+                sizes="(min-width: 1024px) 58vw, 100vw"
+                src={image.src}
+                width={928}
+              />
+            </div>
 
             <div className="mt-10 grid gap-4 md:grid-cols-3">
               <div className="chart-card">
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/65">
+                  <span className="public-muted">
                     {project.initiative.targetMetricLabel}
                   </span>
-                  <span className="mono text-white/45">
+                  <span className="mono public-dim">
                     Goal ·{" "}
                     {project.initiative.targetMetricGoal.toLocaleString("en-US")}
                   </span>
@@ -119,7 +149,7 @@ export default async function InitiativePage({ params }: PageProps) {
                 <div className="bar-track mt-6">
                   <div className="bar-fill" style={widthVar(progress)} />
                 </div>
-                <div className="mt-3 flex justify-between text-sm text-white/50">
+                <div className="public-dim mt-3 flex justify-between text-sm">
                   <span>
                     {project.initiative.targetMetricCurrent.toLocaleString("en-US")} today
                   </span>
@@ -128,24 +158,24 @@ export default async function InitiativePage({ params }: PageProps) {
               </div>
 
               <div className="chart-card">
-                <div className="text-sm text-white/65">Visible batch volume</div>
+                <div className="public-muted text-sm">Visible batch volume</div>
                 <div className="display mt-4 text-4xl font-medium">
                   {formatUsdc(totalSubmitted)}
                 </div>
-                <p className="mt-3 text-sm leading-6 text-white/45">
+                <p className="public-dim mt-3 text-sm leading-6">
                   Submitted and settled batches only. Drafts, failures, and
                   operational exceptions stay internal.
                 </p>
               </div>
 
               <div className="chart-card">
-                <div className="text-sm text-white/65">Public proof rule</div>
+                <div className="public-muted text-sm">Public proof rule</div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Chip tone="info">Category spend</Chip>
                   <Chip tone="ok">Approved updates</Chip>
                   <Chip>Batch receipts</Chip>
                 </div>
-                <p className="mt-4 text-sm leading-6 text-white/45">
+                <p className="public-dim mt-4 text-sm leading-6">
                   Private contacts, raw receipts, and internal reconciliation
                   never appear on this project page.
                 </p>
@@ -158,14 +188,14 @@ export default async function InitiativePage({ params }: PageProps) {
                   className="grid items-center gap-3 text-sm md:grid-cols-[150px_1fr_120px]"
                   key={`${item.batchCode}-${item.category}`}
                 >
-                  <span className="text-white/70">{item.category}</span>
+                  <span className="public-muted">{item.category}</span>
                   <span className="bar-track">
                     <span
                       className="bar-fill block"
                       style={widthVar((item.amountUsdc / maxSpend) * 100)}
                     />
                   </span>
-                  <span className="mono text-white/45">
+                  <span className="mono public-dim">
                     {formatUsdc(item.amountUsdc)}
                   </span>
                 </div>
@@ -176,15 +206,15 @@ export default async function InitiativePage({ params }: PageProps) {
           <aside aria-label="Project updates">
             <div className="mb-4 flex items-end justify-between border-b border-[var(--dark-rule)] pb-3">
               <h2 className="display text-3xl font-medium">Updates</h2>
-              <span className="mono text-xs text-white/35">Latest first</span>
+              <span className="mono public-dim text-xs">Latest first</span>
             </div>
             <div className="space-y-4">
               {project.updates.map((update) => (
                 <article
-                  className="border border-[var(--dark-rule)] bg-white/[0.025] p-5"
+                  className="border border-[var(--dark-rule)] bg-[var(--public-panel)] p-5"
                   key={update.id}
                 >
-                  <div className="mono text-xs uppercase tracking-[0.06em] text-white/35">
+                  <div className="mono public-dim text-xs uppercase">
                     {new Intl.DateTimeFormat("en-US", {
                       month: "short",
                       day: "numeric",
@@ -192,7 +222,7 @@ export default async function InitiativePage({ params }: PageProps) {
                     }).format(new Date(update.publishedAt))}{" "}
                     · {update.milestoneCode}
                   </div>
-                  <p className="mt-4 leading-7 text-white/68">{update.caption}</p>
+                  <p className="public-muted mt-4 leading-7">{update.caption}</p>
                 </article>
               ))}
             </div>
@@ -200,19 +230,19 @@ export default async function InitiativePage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="border-t border-[var(--dark-rule)] bg-black/20 px-[var(--pad-page)] py-16">
+      <section className="border-t border-[var(--dark-rule)] bg-[var(--public-bg-low)] px-[var(--pad-page)] py-16">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="display text-4xl font-medium">
               Receipts · {project.initiative.name}
             </h2>
-            <p className="mt-2 text-white/45">
+            <p className="public-dim mt-2">
               Batch-level proof from canonical records.
             </p>
           </div>
           {proof ? (
             <Link
-              className="btn ghost border-white/20 text-white"
+              className="btn ghost"
               href={`/proof/${proof.batchId}`}
             >
               Open proof <ExternalLink className="h-4 w-4" />
@@ -221,7 +251,7 @@ export default async function InitiativePage({ params }: PageProps) {
         </div>
 
         <div className="overflow-x-auto border border-[var(--dark-rule)]">
-          <table className="t min-w-[720px] text-white">
+          <table className="t min-w-[720px] text-[var(--public-fg)]">
             <thead>
               <tr>
                 <th>Batch</th>
@@ -236,16 +266,16 @@ export default async function InitiativePage({ params }: PageProps) {
                 const batchProof = getProofPack(state, batch.id);
                 return batchProof.receipts.map((receipt) => (
                   <tr key={receipt.id}>
-                    <td className="mono text-white/50">{batch.periodLabel}</td>
+                    <td className="mono public-dim">{batch.periodLabel}</td>
                     <td>{formatUsdc(receipt.amountUsdc)}</td>
                     <td>{receipt.category}</td>
-                    <td className="mono text-white/50">
+                    <td className="mono public-dim">
                       {formatLocal(receipt.localAmount, receipt.localCurrency)}
                     </td>
                     <td>
                       <span className="inline-flex items-center gap-2">
                         <Hash value={receipt.transactionHash ?? receipt.sdpPaymentId} />
-                        <ExternalLink className="h-4 w-4 text-white/35" />
+                        <ExternalLink className="public-dim h-4 w-4" />
                       </span>
                     </td>
                   </tr>
@@ -254,19 +284,20 @@ export default async function InitiativePage({ params }: PageProps) {
             </tbody>
           </table>
         </div>
-        <p className="mt-5 max-w-3xl text-sm leading-6 text-white/42">
+        <p className="public-dim mt-5 max-w-3xl text-sm leading-6">
           Recipient-level names, private receipt files, failed payment details,
           and reconciliation notes remain inside the admin console.
         </p>
       </section>
 
-      <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--dark-rule)] px-[var(--pad-page)] py-8 text-sm text-white/38">
-        <span>AYRA Stellar · public transparency wall</span>
-        <span className="inline-flex items-center gap-2">
-          <Leaf className="h-4 w-4 text-[var(--accent)]" />
-          {project.track.name} · {project.initiative.name}
-        </span>
-      </footer>
+      <SiteFooter
+        detail={
+          <>
+            {project.track.name} · {project.initiative.name}
+          </>
+        }
+        sectionLabel="Project page"
+      />
     </main>
   );
 }

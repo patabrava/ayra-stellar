@@ -133,7 +133,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
                     "AYRA manually verifies and locks the address at first disbursement.",
                   ],
                 ].map(([step, title, body]) => (
-                  <div className="border border-rule bg-white p-4" key={step}>
+                  <div className="border border-rule bg-[var(--ops-surface)] p-4" key={step}>
                     <span className="chip ok">{step}</span>
                     <h2 className="mt-3 font-medium">{title}</h2>
                     <p className="mt-2 text-sm leading-6 text-ink-muted">{body}</p>
@@ -150,7 +150,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
                   first disbursement.
                 </p>
               </div>
-              <form action={submitPayoutAddressAction} className="mt-5 grid gap-3 border border-rule bg-white p-4">
+              <form action={submitPayoutAddressAction} className="mt-5 grid gap-3 border border-rule bg-[var(--ops-surface)] p-4">
                 <input name="initiativeId" type="hidden" value={initiative.id} />
                 <div className="field">
                   <label htmlFor="address">Replacement Stellar address</label>
@@ -374,7 +374,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
                 .filter((batch) => batch.status === "settled")
                 .map((batch) => (
                   <div
-                    className="flex flex-wrap items-center justify-between gap-3 border border-rule bg-white p-3"
+                    className="flex flex-wrap items-center justify-between gap-3 border border-rule bg-[var(--ops-surface)] p-3"
                     key={batch.id}
                   >
                     <div>

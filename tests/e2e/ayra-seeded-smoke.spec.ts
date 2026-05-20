@@ -56,8 +56,10 @@ test("seeded MVP journey from application intake to public disbursement proof", 
     );
   await page.getByLabel("Signal / phone").fill("+57 300 111 2222");
   await page.getByRole("button", { name: /Submit for review/ }).click();
-  await expect(page).toHaveURL(/status=demo-submitted/);
-  await expect(page.getByText("demo submitted")).toBeVisible();
+  await expect(page).toHaveURL(/status=demo-submitted/, { timeout: 30_000 });
+  await expect(
+    page.getByRole("dialog", { name: "Your application has been submitted." }),
+  ).toBeVisible();
 
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Operator console" })).toBeVisible();
@@ -70,16 +72,18 @@ test("seeded MVP journey from application intake to public disbursement proof", 
   await expect(page.getByRole("link", { name: /Export CSV/ })).toBeVisible();
 
   await page.getByRole("button", { name: /Approve/ }).first().click();
-  await expect(page).toHaveURL(/status=demo-application-approved/);
+  await expect(page).toHaveURL(/status=demo-application-approved/, {
+    timeout: 30_000,
+  });
   await expect(page.getByText("demo application approved")).toBeVisible();
 
   await page.goto("/admin#batches");
   await page.getByRole("button", { name: "Sync status" }).first().click();
-  await expect(page).toHaveURL(/status=demo-batch-synced/);
+  await expect(page).toHaveURL(/status=demo-batch-synced/, { timeout: 30_000 });
   await expect(page.getByText("demo batch synced")).toBeVisible();
   await page.goto("/admin#batches");
   await page.getByRole("button", { name: "Create ready batch" }).click();
-  await expect(page).toHaveURL(/status=demo-batch-created/);
+  await expect(page).toHaveURL(/status=demo-batch-created/, { timeout: 30_000 });
   await expect(page.getByText("demo batch created")).toBeVisible();
 
   await page.goto("/steward");

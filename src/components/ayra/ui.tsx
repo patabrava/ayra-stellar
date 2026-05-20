@@ -40,8 +40,8 @@ export function Hash({ value }: { value?: string }) {
 export function StatusBanner({ status }: { status?: string }) {
   if (!status) return null;
   return (
-    <div className="mb-5 border border-rule bg-white px-4 py-3 text-sm text-ink-soft">
-      <span className="mono text-xs uppercase tracking-[0.06em] text-ink-muted">
+    <div className="mb-5 border border-rule bg-[var(--ops-surface)] px-4 py-3 text-sm text-ink-soft">
+      <span className="mono text-xs uppercase text-ink-muted">
         Server action
       </span>{" "}
       {status.replaceAll("-", " ")}

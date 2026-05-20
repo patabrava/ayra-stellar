@@ -12,7 +12,7 @@ type PageProps = {
 
 export default async function LoginPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const next = safeNextPath(params?.next, "/admin");
+  const next = safeNextPath(params?.next, "/login");
 
   return (
     <main className="ops-shell">
@@ -32,8 +32,8 @@ export default async function LoginPage({ searchParams }: PageProps) {
           <div>
             <h1>Sign in to AYRA Stellar.</h1>
             <p className="section-sub">
-              Operator and steward portals use Supabase magic links. Access is
-              resolved from the profile and role records attached to your email.
+              AYRA portals use Supabase magic links. After sign-in, your role
+              records route you to the operator console or steward portal.
             </p>
           </div>
         </section>
@@ -58,8 +58,8 @@ export default async function LoginPage({ searchParams }: PageProps) {
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
               <p className="max-w-md text-sm text-ink-muted">
-                Seeded admin and steward emails claim their existing scoped
-                records after the magic-link callback.
+                Use the email connected to your application or operator role.
+                AYRA will open the portal your account is allowed to use.
               </p>
               <button className="btn primary" type="submit">
                 Send link <Mail className="h-4 w-4" />

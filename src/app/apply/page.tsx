@@ -160,7 +160,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                   "Submitted updates go to moderation. Only approved public records reach the wall.",
                 ],
               ].map(([step, title, body]) => (
-                <div className="border border-rule bg-white p-4" key={step}>
+                <div className="border border-rule bg-[var(--ops-surface)] p-4" key={step}>
                   <span className="chip">{step}</span>
                   <h2 className="mt-3 font-medium">{title}</h2>
                   <p className="mt-2 text-sm leading-6 text-ink-muted">{body}</p>

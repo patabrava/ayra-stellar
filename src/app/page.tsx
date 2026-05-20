@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Leaf } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { AyraLogo } from "@/components/ayra/ui";
+import { SiteFooter } from "@/components/ayra/site-footer";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import { getPublicWallProjection } from "@/lib/ayra/domain";
 
@@ -65,13 +66,13 @@ export default async function Home({ searchParams }: PageProps) {
           <Link className="public-anchor" href="/apply">
             Apply
           </Link>
-          <Link className="public-anchor" href="/admin">
-            Operator
+          <Link className="public-anchor" href="/login">
+            Login
           </Link>
         </div>
       </nav>
 
-      <section id="top" className="px-[var(--pad-page)] py-20 md:py-32">
+      <section id="top" className="px-[var(--pad-page)] py-14 md:py-20">
         <div className="max-w-6xl">
           <div className="place-line">{wall.track.name} · 2026</div>
           <h1 className="hero-title mt-7">
@@ -81,7 +82,7 @@ export default async function Home({ searchParams }: PageProps) {
             <br />
             Funded by AYRA.
           </h1>
-          <p className="mt-8 max-w-2xl text-xl leading-8 text-white/55">
+          <p className="public-muted mt-8 max-w-2xl text-xl leading-8">
             AYRA builds impact zones in places we care about. First zone:
             Providencia, the Caribbean of Colombia where we are bringing the
             island onto tech rails.
@@ -116,7 +117,7 @@ export default async function Home({ searchParams }: PageProps) {
                   src={image.src}
                   width={928}
                 />
-                <span className="mono absolute left-4 top-4 z-10 text-xs text-white/85">
+                <span className="mono absolute left-4 top-4 z-10 text-xs text-[var(--public-fg)]">
                   {String(index + 1).padStart(2, "0")} /{" "}
                   {String(wall.initiatives.length).padStart(2, "0")}
                 </span>
@@ -130,10 +131,10 @@ export default async function Home({ searchParams }: PageProps) {
                     <strong>{initiative.leagueScore}</strong> Score
                   </span>
                 </div>
-                <p className="mt-4 min-h-16 text-sm leading-6 text-white/55">
+                <p className="public-muted mt-4 min-h-16 text-sm leading-6">
                   {initiative.description}
                 </p>
-                <div className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-white/80">
+                <div className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-[var(--public-fg)]">
                   Open project <ArrowRight className="h-4 w-4" />
                 </div>
               </div>
@@ -142,13 +143,10 @@ export default async function Home({ searchParams }: PageProps) {
         })}
       </section>
 
-      <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--dark-rule)] px-[var(--pad-page)] py-8 text-sm text-white/38">
-        <span>AYRA Stellar · public transparency wall</span>
-        <span className="inline-flex items-center gap-2">
-          <Leaf className="h-4 w-4 text-[var(--accent)]" />
-          Project pages hold receipts and proof
-        </span>
-      </footer>
+      <SiteFooter
+        detail="Project pages hold receipts and proof."
+        sectionLabel="Public transparency wall"
+      />
     </main>
   );
 }

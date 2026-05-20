@@ -205,7 +205,7 @@ LLM_FRIENDLY_PLAN_CODE_DEBUG
 END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 
 2) Specific harness rules (Codex)
-- 
+- Vercel deploys must preserve existing domain ownership: keep `ayra.haus`/`www.ayra.haus` on `AYRA LANDING/ayra-epoch-vision`, and deploy this transparency app only to `ayra-transparency`/`transparency.ayra.haus` unless explicitly replacing the landing.
 
 3) Specific repo rules
 - Public landing stays overview-only: hero plus project entry points belong on `/`, while initiative updates, receipts, and proof context belong on `/projects/[trackSlug]/[initiativeSlug]` or `/proof/[batchId]`.

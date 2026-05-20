@@ -1,20 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --background: oklch(13% 0.008 60);
-  --foreground: oklch(95% 0.014 80);
-  --surface: oklch(15% 0.009 60);
-  --surface-2: oklch(97% 0.003 80);
-  --surface-3: oklch(95% 0.004 80);
-  --ink: oklch(18% 0.01 60);
-  --ink-muted: oklch(52% 0.008 60);
-  --ink-soft: oklch(35% 0.01 60);
-  --rule: oklch(86% 0.006 80);
-  --rule-strong: oklch(78% 0.008 80);
-  --dark-rule: oklch(26% 0.012 60);
-  --accent: oklch(72% 0.16 258);
-  --accent-admin: oklch(48% 0.18 258);
-  --accent-soft: oklch(94% 0.04 258);
+  --public-bg: oklch(13% 0.012 84);
+  --public-bg-low: oklch(10% 0.01 84);
+  --public-fg: oklch(94% 0.018 86);
+  --public-muted: oklch(73% 0.026 92);
+  --public-dim: oklch(58% 0.02 92);
+  --public-rule: oklch(29% 0.014 84);
+  --public-panel: oklch(16% 0.014 84);
+  --public-panel-strong: oklch(19% 0.016 84);
+  --public-chip: oklch(20% 0.018 92);
+  --ops-bg: oklch(97% 0.004 86);
+  --ops-surface: oklch(99% 0.003 86);
+  --ops-surface-muted: oklch(94% 0.006 86);
+  --background: var(--public-bg);
+  --foreground: var(--public-fg);
+  --surface: var(--public-panel);
+  --surface-2: var(--ops-bg);
+  --surface-3: var(--ops-surface-muted);
+  --ink: oklch(18% 0.012 84);
+  --ink-muted: oklch(49% 0.014 84);
+  --ink-soft: oklch(34% 0.014 84);
+  --rule: oklch(85% 0.008 86);
+  --rule-strong: oklch(76% 0.01 86);
+  --dark-rule: var(--public-rule);
+  --accent: oklch(74% 0.13 145);
+  --accent-admin: oklch(42% 0.11 160);
+  --accent-soft: oklch(93% 0.04 145);
+  --focus-ring: oklch(69% 0.14 145);
   --ok: oklch(45% 0.14 150);
   --ok-bg: oklch(94% 0.05 150);
   --warn: oklch(55% 0.16 70);
@@ -63,13 +76,18 @@ select {
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--accent) 40%, transparent);
+  background: color-mix(in oklab, var(--accent) 45%, transparent);
   color: var(--foreground);
+}
+
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
 }
 
 .display {
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.038em;
+  letter-spacing: 0;
   line-height: 0.96;
 }
 
@@ -80,9 +98,8 @@ select {
 .public-shell {
   min-height: 100vh;
   background:
-    radial-gradient(120% 80% at 50% 0%, oklch(20% 0.02 60 / 0.55), transparent 70%),
-    radial-gradient(120% 80% at 50% 100%, oklch(8% 0.01 60 / 0.6), transparent 70%),
-    var(--background);
+    linear-gradient(180deg, var(--public-bg) 0%, var(--public-bg-low) 58%, var(--public-bg) 100%),
+    var(--public-bg);
   color: var(--foreground);
 }
 
@@ -95,9 +112,8 @@ select {
   align-items: center;
   gap: 16px;
   padding: 18px var(--pad-page);
-  background: color-mix(in oklab, var(--background) 70%, transparent);
+  background: color-mix(in oklab, var(--public-bg) 94%, black);
   border-bottom: 1px solid color-mix(in oklab, var(--dark-rule) 65%, transparent);
-  backdrop-filter: blur(14px) saturate(120%);
 }
 
 .wordmark {
@@ -107,7 +123,7 @@ select {
   font-family: var(--font-display), ui-sans-serif;
   font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 .ayra-logo {
@@ -128,52 +144,56 @@ select {
   font-family: var(--font-display), ui-sans-serif;
   font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 .public-anchor {
   border: 1px solid var(--dark-rule);
-  border-radius: 999px;
-  color: oklch(78% 0.014 70);
+  border-radius: 4px;
+  color: var(--public-muted);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 14px;
   font-weight: 500;
-  padding: 8px 14px;
-  transition: border-color 150ms, color 150ms;
+  padding: 9px 14px;
+  transition: background 150ms, border-color 150ms, color 150ms;
 }
 
 .public-anchor:hover {
-  border-color: oklch(58% 0.012 60);
+  background: var(--public-chip);
+  border-color: color-mix(in oklab, var(--public-rule) 50%, var(--public-muted));
   color: var(--foreground);
 }
 
 .public-anchor.active {
-  background: oklch(82% 0.12 145);
-  border-color: oklch(82% 0.12 145);
-  color: oklch(12% 0.012 80);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: oklch(13% 0.015 100);
 }
 
 .hero-title {
   font-family: var(--font-display), ui-sans-serif;
-  font-size: clamp(44px, 6.4vw + 8px, 112px);
+  font-size: 3.75rem;
   font-weight: 500;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   line-height: 0.96;
   text-wrap: balance;
 }
 
 .place-line {
   align-items: center;
-  color: oklch(58% 0.012 60);
+  color: var(--public-dim);
   display: inline-flex;
-  font-size: clamp(13px, 0.3vw + 12px, 15px);
+  font-size: 14px;
   font-weight: 500;
   gap: 12px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .place-line::before {
-  background: oklch(42% 0.01 60);
+  background: var(--public-rule);
   content: "";
   height: 1px;
   width: 28px;
@@ -182,36 +202,40 @@ select {
 .initiative-tile {
   border: 1px solid var(--dark-rule);
   border-radius: 2px;
-  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  background: var(--public-panel);
   min-height: 420px;
   overflow: hidden;
   transition: border-color 180ms, transform 180ms, background 180ms;
 }
 
 .initiative-tile:hover {
-  background: color-mix(in oklab, var(--surface) 96%, transparent);
-  border-color: oklch(34% 0.015 60);
+  background: var(--public-panel-strong);
+  border-color: color-mix(in oklab, var(--public-rule) 45%, var(--accent));
   transform: translateY(-2px);
 }
 
 .viz {
   background:
-    linear-gradient(135deg, oklch(70% 0.1 145 / 0.9), oklch(38% 0.1 145 / 0.9)),
-    radial-gradient(circle at 20% 20%, oklch(95% 0.014 80 / 0.25), transparent 35%);
+    linear-gradient(90deg, color-mix(in oklab, var(--accent) 72%, black) 0 1px, transparent 1px 100%),
+    linear-gradient(0deg, color-mix(in oklab, var(--accent) 36%, transparent) 0 1px, transparent 1px 100%),
+    var(--public-chip);
+  background-size: 18px 18px;
   min-height: 230px;
   position: relative;
 }
 
 .viz-alt {
   background:
-    linear-gradient(135deg, oklch(70% 0.08 50 / 0.9), oklch(38% 0.08 50 / 0.9)),
-    radial-gradient(circle at 20% 20%, oklch(95% 0.014 80 / 0.25), transparent 35%);
+    linear-gradient(90deg, color-mix(in oklab, var(--warn) 70%, black) 0 1px, transparent 1px 100%),
+    linear-gradient(0deg, color-mix(in oklab, var(--warn) 36%, transparent) 0 1px, transparent 1px 100%),
+    var(--public-chip);
 }
 
 .viz-reef {
   background:
-    linear-gradient(135deg, oklch(70% 0.08 220 / 0.9), oklch(38% 0.08 220 / 0.9)),
-    radial-gradient(circle at 20% 20%, oklch(95% 0.014 80 / 0.25), transparent 35%);
+    linear-gradient(90deg, color-mix(in oklab, oklch(66% 0.08 205) 70%, black) 0 1px, transparent 1px 100%),
+    linear-gradient(0deg, color-mix(in oklab, oklch(66% 0.08 205) 36%, transparent) 0 1px, transparent 1px 100%),
+    var(--public-chip);
 }
 
 .project-visual {
@@ -224,8 +248,8 @@ select {
 .project-visual::after {
   background: linear-gradient(
     180deg,
-    oklch(8% 0.01 60 / 0.08) 0%,
-    oklch(8% 0.01 60 / 0.58) 100%
+    oklch(8% 0.01 84 / 0.02) 0%,
+    oklch(8% 0.01 84 / 0.58) 100%
   );
   content: "";
   inset: 0;
@@ -235,18 +259,37 @@ select {
 }
 
 .project-visual-image {
-  filter: saturate(0.94) contrast(1.03) brightness(0.92);
   height: 100%;
   object-fit: cover;
-  transition:
-    filter 180ms,
-    transform 240ms;
+  opacity: 0.94;
+  transition: opacity 180ms, transform 240ms;
   width: 100%;
 }
 
 .initiative-tile:hover .project-visual-image {
-  filter: saturate(1) contrast(1.05) brightness(0.98);
+  opacity: 1;
   transform: scale(1.025);
+}
+
+.project-detail-visual {
+  aspect-ratio: 16 / 11;
+  border: 1px solid var(--dark-rule);
+  overflow: hidden;
+  position: relative;
+}
+
+.project-detail-visual::after {
+  background: linear-gradient(180deg, transparent 55%, oklch(8% 0.01 84 / 0.42));
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.project-detail-visual img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 .score {
@@ -270,13 +313,13 @@ select {
 
 .chart-card {
   border: 1px solid var(--dark-rule);
-  background: color-mix(in oklab, var(--surface) 86%, transparent);
+  background: var(--public-panel);
   border-radius: 2px;
   padding: 18px;
 }
 
 .bar-track {
-  background: oklch(22% 0.012 60);
+  background: var(--public-chip);
   height: 8px;
   position: relative;
 }
@@ -299,7 +342,7 @@ select {
   top: 0;
   z-index: 30;
   align-items: center;
-  background: oklch(99% 0.002 80);
+  background: var(--ops-surface);
   border-bottom: 1px solid var(--rule);
   display: flex;
   gap: 18px;
@@ -314,7 +357,7 @@ select {
   font-size: 16px;
   font-weight: 600;
   gap: 6px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .ops-brand span {
@@ -333,7 +376,7 @@ select {
   font-size: 11px;
   font-weight: 700;
   gap: 6px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   padding: 2px 8px;
   text-transform: uppercase;
 }
@@ -380,7 +423,7 @@ select {
   position: sticky;
   top: 56px;
   z-index: 25;
-  background: oklch(99% 0.002 80);
+  background: var(--ops-surface);
   border-bottom: 1px solid var(--rule);
   display: flex;
   overflow-x: auto;
@@ -393,6 +436,7 @@ select {
   flex: 0 0 auto;
   font-size: 13px;
   font-weight: 500;
+  min-height: 44px;
   padding: 12px 16px;
 }
 
@@ -424,9 +468,9 @@ select {
 .section-head h1,
 .section-head h2 {
   font-family: var(--font-display), ui-sans-serif;
-  font-size: clamp(24px, 1.6vw + 14px, 32px);
+  font-size: 28px;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   margin: 0;
 }
 
@@ -438,7 +482,7 @@ select {
 }
 
 .panel {
-  background: oklch(99% 0.002 80);
+  background: var(--ops-surface);
   border: 1px solid var(--rule);
   border-radius: 2px;
 }
@@ -455,7 +499,7 @@ select {
   font-family: var(--font-display), ui-sans-serif;
   font-size: 15px;
   font-weight: 500;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 .panel-body {
@@ -469,7 +513,7 @@ select {
 }
 
 .stat {
-  background: oklch(99% 0.002 80);
+  background: var(--ops-surface);
   border: 1px solid var(--rule);
   border-radius: 2px;
   padding: 18px 20px;
@@ -480,7 +524,7 @@ select {
   font-family: var(--font-mono), ui-monospace;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -489,7 +533,7 @@ select {
   font-family: var(--font-display), ui-sans-serif;
   font-size: 30px;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   margin-top: 6px;
 }
 
@@ -502,7 +546,7 @@ select {
 
 .btn {
   align-items: center;
-  background: oklch(99% 0.002 80);
+  background: var(--ops-surface);
   border: 1px solid var(--rule-strong);
   border-radius: 2px;
   color: var(--ink);
@@ -510,7 +554,9 @@ select {
   font-size: 13px;
   font-weight: 500;
   gap: 6px;
-  padding: 7px 12px;
+  justify-content: center;
+  min-height: 44px;
+  padding: 9px 14px;
   transition: background 150ms, border-color 150ms;
 }
 
@@ -522,7 +568,7 @@ select {
 .btn.primary {
   background: var(--accent-admin);
   border-color: var(--accent-admin);
-  color: white;
+  color: var(--ops-surface);
 }
 
 .btn.danger {
@@ -535,6 +581,19 @@ select {
   color: var(--ink-soft);
 }
 
+.public-shell .btn,
+.public-proof .btn {
+  background: transparent;
+  border-color: var(--public-rule);
+  color: var(--public-fg);
+}
+
+.public-shell .btn:hover,
+.public-proof .btn:hover {
+  background: var(--public-chip);
+  border-color: color-mix(in oklab, var(--public-rule) 45%, var(--accent));
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -544,14 +603,14 @@ select {
   color: var(--ink-muted);
   font-family: var(--font-mono), ui-monospace;
   font-size: 11px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .field input,
 .field textarea,
 .field select {
-  background: oklch(99% 0.002 80);
+  background: var(--ops-surface);
   border: 1px solid var(--rule-strong);
   border-radius: 2px;
   color: var(--ink);
@@ -564,7 +623,7 @@ select {
 .field select:focus {
   border-color: var(--accent-admin);
   box-shadow: 0 0 0 3px var(--accent-soft);
-  outline: 0;
+  outline: 2px solid transparent;
 }
 
 .t {
@@ -584,7 +643,7 @@ select {
   color: var(--ink-muted);
   font-family: var(--font-mono), ui-monospace;
   font-size: 11px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -609,7 +668,15 @@ select {
   font-size: 12px;
   gap: 8px;
   max-width: 100%;
+  overflow-wrap: anywhere;
   padding: 3px 6px;
+}
+
+.public-shell .hashish,
+.public-proof .hashish {
+  background: var(--public-chip);
+  border-color: var(--public-rule);
+  color: var(--public-muted);
 }
 
 .grid-2 {
@@ -631,15 +698,14 @@ select {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: color-mix(in oklab, var(--ink) 26%, transparent);
-  backdrop-filter: blur(8px);
+  background: color-mix(in oklab, var(--ink) 42%, transparent);
 }
 
 .ops-modal {
   position: relative;
   width: min(100%, 520px);
   border: 1px solid var(--rule);
-  background: oklch(99% 0.002 80);
+  background: var(--ops-surface);
   box-shadow: 0 24px 80px oklch(10% 0.02 60 / 0.18);
   padding: 24px;
 }
@@ -654,7 +720,9 @@ select {
   border: 1px solid transparent;
   background: transparent;
   color: var(--ink-muted);
+  height: 44px;
   padding: 6px;
+  width: 44px;
 }
 
 .ops-modal-close:hover {
@@ -689,6 +757,29 @@ select {
   color: var(--err);
 }
 
+.stat-invert {
+  background: color-mix(in oklab, var(--public-fg) 7%, transparent);
+  color: var(--public-fg);
+}
+
+.stat-invert .stat-k,
+.stat-invert .stat-d,
+.stat-invert small {
+  color: var(--public-muted);
+}
+
+.stat-invert .stat-v {
+  color: var(--public-fg);
+}
+
+.public-muted {
+  color: var(--public-muted);
+}
+
+.public-dim {
+  color: var(--public-dim);
+}
+
 @media (max-width: 900px) {
   .grid-2,
   .grid-3 {
@@ -702,5 +793,42 @@ select {
 
   .public-nav {
     grid-template-columns: 1fr;
+  }
+
+  .public-nav > div {
+    justify-content: start;
+  }
+
+  .ops-nav {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-block: 10px;
+  }
+
+  .ops-pill {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero-title {
+    font-size: 6rem;
+  }
+
+  .section-head h1,
+  .section-head h2 {
+    font-size: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
   }
 }

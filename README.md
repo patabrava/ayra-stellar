@@ -90,7 +90,8 @@ npm run dev
 ```
 
 Open the local URL printed by Next.js. By default it is
-`http://localhost:3000`.
+`http://localhost:3000`, but if that port is already in use Next.js may
+choose another local port such as `http://localhost:3201`.
 
 ## 4. What to test
 

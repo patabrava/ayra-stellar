@@ -51,6 +51,40 @@ export function hasStewardPortalAccess(context: RoleContext) {
   );
 }
 
+export function resolveRoleHomePath(
+  context: RoleContext,
+  requestedNext?: string,
+) {
+  const canUseStewardPortal = hasStewardPortalAccess(context);
+  const fallback = context.isAdmin
+    ? "/admin"
+    : canUseStewardPortal
+      ? "/steward"
+      : "/login?status=scope-required";
+
+  if (requestedNext === "/admin") {
+    return context.isAdmin ? requestedNext : fallback;
+  }
+
+  if (requestedNext?.startsWith("/admin/")) {
+    return context.isAdmin ? requestedNext : fallback;
+  }
+
+  if (requestedNext === "/steward") {
+    return canUseStewardPortal ? requestedNext : fallback;
+  }
+
+  if (requestedNext?.startsWith("/steward/")) {
+    return canUseStewardPortal ? requestedNext : fallback;
+  }
+
+  if (requestedNext && requestedNext !== "/login") {
+    return requestedNext;
+  }
+
+  return fallback;
+}
+
 export function resolveEmailOtpType(value?: string | null) {
   if (value === "recovery" || value === "invite" || value === "email_change") {
     return value;

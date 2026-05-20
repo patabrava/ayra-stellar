@@ -6,6 +6,7 @@ import {
   requireAdminRole,
   resolveRoleContext,
   resolveEmailOtpType,
+  resolveRoleHomePath,
 } from "../src/lib/ayra/auth";
 import type { Grantee, Milestone, Profile, UserRole } from "../src/lib/ayra/domain";
 
@@ -72,5 +73,30 @@ describe("AYRA auth role resolution", () => {
     assert.equal(resolveEmailOtpType("email"), "email");
     assert.equal(resolveEmailOtpType("recovery"), "recovery");
     assert.equal(resolveEmailOtpType("invite"), "invite");
+  });
+
+  it("routes admins and stewards to the correct portal after sign-in", () => {
+    const adminContext = resolveRoleContext({
+      profile,
+      roles: [{ id: "role-admin", profileId: profile.id, role: "admin" }],
+      grantees: [],
+    });
+    const stewardContext = resolveRoleContext({
+      profile,
+      roles: [
+        {
+          id: "role-steward",
+          profileId: profile.id,
+          role: "steward",
+          initiativeId: "initiative-1",
+        },
+      ],
+      grantees: [],
+    });
+
+    assert.equal(resolveRoleHomePath(adminContext), "/admin");
+    assert.equal(resolveRoleHomePath(stewardContext), "/steward");
+    assert.equal(resolveRoleHomePath(stewardContext, "/admin"), "/steward");
+    assert.equal(resolveRoleHomePath(adminContext, "/steward"), "/admin");
   });
 });

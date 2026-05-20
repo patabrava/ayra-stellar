@@ -137,7 +137,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
               <div className="panel-body grid gap-3">
                 {state.initiatives.map((initiative) => (
                   <a
-                    className="grid gap-3 border border-rule bg-white p-4 md:grid-cols-[70px_1fr_auto]"
+                    className="grid gap-3 border border-rule bg-[var(--ops-surface)] p-4 md:grid-cols-[70px_1fr_auto]"
                     href="#registry"
                     key={initiative.id}
                   >
