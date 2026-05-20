@@ -1,5 +1,6 @@
 insert into public.profiles (id, email, display_name) values
   ('00000000-0000-0000-0000-000000000001', 'caposk817@gmail.com', 'Nicolas Alvarez'),
+  ('00000000-0000-0000-0000-00000000cfe1', 'cfeix@web.de', 'Cfeix'),
   ('00000000-0000-0000-0000-000000000002', 'leidy@ecoparque.co', 'Leidy Mendoza'),
   ('00000000-0000-0000-0000-000000000003', 'applicant@example.org', 'Prospective steward'),
   ('00000000-0000-0000-0000-000000000004', 'nicolas.weber@nos.studio', 'Nicolas Weber')
@@ -71,6 +72,7 @@ on conflict (code) do nothing;
 
 insert into public.user_roles (profile_id, role, initiative_id, grantee_id) values
   ('00000000-0000-0000-0000-000000000001', 'admin', null, null),
+  ('00000000-0000-0000-0000-00000000cfe1', 'admin', null, null),
   ('00000000-0000-0000-0000-000000000004', 'admin', null, null),
   ('00000000-0000-0000-0000-000000000002', 'steward', '30000000-0000-0000-0000-000000000001', null)
 on conflict do nothing;
