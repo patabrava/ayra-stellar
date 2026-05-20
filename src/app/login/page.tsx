@@ -22,7 +22,6 @@ export default async function LoginPage({ searchParams }: PageProps) {
           <AyraLogo />
           <span>/</span>login
         </Link>
-        <span className="ops-pill">Magic-link access</span>
         <Link className="btn ghost ml-auto" href="/">
           <ArrowLeft className="h-4 w-4" /> Wall
         </Link>
