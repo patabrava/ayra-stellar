@@ -229,6 +229,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Gemini Developer API REST structured output must use `generationConfig.responseMimeType` plus `responseSchema`; `responseFormat.text.mimeType` can 400 even when SDK examples show it.
 - Gemini Developer API `responseSchema` rejects unsupported JSON Schema fields such as `additionalProperties`; keep schemas to the accepted subset and validate extra fields locally with Zod.
 - Seeded operator email changes must be applied to live `profiles` plus `user_roles`; a successful magic-link session still redirects with `admin-required` when the authenticated profile only has `applicant`.
+- Live steward-access repairs must include the scoped `user_roles` row plus adjacent `steward_profiles`/grantee-contact records; an auth-linked profile with only `applicant` will keep redirecting to `/login?status=scope-required`.
 - Steward portal pages must render an empty payout state for scoped initiatives with no submitted/settled batches; never dereference `currentBatch` before a batch exists.
 - Steward portal copy and banners must distinguish first-time payout-address setup from later replacements, and the post-submit state must name pending AYRA verification.
 - Status-driven modal components must SSR the dialog on first paint and only portal after client mount; returning `null` until hydration hides server-action feedback.

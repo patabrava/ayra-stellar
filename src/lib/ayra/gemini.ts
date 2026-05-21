@@ -8,6 +8,7 @@ import {
 } from "@/lib/ayra/advisor";
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export function hasGeminiEnv() {
   return Boolean(process.env.GEMINI_API_KEY?.trim());
@@ -23,31 +24,21 @@ export async function generateGeminiAdvisorAnswer(
     throw new Error("GEMINI_API_KEY is not configured.");
   }
 
+  const prompt = buildAdvisorPrompt(question, sources, history);
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`,
+    geminiEndpoint(GEMINI_MODEL),
     {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "x-goog-api-key": apiKey,
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: buildAdvisorPrompt(question, sources, history),
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: ADVISOR_RESPONSE_JSON_SCHEMA,
-          temperature: 0.2,
-        },
-      }),
+      body: JSON.stringify(
+        buildGeminiRequestBody(
+          "Answer with JSON that matches the configured schema.",
+          prompt,
+        ),
+      ),
     },
   );
 
@@ -72,7 +63,30 @@ type GeminiGenerateContentResponse = {
   }>;
 };
 
-function extractGeminiText(response: GeminiGenerateContentResponse) {
+export function geminiEndpoint(model: string) {
+  return `${GEMINI_API_BASE}/${encodeURIComponent(model)}:generateContent`;
+}
+
+export function buildGeminiRequestBody(system: string, prompt: string) {
+  return {
+    systemInstruction: {
+      parts: [{ text: system }],
+    },
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: prompt }],
+      },
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: ADVISOR_RESPONSE_JSON_SCHEMA,
+      temperature: 0.2,
+    },
+  };
+}
+
+export function extractGeminiText(response: GeminiGenerateContentResponse) {
   for (const candidate of response.candidates ?? []) {
     for (const part of candidate.content?.parts ?? []) {
       if (typeof part.text === "string" && part.text.trim()) {
