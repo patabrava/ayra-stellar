@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 
+import fs from "node:fs";
+
+loadDotEnv();
+
 const required = [
   "STELLAR_SDP_BASE_URL",
   "STELLAR_SDP_CREATE_AUTHORIZATION",
   "STELLAR_SDP_ASSET_ID",
   "STELLAR_SDP_TEST_WALLET_ADDRESS",
+  "STELLAR_USDC_ISSUER",
 ];
 
 if (process.env.AYRA_SDP_MODE !== "testnet") {
@@ -23,6 +28,8 @@ const config = {
     process.env.STELLAR_SDP_CREATE_AUTHORIZATION,
   tenantName: process.env.STELLAR_SDP_TENANT_NAME || "",
   assetId: process.env.STELLAR_SDP_ASSET_ID,
+  horizonUrl: (process.env.STELLAR_HORIZON_URL || "https://horizon-testnet.stellar.org").replace(/\/+$/, ""),
+  usdcIssuer: process.env.STELLAR_USDC_ISSUER,
   registrationContactType:
     process.env.STELLAR_SDP_REGISTRATION_CONTACT_TYPE ||
     "EMAIL_AND_WALLET_ADDRESS",
@@ -49,12 +56,13 @@ const disbursement = await createDisbursement(batchCode);
 await uploadInstructions(disbursement.id, batchCode);
 await startDisbursement(disbursement.id);
 const payments = await pollPayments(paymentExternalId);
+const verifiedPayments = await verifyPayments(payments);
 
-const mappedPaymentIds = payments.map((payment) => payment.id).filter(Boolean);
-const transactionIds = payments
+const mappedPaymentIds = verifiedPayments.map((payment) => payment.id).filter(Boolean);
+const transactionIds = verifiedPayments
   .map((payment) => payment.stellar_transaction_id)
   .filter(Boolean);
-const hasSuccess = payments.some((payment) => payment.status === "SUCCESS");
+const hasSuccess = verifiedPayments.some((payment) => payment.status === "SUCCESS");
 
 console.log(
   JSON.stringify(
@@ -63,6 +71,8 @@ console.log(
       sdpDisbursementId: disbursement.id,
       mappedSdpPaymentIds: mappedPaymentIds,
       mappedTransactionIds: transactionIds,
+      verifiedAsset: transactionIds.length > 0 ? "USDC" : null,
+      verifiedIssuer: transactionIds.length > 0 ? config.usdcIssuer : null,
       finalAyraStatusMapping: hasSuccess ? "settled" : "submitted",
     },
     null,
@@ -120,8 +130,7 @@ async function pollPayments(externalPaymentId) {
     const payments = extractPayments(response).filter(
       (payment) =>
         payment.external_payment_id === externalPaymentId ||
-        payment.id === externalPaymentId ||
-        payment.id,
+        payment.id === externalPaymentId,
     );
     if (
       payments.some((payment) => payment.stellar_transaction_id) ||
@@ -132,6 +141,48 @@ async function pollPayments(externalPaymentId) {
     await delay(config.delayMs);
   }
   return [];
+}
+
+async function verifyPayments(payments) {
+  const verified = [];
+  for (const payment of payments) {
+    if (!payment.stellar_transaction_id) continue;
+    const proof = await inspectTransaction(payment.stellar_transaction_id);
+    const valid =
+      proof.assetCode === "USDC" &&
+      proof.assetIssuer === config.usdcIssuer &&
+      proof.destination === config.walletAddress &&
+      decimalToStroops(String(proof.amount)) === decimalToStroops(String(config.amount));
+    if (!valid) {
+      fail(`Transaction ${payment.stellar_transaction_id} is not verified USDC.`);
+    }
+    verified.push(payment);
+  }
+  return verified.length > 0 ? verified : payments.filter((payment) => !payment.stellar_transaction_id);
+}
+
+async function inspectTransaction(hash) {
+  const response = await fetch(`${config.horizonUrl}/transactions/${hash}/operations`);
+  if (!response.ok) {
+    fail(`Horizon lookup for ${hash} failed with HTTP ${response.status}.`);
+  }
+  const json = await response.json();
+  const payment = (json._embedded?.records || []).find(
+    (record) => record.type === "payment" && record.transaction_successful === true,
+  );
+  const isCreditAsset =
+    payment?.asset_type === "credit_alphanum4" ||
+    payment?.asset_type === "credit_alphanum12";
+  return {
+    assetCode: isCreditAsset
+      ? payment?.asset_code || null
+      : payment?.asset_type === "native"
+        ? "XLM"
+        : null,
+    assetIssuer: isCreditAsset ? payment?.asset_issuer || null : null,
+    amount: payment?.amount || null,
+    destination: payment?.to || null,
+  };
 }
 
 async function sdpFetch(path, init) {
@@ -183,6 +234,24 @@ function csv(value) {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function decimalToStroops(value) {
+  const match = /^(\d+)(?:\.(\d{1,7}))?$/.exec(value);
+  if (!match) return null;
+  return BigInt(match[1]) * 10_000_000n + BigInt((match[2] || "").padEnd(7, "0"));
+}
+
+function loadDotEnv() {
+  const dotenvPath = fs.existsSync(".env.local") ? ".env.local" : ".env";
+  if (!fs.existsSync(dotenvPath)) return;
+  for (const line of fs.readFileSync(dotenvPath, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(trimmed);
+    if (!match || process.env[match[1]]) continue;
+    process.env[match[1]] = match[2].replace(/^['"]|['"]$/g, "");
+  }
 }
 
 function fail(message) {

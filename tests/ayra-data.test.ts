@@ -108,8 +108,48 @@ const publicRows = {
       local_amount: 18798000,
       local_currency: "COP",
       line_item_status: "submitted",
-      sdp_payment_id: "mock-payment-1",
       transaction_hash: null,
+      payment_asset_code: null,
+      payment_asset_issuer: null,
+      payment_asset_amount: null,
+    },
+    {
+      line_item_id: "line-2",
+      batch_id: "batch-1",
+      batch_code: "PV-REFOREST-APR26",
+      period_label: "April 2026",
+      batch_status: "submitted",
+      initiative_name: "Reforestation",
+      sponsor_name: "Climate Future",
+      category: "Seedlings",
+      amount_usdc: 1,
+      local_amount: 3900,
+      local_currency: "COP",
+      line_item_status: "settled",
+      transaction_hash:
+        "9b02f2db43af6a56907b92c1e74d95db1b243524b57430a5d1a579285d6c6ac6",
+      payment_asset_code: "USDC",
+      payment_asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      payment_asset_amount: 1,
+    },
+    {
+      line_item_id: "line-xlm",
+      batch_id: "batch-1",
+      batch_code: "PV-REFOREST-APR26",
+      period_label: "April 2026",
+      batch_status: "submitted",
+      initiative_name: "Reforestation",
+      sponsor_name: "Climate Future",
+      category: "Crew wages",
+      amount_usdc: 1,
+      local_amount: 3900,
+      local_currency: "COP",
+      line_item_status: "settled",
+      transaction_hash:
+        "4ee20870c7d17a13234d36a1c8d9f285a68defa3a8ec4172de1ad58f7acc8783",
+      payment_asset_code: null,
+      payment_asset_issuer: null,
+      payment_asset_amount: null,
     },
   ],
 };
@@ -125,9 +165,23 @@ describe("AYRA Supabase row mapping", () => {
       wall.updates.map((update) => update.caption),
       ["Public planting update."],
     );
-    assert.equal(wall.spending[0]?.category, "Crew wages");
+    assert.equal(wall.spending[0]?.category, "Seedlings");
+    assert.equal(wall.spending[0]?.amountUsdc, 1);
+    assert.equal(wall.batches[0]?.amountUsdc, 1);
     assert.equal(wall.batches[0]?.publicLabel, "In flight");
-    assert.equal(proof.receipts[0]?.id, "line-1");
+    assert.equal(proof.receipts.length, 1);
+    assert.equal(proof.receipts[0]?.id, "line-2");
+    assert.equal(
+      proof.receipts[0]?.transactionHash,
+      "9b02f2db43af6a56907b92c1e74d95db1b243524b57430a5d1a579285d6c6ac6",
+    );
+    assert.equal(proof.receipts[0]?.assetCode, "USDC");
+    assert.equal(
+      proof.receipts[0]?.assetIssuer,
+      "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+    );
+    assert.ok(!JSON.stringify(wall).includes("mock-payment-1"));
+    assert.ok(!JSON.stringify(wall).includes("payment-xlm-1"));
     assert.ok(!JSON.stringify(wall).includes("profile-private"));
   });
 

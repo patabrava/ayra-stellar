@@ -81,6 +81,8 @@ export STELLAR_SDP_START_AUTHORIZATION='SDP_<start-api-token-or-same-if-allowed>
 export STELLAR_SDP_TENANT_NAME=default
 export STELLAR_SDP_ASSET_ID='<testnet-asset-id-from-sdp>'
 export STELLAR_SDP_REGISTRATION_CONTACT_TYPE=EMAIL_AND_WALLET_ADDRESS
+export STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
+export STELLAR_USDC_ISSUER=GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
 export STELLAR_SDP_TEST_RECEIVER_EMAIL=ayra-sdp-smoke@example.org
 export STELLAR_SDP_TEST_WALLET_ADDRESS='<receiver-stellar-public-key>'
 export STELLAR_SDP_TEST_WALLET_ADDRESS_MEMO=''
@@ -88,6 +90,13 @@ export STELLAR_SDP_TEST_AMOUNT_USDC=1
 export STELLAR_SDP_SYNC_ATTEMPTS=12
 export STELLAR_SDP_SYNC_DELAY_MS=10000
 ```
+
+AYRA treats `STELLAR_SDP_ASSET_ID` as the SDP-side asset UUID and
+`STELLAR_USDC_ISSUER` as the on-chain issuer check. A line item is not public
+proof until Horizon confirms the stored transaction hash is a USDC payment from
+that issuer for the exact `amount_usdc`. Native XLM transactions are never
+public payout receipts; XLM is only expected for network fees and account
+reserve behavior.
 
 ## Verify
 
@@ -124,7 +133,7 @@ is performed by admin server actions:
 the disbursement, stores `stellar-sdp` sync events, and maps SDP payment ids to
 AYRA batch line items.
 - `syncBatchStatusAction` reads SDP payments and persists transaction hashes when
-available.
+available only after Horizon verifies each hash as a matching USDC payment.
 
 Acceptance for a fully connected environment is:
 
@@ -132,8 +141,9 @@ Acceptance for a fully connected environment is:
 2. Admin submits the batch with `AYRA_SDP_MODE=testnet`.
 3. `sdp_sync_events.provider` contains `stellar-sdp` rows.
 4. `batch_line_items.sdp_payment_id` is populated.
-5. After sync, settled line items have `transaction_hash`.
-6. Public proof pages show category-level receipts only.
+5. After sync, settled line items have `transaction_hash`,
+   `payment_asset_code`, `payment_asset_issuer`, and `payment_asset_amount`.
+6. Public proof pages show verified category-level USDC receipts only.
 
 ## Hosted Hostinger Testnet Instance
 
@@ -180,6 +190,8 @@ AYRA_SDP_MODE=testnet
 STELLAR_SDP_BASE_URL=https://sdp-api.ayra.haus
 STELLAR_SDP_TENANT_NAME=default
 STELLAR_SDP_REGISTRATION_CONTACT_TYPE=EMAIL_AND_WALLET_ADDRESS
+STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
+STELLAR_USDC_ISSUER=GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
 STELLAR_SDP_SYNC_ATTEMPTS=12
 STELLAR_SDP_SYNC_DELAY_MS=10000
 ```
@@ -187,6 +199,18 @@ STELLAR_SDP_SYNC_DELAY_MS=10000
 `STELLAR_SDP_CREATE_AUTHORIZATION`, `STELLAR_SDP_START_AUTHORIZATION`, and
 `STELLAR_SDP_ASSET_ID` are production secrets and must live only in Vercel or
 the operator secret store.
+
+Run existing-data cleanup after the migration and before considering public
+proof complete:
+
+```bash
+DRY_RUN=1 npm run backfill:usdc-proof-metadata
+DRY_RUN=0 npm run backfill:usdc-proof-metadata
+```
+
+The dry run should report any native XLM hashes as invalid. The real run
+backfills verified USDC metadata and clears non-USDC hashes from public proof
+eligibility.
 
 ## Failure Signals
 

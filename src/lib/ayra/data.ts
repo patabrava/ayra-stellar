@@ -158,8 +158,10 @@ type ReceiptRow = {
   local_amount: number | string;
   local_currency: string;
   line_item_status: string | null;
-  sdp_payment_id: string | null;
   transaction_hash: string | null;
+  payment_asset_code: string | null;
+  payment_asset_issuer: string | null;
+  payment_asset_amount: number | string | null;
 };
 
 type ProfileRow = {
@@ -238,6 +240,9 @@ type LineItemRow = {
   status: string;
   sdp_payment_id: string | null;
   transaction_hash: string | null;
+  payment_asset_code: string | null;
+  payment_asset_issuer: string | null;
+  payment_asset_amount: number | string | null;
   private_recipient_name: string | null;
 };
 
@@ -392,7 +397,7 @@ async function loadPublicAyraStateFromClient(
     supabase
       .from("public_batch_receipts")
       .select(
-        "line_item_id,batch_id,batch_code,period_label,batch_status,initiative_name,sponsor_name,category,amount_usdc,local_amount,local_currency,line_item_status,sdp_payment_id,transaction_hash",
+        "line_item_id,batch_id,batch_code,period_label,batch_status,initiative_name,sponsor_name,category,amount_usdc,local_amount,local_currency,line_item_status,transaction_hash,payment_asset_code,payment_asset_issuer,payment_asset_amount",
       ),
   ]);
 
@@ -498,7 +503,7 @@ async function loadOperatorAyraStateFromClient(
     supabase
       .from("batch_line_items")
       .select(
-        "id,batch_id,category,amount_usdc,local_amount,local_currency,status,sdp_payment_id,transaction_hash,private_recipient_name",
+        "id,batch_id,category,amount_usdc,local_amount,local_currency,status,sdp_payment_id,transaction_hash,payment_asset_code,payment_asset_issuer,payment_asset_amount,private_recipient_name",
       ),
     supabase
       .from("funding_allocations")
@@ -721,8 +726,11 @@ function mapReceiptLineItem(row: ReceiptRow): BatchLineItem {
     localAmount: numeric(row.local_amount),
     localCurrency: currency(row.local_currency),
     status: lineItemStatus(row.line_item_status ?? row.batch_status),
-    sdpPaymentId: row.sdp_payment_id ?? undefined,
     transactionHash: row.transaction_hash ?? undefined,
+    paymentAssetCode: row.payment_asset_code === "USDC" ? "USDC" : undefined,
+    paymentAssetIssuer: row.payment_asset_issuer ?? undefined,
+    paymentAssetAmount:
+      row.payment_asset_amount == null ? undefined : numeric(row.payment_asset_amount),
   };
 }
 
@@ -737,6 +745,10 @@ function mapLineItem(row: LineItemRow): BatchLineItem {
     status: lineItemStatus(row.status),
     sdpPaymentId: row.sdp_payment_id ?? undefined,
     transactionHash: row.transaction_hash ?? undefined,
+    paymentAssetCode: row.payment_asset_code === "USDC" ? "USDC" : undefined,
+    paymentAssetIssuer: row.payment_asset_issuer ?? undefined,
+    paymentAssetAmount:
+      row.payment_asset_amount == null ? undefined : numeric(row.payment_asset_amount),
     recipientName: row.private_recipient_name ?? undefined,
   };
 }

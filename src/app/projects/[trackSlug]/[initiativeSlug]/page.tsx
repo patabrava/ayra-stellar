@@ -287,7 +287,7 @@ export default async function InitiativePage({ params }: PageProps) {
                     </td>
                     <td>
                       <span className="inline-flex items-center gap-2">
-                        <Hash value={receipt.transactionHash ?? receipt.sdpPaymentId} />
+                        <Hash value={receipt.transactionHash} />
                         <ExternalLink className="public-dim h-4 w-4" />
                       </span>
                     </td>
@@ -298,9 +298,10 @@ export default async function InitiativePage({ params }: PageProps) {
           </table>
         </div>
         <p className="public-dim mt-5 max-w-3xl text-sm leading-6">
-          Public receipt rows show category, amount, local snapshot, and
-          chain/payment reference. Recipient names, private files, failed
-          payments, and reconciliation notes stay in the admin console.
+          Public receipt rows show verified USDC amount, category, local
+          snapshot, and Stellar transaction reference. Recipient names, private
+          files, failed payments, and native XLM fee or reserve activity stay
+          in the admin console.
         </p>
       </section>
 

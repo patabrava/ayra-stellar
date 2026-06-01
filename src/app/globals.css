@@ -937,6 +937,16 @@ select {
   padding: 3px 6px;
 }
 
+a.hashish {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a.hashish:hover {
+  color: var(--ink);
+}
+
 .public-shell .hashish,
 .public-proof .hashish {
   background: var(--public-chip);

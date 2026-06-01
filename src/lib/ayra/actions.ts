@@ -25,6 +25,7 @@ import {
   SdpGatewayError,
   type SdpGatewayEvent,
 } from "@/lib/ayra/sdp";
+import { verifyStellarUsdcPayment, StellarProofError } from "@/lib/ayra/stellar-proof";
 import { insertPublicApplication } from "@/lib/ayra/public-write";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -53,7 +54,10 @@ const batchSchema = z.object({
   periodLabel: z.string().trim().min(4),
   sponsorId: z.string().trim().optional(),
   category: z.string().trim().min(2),
-  amountUsdc: z.coerce.number().positive(),
+  amountUsdc: z.coerce
+    .number()
+    .positive()
+    .refine(hasCentsPrecision, "USDC amount must use at most two decimals."),
   localAmount: z.coerce.number().nonnegative(),
   localCurrency: z.enum(["COP", "USD"]),
 });
@@ -87,6 +91,11 @@ function text(formData: FormData, key: string) {
 function optionalText(formData: FormData, key: string) {
   const value = text(formData, key).trim();
   return value.length > 0 ? value : undefined;
+}
+
+function hasCentsPrecision(value: number) {
+  const cents = value * 100;
+  return Number.isSafeInteger(Math.round(cents)) && Math.abs(cents - Math.round(cents)) < 1e-8;
 }
 
 function optionalFile(formData: FormData, key: string) {
@@ -780,15 +789,78 @@ export async function syncBatchStatusAction(formData: FormData) {
     redirectWithStatus("/admin", "sdp-error");
   }
 
-  const settledLineItemIds = new Set(sdp.payments.map((payment) => payment.lineItemId));
+  const expectedUsdcIssuer = process.env.STELLAR_USDC_ISSUER?.trim();
+  const horizonUrl = process.env.STELLAR_HORIZON_URL?.trim();
+  const verifiedPayments = new Map<
+    string,
+    {
+      transactionHash: string;
+      assetCode: "USDC";
+      assetIssuer: string;
+      assetAmount: number;
+    }
+  >();
+  const verificationEvents: SdpGatewayEvent[] = [];
+  for (const payment of sdp.payments) {
+    const lineItem = lineItems.find((item) => item.id === payment.lineItemId);
+    if (!lineItem) continue;
+    if (!expectedUsdcIssuer) {
+      verificationEvents.push({
+        provider: "stellar-sdp",
+        action: "sync_status",
+        status: "error",
+        externalId: payment.transactionHash,
+        message: "Missing STELLAR_USDC_ISSUER for USDC proof verification",
+      });
+      continue;
+    }
+
+    try {
+      const proof = await verifyStellarUsdcPayment({
+        transactionHash: payment.transactionHash,
+        expectedAmount: Number(lineItem.amount_usdc),
+        expectedIssuer: expectedUsdcIssuer,
+        expectedDestination: destination.walletAddress,
+        horizonUrl,
+      });
+      verifiedPayments.set(payment.lineItemId, {
+        transactionHash: payment.transactionHash,
+        assetCode: proof.assetCode,
+        assetIssuer: proof.assetIssuer,
+        assetAmount: proof.assetAmount,
+      });
+      verificationEvents.push({
+        provider: "stellar-sdp",
+        action: "sync_status",
+        status: "ok",
+        externalId: payment.transactionHash,
+        message: "Verified USDC payment proof",
+      });
+    } catch (error) {
+      verificationEvents.push({
+        provider: "stellar-sdp",
+        action: "sync_status",
+        status: "error",
+        externalId: payment.transactionHash,
+        message:
+          error instanceof StellarProofError
+            ? error.message
+            : "USDC payment proof verification failed",
+      });
+    }
+  }
+
   const updates = await Promise.all(
     lineItems.map((lineItem) => {
-      const payment = sdp.payments.find((item) => item.lineItemId === lineItem.id);
+      const payment = verifiedPayments.get(lineItem.id);
       return supabase
         .from("batch_line_items")
         .update({
-          status: settledLineItemIds.has(lineItem.id) ? "settled" : "processing",
+          status: payment ? "settled" : "processing",
           transaction_hash: payment?.transactionHash ?? null,
+          payment_asset_code: payment?.assetCode ?? null,
+          payment_asset_issuer: payment?.assetIssuer ?? null,
+          payment_asset_amount: payment?.assetAmount ?? null,
         })
         .eq("id", lineItem.id);
     }),
@@ -797,7 +869,7 @@ export async function syncBatchStatusAction(formData: FormData) {
     redirectWithStatus("/admin", "line-item-error");
   }
 
-  const allSettled = lineItems.every((lineItem) => settledLineItemIds.has(lineItem.id));
+  const allSettled = lineItems.every((lineItem) => verifiedPayments.has(lineItem.id));
   const { error } = await supabase
     .from("funding_batches")
     .update({
@@ -819,7 +891,10 @@ export async function syncBatchStatusAction(formData: FormData) {
       .eq("batch_id", parsed.data.entityId)
       .eq("status", "receipt_attached");
   }
-  await insertSdpEvents(supabase, parsed.data.entityId, sdp.events);
+  await insertSdpEvents(supabase, parsed.data.entityId, [
+    ...sdp.events,
+    ...verificationEvents,
+  ]);
 
   await insertAudit(supabase, session, {
     action: "batch.synced",

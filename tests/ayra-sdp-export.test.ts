@@ -42,6 +42,21 @@ const testnetConfig = {
 };
 
 describe("AYRA SDP gateway and CSV exports", () => {
+  it("keeps SDP asset configuration separate from Horizon USDC issuer verification", () => {
+    const gateway = createSdpGateway({
+      AYRA_SDP_MODE: "testnet",
+      STELLAR_SDP_BASE_URL: "https://sdp-api.ayra.haus",
+      STELLAR_SDP_CREATE_AUTHORIZATION: "SDP_create.secret",
+      STELLAR_SDP_START_AUTHORIZATION: "SDP_start.secret",
+      STELLAR_SDP_ASSET_ID: "1c486a48-afe9-4a15-9ee2-7c6ec5d59ccd",
+      STELLAR_SDP_REGISTRATION_CONTACT_TYPE: "EMAIL_AND_WALLET_ADDRESS",
+      STELLAR_USDC_ISSUER: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      STELLAR_HORIZON_URL: "https://horizon-testnet.stellar.org",
+    } as unknown as NodeJS.ProcessEnv);
+
+    assert.ok(gateway);
+  });
+
   it("maps mock SDP submission and settlement through stable external ids", async () => {
     const gateway = createMockSdpGateway();
     const batch = { id: "batch-1", code: "PV-TEST-MAY26" };
@@ -162,12 +177,58 @@ describe("AYRA SDP gateway and CSV exports", () => {
     assert.match(calls.find((call) => call.csv)?.csv ?? "", /walletAddressMemo/);
   });
 
+  it("does not map broad SDP payment search results without an exact payment id match", async () => {
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/disbursements")) {
+        return Response.json({ id: "sdp-disbursement-1", status: "DRAFT" }, { status: 201 });
+      }
+      if (url.endsWith("/disbursements/sdp-disbursement-1/instructions")) {
+        return Response.json({ message: "File uploaded successfully" }, { status: 201 });
+      }
+      if (url.endsWith("/disbursements/sdp-disbursement-1/status")) {
+        return Response.json({ message: "Disbursement started" }, { status: 200 });
+      }
+      if (url.includes("/payments?")) {
+        assert.equal(init?.method, "GET");
+        return Response.json({
+          data: [
+            {
+              id: "unrelated-sdp-payment",
+              external_payment_id: "unrelated-external-payment",
+              status: "SUCCESS",
+              stellar_transaction_id: "unrelated-tx",
+            },
+          ],
+          pagination: { pages: 1, total: 1 },
+        });
+      }
+      return new Response("unexpected", { status: 500 });
+    };
+
+    const gateway = createTestnetSdpGateway(testnetConfig, fetchImpl);
+    const submitted = await gateway.submitBatch(
+      { id: "batch-1", code: "PV-TEST-MAY26" },
+      sdpLineItems,
+    );
+    const synced = await gateway.syncStatus(
+      {
+        id: "batch-1",
+        code: "PV-TEST-MAY26",
+        sdpBatchId: submitted.externalBatchId,
+      },
+      sdpLineItems,
+    );
+
+    assert.deepEqual(synced.payments, []);
+  });
+
   it("fails fast on missing testnet env and sanitizes non-2xx SDP errors", async () => {
     assert.throws(
       () =>
         createSdpGateway({
           AYRA_SDP_MODE: "testnet",
-        } as NodeJS.ProcessEnv),
+        } as unknown as NodeJS.ProcessEnv),
       /Missing STELLAR_SDP_BASE_URL/,
     );
 

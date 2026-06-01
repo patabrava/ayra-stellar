@@ -42,8 +42,8 @@ describe("AYRA Stellar domain smoke path", () => {
     );
     assert.ok(wall.spending.every((item) => !item.recipientName));
     assert.ok(wall.spending.every((item) => item.category.length > 0));
-    assert.ok(wall.batches.some((batch) => batch.publicLabel === "In flight"));
-    assert.ok(wall.batches.some((batch) => batch.publicLabel === "Cleared"));
+    assert.equal(wall.spending.length, 0);
+    assert.equal(wall.batches.length, 0);
     assert.ok(!JSON.stringify(wall).includes("leidy@ecoparque.co"));
   });
 
@@ -89,7 +89,7 @@ describe("AYRA Stellar domain smoke path", () => {
     assert.equal(project.track.slug, "providencia");
     assert.equal(project.initiative.slug, "reforestation");
     assert.ok(project.updates.length > 0);
-    assert.ok(project.batches.length > 0);
+    assert.equal(project.batches.length, 0);
     assert.ok(
       project.updates.every((update) => update.initiativeName === "Reforestation"),
     );
@@ -98,6 +98,93 @@ describe("AYRA Stellar domain smoke path", () => {
     );
     assert.ok(project.spending.every((item) => !item.recipientName));
     assert.ok(!JSON.stringify(project).includes("leidy@ecoparque.co"));
+  });
+
+  it("does not expose mock SDP references as public on-chain proof", () => {
+    const state = createDemoState();
+    const project = getPublicInitiativeProjection(
+      state,
+      "providencia",
+      "reforestation",
+    );
+    const serializedProject = JSON.stringify(project);
+
+    assert.equal(project.spending.length, 0);
+    assert.equal(project.batches.length, 0);
+    assert.ok(!serializedProject.includes("mock-tx-"));
+    assert.ok(!serializedProject.includes("mock-payment-"));
+
+    const seededBatch = state.batches.find(
+      (batch) => batch.id === "batch-reforest-mar26",
+    );
+    assert.ok(seededBatch);
+    const proof = getProofPack(state, seededBatch.id);
+
+    assert.equal(proof.receipts.length, 0);
+    assert.ok(!JSON.stringify(proof).includes("mock-tx-"));
+    assert.ok(!JSON.stringify(proof).includes("mock-payment-"));
+  });
+
+  it("uses real Stellar transaction hashes for public proof volume", () => {
+    const realHash =
+      "9b02f2db43af6a56907b92c1e74d95db1b243524b57430a5d1a579285d6c6ac6";
+    const state = createDemoState();
+    const batchId = "batch-reforest-apr26";
+    const batchLineItems = state.batchLineItems.map((lineItem) =>
+      lineItem.id === `${batchId}-line-1`
+        ? {
+            ...lineItem,
+            amountUsdc: 1,
+            localAmount: 3900,
+            status: "settled" as const,
+            sdpPaymentId: "real-payment-1",
+            transactionHash: realHash,
+            paymentAssetCode: "USDC" as const,
+            paymentAssetIssuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+            paymentAssetAmount: 1,
+          }
+        : lineItem,
+    );
+    const project = getPublicInitiativeProjection(
+      { ...state, batchLineItems },
+      "providencia",
+      "reforestation",
+    );
+    const proof = getProofPack({ ...state, batchLineItems }, batchId);
+
+    assert.equal(project.spending.length, 1);
+    assert.equal(project.spending[0]?.amountUsdc, 1);
+    assert.equal(project.batches[0]?.amountUsdc, 1);
+    assert.equal(proof.receipts.length, 1);
+    assert.equal(proof.receipts[0]?.transactionHash, realHash);
+  });
+
+  it("does not publish hash-only receipts without verified USDC metadata", () => {
+    const state = createDemoState();
+    const batchId = "batch-reforest-apr26";
+    const batchLineItems = state.batchLineItems.map((lineItem) =>
+      lineItem.id === `${batchId}-line-1`
+        ? {
+            ...lineItem,
+            amountUsdc: 1,
+            localAmount: 3900,
+            status: "settled" as const,
+            sdpPaymentId: "payment-xlm-1",
+            transactionHash:
+              "4ee20870c7d17a13234d36a1c8d9f285a68defa3a8ec4172de1ad58f7acc8783",
+          }
+        : lineItem,
+    );
+
+    const project = getPublicInitiativeProjection(
+      { ...state, batchLineItems },
+      "providencia",
+      "reforestation",
+    );
+    const proof = getProofPack({ ...state, batchLineItems }, batchId);
+
+    assert.equal(project.spending.length, 0);
+    assert.equal(proof.receipts.length, 0);
   });
 
   it("does not select a current proof batch before payouts are submitted", () => {
@@ -252,8 +339,8 @@ describe("AYRA Stellar domain smoke path", () => {
     assert.equal(proof.publicLabel, "Cleared");
     assert.equal(proof.trackSlug, "providencia");
     assert.equal(proof.initiativeSlug, "mangrove-nursery");
-    assert.equal(proof.receipts[0]?.category, "Nursery materials");
-    assert.match(proof.receipts[0]?.transactionHash ?? "", /^mock-tx-/);
+    assert.equal(proof.receipts.length, 0);
+    assert.ok(!JSON.stringify(proof).includes("mock-tx-"));
   });
 
   it("keeps submitted batch line items immutable", () => {

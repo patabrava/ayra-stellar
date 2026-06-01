@@ -11,7 +11,9 @@
     "test:e2e": "playwright test",
     "sync:advisor-sources": "tsx scripts/sync-advisor-sources.ts",
     "verify:hostinger-sdp-env": "node scripts/verify-hostinger-sdp-env.mjs",
-    "verify:sdp-testnet": "node scripts/verify-sdp-testnet.mjs"
+    "verify:sdp-testnet": "node scripts/verify-sdp-testnet.mjs",
+    "populate:public-sdp-testnet-receipts": "node scripts/populate-public-sdp-testnet-receipts.mjs",
+    "backfill:usdc-proof-metadata": "node scripts/backfill-usdc-proof-metadata.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

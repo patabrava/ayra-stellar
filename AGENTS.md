@@ -215,6 +215,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Canonical track display names are normalized at ingest; do not let live row casing change `Providencia` in public or operator shells.
 - Browser smoke selectors for public track controls must scope or exact-match nav links because the wordmark repeats the active track name.
 - Browser smoke privacy assertions must be route-specific: public/proof pages must exclude private contact and receipt data, while steward/admin pages may show scoped private contacts but still must hide raw receipt paths.
+- Public receipt/proof projections must require settled line items with Horizon-verified USDC metadata and real 64-char Stellar transaction hashes, render those hashes as Stellar Expert testnet links, and never expose native XLM, `mock-*`, or SDP payment ids as on-chain references.
 - Anonymous application inserts must use return-minimal writes unless a privileged client can also read `applications`; selecting inserted ids will fail RLS.
 - When changing `public_batch_receipts` column order or adding leading columns, drop and recreate the view instead of `create or replace view`.
 - Authenticated admin server actions need explicit admin RLS policies for every registry table they write; service-role-era assumptions surface as promotion or batch mutation errors.
@@ -225,6 +226,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Supabase `link-error` on `/login` can be built-in mailer throttling, not role denial; check auth logs for `over_email_send_rate_limit`, and configure custom SMTP before raising `rate_limit_email_sent`.
 - Standalone `tsx` scripts must call `loadEnvConfig(process.cwd())`, avoid top-level await under this CommonJS build, and reuse the Node WebSocket transport for Supabase clients.
 - Keep SDP env examples, `src/lib/ayra/sdp.ts`, and `docs/ayra-stellar-sdp-testnet-runbook.md` aligned on `AYRA_SDP_MODE` plus `STELLAR_SDP_*`; stale `SDP_*` placeholders send setup down the wrong path.
+- USDC proof sync must fail closed when `STELLAR_USDC_ISSUER` is missing; never let Horizon verification publish an arbitrary USDC issuer.
 - Playwright fallback advisor smokes must blank `GEMINI_API_KEY` in `webServer.command`; Next loads `.env`, so local keys otherwise bypass deterministic fallback.
 - Gemini Developer API REST structured output must use `generationConfig.responseMimeType` plus `responseSchema`; `responseFormat.text.mimeType` can 400 even when SDK examples show it.
 - Gemini Developer API `responseSchema` rejects unsupported JSON Schema fields such as `additionalProperties`; keep schemas to the accepted subset and validate extra fields locally with Zod.

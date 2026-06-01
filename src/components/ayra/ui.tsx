@@ -34,7 +34,30 @@ export function Chip({
 
 export function Hash({ value }: { value?: string }) {
   if (!value) return <span className="text-ink-muted">-</span>;
+  const explorerUrl = getStellarExpertTransactionUrl(value);
+
+  if (explorerUrl) {
+    return (
+      <a
+        aria-label={`Open Stellar testnet transaction ${value}`}
+        className="hashish"
+        href={explorerUrl}
+        rel="noopener noreferrer"
+        target="_blank"
+        title="Open on Stellar Expert"
+      >
+        {value}
+      </a>
+    );
+  }
+
   return <span className="hashish">{value}</span>;
+}
+
+function getStellarExpertTransactionUrl(value: string) {
+  return /^[a-f0-9]{64}$/i.test(value)
+    ? `https://stellar.expert/explorer/testnet/tx/${value}`
+    : null;
 }
 
 export function StatusBanner({ status }: { status?: string }) {

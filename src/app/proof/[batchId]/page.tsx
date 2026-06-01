@@ -63,7 +63,7 @@ export default async function ProofPage({ params }: PageProps) {
           </div>
 
           <div className="receipt-region">
-            <div className="proof-pack-kicker">Category-level receipts</div>
+            <div className="proof-pack-kicker">Verified USDC receipts</div>
             <div className="receipt-table-wrap mt-3">
               <table className="receipt-table">
                 <thead>
@@ -85,9 +85,7 @@ export default async function ProofPage({ params }: PageProps) {
                         {formatLocal(receipt.localAmount, receipt.localCurrency)}
                       </td>
                       <td>
-                        <Hash
-                          value={receipt.transactionHash ?? receipt.sdpPaymentId}
-                        />
+                        <Hash value={receipt.transactionHash} />
                       </td>
                     </tr>
                   ))}
@@ -99,9 +97,10 @@ export default async function ProofPage({ params }: PageProps) {
           <div className="proof-exclusion">
             <ShieldCheck className="mt-1 h-5 w-5" />
             <p className="text-sm leading-6">
-              This category ledger shows public amounts and payment references
-              only. Recipient names, private receipt files, failed payments, and
-              reconciliation notes stay internal.
+              Public proof shows category-level USDC payments verified against
+              Stellar transaction metadata. Recipient names, private receipt
+              files, failed payments, internal reconciliation notes, and native
+              XLM fee or reserve activity stay off this page.
             </p>
           </div>
         </section>

@@ -29,6 +29,9 @@ export type SdpSubmittedPayment = {
 export type SdpSettledPayment = {
   lineItemId: string;
   transactionHash: string;
+  assetCode?: "USDC";
+  assetIssuer?: string;
+  assetAmount?: number;
 };
 
 export type SdpSubmitResult = {
@@ -338,8 +341,7 @@ class TestnetSdpClient {
       const payment = extractPayments(json).find(
         (item) =>
           item.external_payment_id === expectedPaymentId ||
-          item.id === expectedPaymentId ||
-          item.id,
+          item.id === expectedPaymentId,
       );
       if (payment) results.push({ lineItem, payment });
     }

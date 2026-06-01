@@ -159,6 +159,9 @@ export type BatchLineItem = {
   status: "draft" | "submitted" | "processing" | "settled";
   sdpPaymentId?: string;
   transactionHash?: string;
+  paymentAssetCode?: "USDC";
+  paymentAssetIssuer?: string;
+  paymentAssetAmount?: number;
   recipientName?: string;
 };
 
@@ -316,7 +319,9 @@ export type ProofPack = {
     localAmount: number;
     localCurrency: string;
     transactionHash?: string;
-    sdpPaymentId?: string;
+    assetCode: "USDC";
+    assetIssuer?: string;
+    assetAmount: number;
   }>;
 };
 
@@ -348,6 +353,9 @@ type SdpPaymentResult = {
   lineItemId: string;
   status: "settled";
   transactionHash: string;
+  assetCode?: "USDC";
+  assetIssuer?: string;
+  assetAmount?: number;
 };
 
 const baseTime = Date.parse("2026-05-15T12:00:00.000Z");
@@ -1456,6 +1464,9 @@ export async function settleBatchFromSdp(
     if (lineItem) {
       lineItem.status = "settled";
       lineItem.transactionHash = payment.transactionHash;
+      lineItem.paymentAssetCode = payment.assetCode;
+      lineItem.paymentAssetIssuer = payment.assetIssuer;
+      lineItem.paymentAssetAmount = payment.assetAmount;
     }
   });
   batch.status = "settled";
@@ -1527,7 +1538,7 @@ export function getPublicWallProjection(
         initiatives.find((initiative) => initiative.id === batch.initiativeId)
           ?.name ?? "Unknown initiative",
       periodLabel: batch.periodLabel,
-      amountUsdc: sumLineItems(state, batch.id),
+      amountUsdc: sumPublicProofLineItems(state, batch.id),
       sponsorName: state.sponsors.find((sponsor) => sponsor.id === batch.sponsorId)
         ?.name,
       status: batch.status,
@@ -1535,7 +1546,8 @@ export function getPublicWallProjection(
         batch.status === "settled"
           ? ("Cleared" as const)
           : ("In flight" as const),
-    }));
+    }))
+    .filter((batch) => batch.amountUsdc > 0);
 
   return {
     track,
@@ -1567,6 +1579,7 @@ export function getPublicWallProjection(
       })),
     spending: state.batchLineItems
       .filter((lineItem) =>
+        isVerifiedPublicProofLineItem(lineItem) &&
         state.batches.some(
           (batch) =>
             batch.id === lineItem.batchId &&
@@ -1607,8 +1620,7 @@ export function getProofPack(state: AyraState, batchId: string): ProofPack {
     sponsorName: state.sponsors.find((item) => item.id === batch.sponsorId)?.name,
     periodLabel: batch.periodLabel,
     publicLabel: batch.status === "settled" ? "Cleared" : "In flight",
-    receipts: state.batchLineItems
-      .filter((lineItem) => lineItem.batchId === batch.id)
+    receipts: publicProofLineItems(state, batch.id)
       .map((lineItem) => ({
         id: lineItem.id,
         category: lineItem.category,
@@ -1616,7 +1628,9 @@ export function getProofPack(state: AyraState, batchId: string): ProofPack {
         localAmount: lineItem.localAmount,
         localCurrency: lineItem.localCurrency,
         transactionHash: lineItem.transactionHash,
-        sdpPaymentId: lineItem.sdpPaymentId,
+        assetCode: lineItem.paymentAssetCode!,
+        assetIssuer: lineItem.paymentAssetIssuer,
+        assetAmount: lineItem.paymentAssetAmount!,
     })),
   };
 }
@@ -1652,10 +1666,33 @@ export function getPublicInitiativeProjection(
   };
 }
 
-function sumLineItems(state: AyraState, batchId: string) {
-  return state.batchLineItems
-    .filter((lineItem) => lineItem.batchId === batchId)
-    .reduce((sum, lineItem) => sum + lineItem.amountUsdc, 0);
+function isPublicTransactionHash(value?: string) {
+  return Boolean(value && /^[a-f0-9]{64}$/i.test(value) && !value.startsWith("mock-"));
+}
+
+function publicProofLineItems(state: AyraState, batchId: string) {
+  return state.batchLineItems.filter(
+    (lineItem) =>
+      lineItem.batchId === batchId &&
+      isVerifiedPublicProofLineItem(lineItem),
+  );
+}
+
+function isVerifiedPublicProofLineItem(lineItem: BatchLineItem) {
+  return (
+    lineItem.status === "settled" &&
+    isPublicTransactionHash(lineItem.transactionHash) &&
+    lineItem.paymentAssetCode === "USDC" &&
+    Boolean(lineItem.paymentAssetIssuer) &&
+    lineItem.paymentAssetAmount === lineItem.amountUsdc
+  );
+}
+
+function sumPublicProofLineItems(state: AyraState, batchId: string) {
+  return publicProofLineItems(state, batchId).reduce(
+    (sum, lineItem) => sum + lineItem.amountUsdc,
+    0,
+  );
 }
 
 export function formatUsdc(amount: number) {

@@ -201,7 +201,7 @@ describe("AYRA advisor public source contract", () => {
 
     assert.equal(response.status, "answered");
     assert.match(response.answer, /USDC/);
-    assert.match(response.answer, /Cleared/);
+    assert.match(response.answer, /No submitted or settled public batches yet/);
     assert.equal(response.citations[0]?.sourceId, "funding:providencia:reforestation");
   });
 

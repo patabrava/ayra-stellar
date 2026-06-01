@@ -120,8 +120,9 @@ test("seeded MVP journey from application intake to public disbursement proof", 
     "href",
     "/projects/providencia/reforestation",
   );
-  await expect(page.getByRole("cell", { name: "Crew wages" })).toBeVisible();
-  await expect(page.getByText("mock-tx-mar-crew")).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Payment proof" })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("mock-tx-mar-crew");
+  await expect(page.locator("body")).not.toContainText("mock-payment-");
   await expect(page.locator("body")).not.toContainText("leidy@ecoparque.co");
   await expect(page.locator("body")).not.toContainText(
     "receipts/batch-reforest-apr26/crew.pdf",
