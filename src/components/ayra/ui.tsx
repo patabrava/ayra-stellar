@@ -87,6 +87,16 @@ export function StatusBannerForSurface({
           <p className="mt-1 max-w-3xl leading-6 text-ink-muted">
             {journeyStatus.body}
           </p>
+          {journeyStatus.details?.length ? (
+            <ul className="mt-3 grid gap-1 text-xs leading-5 text-ink-muted md:text-sm">
+              {journeyStatus.details.map((detail) => (
+                <li className="flex gap-2" key={detail}>
+                  <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 bg-[var(--ink)]" />
+                  <span>{detail}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </div>
     </div>

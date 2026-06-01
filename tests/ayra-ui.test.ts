@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { Hash } from "../src/components/ayra/ui";
+import { Hash, StatusBannerForSurface } from "../src/components/ayra/ui";
 
 describe("AYRA UI hash renderer", () => {
   it("links real Stellar transaction hashes to Stellar Expert testnet", () => {
@@ -29,5 +29,21 @@ describe("AYRA UI hash renderer", () => {
 
     assert.match(markup, /^<span /);
     assert.doesNotMatch(markup, /href=/);
+  });
+});
+
+describe("AYRA journey status banner", () => {
+  it("renders application approval confirmation with next steps", () => {
+    const markup = renderToStaticMarkup(
+      createElement(StatusBannerForSurface, {
+        status: "application-approved",
+        surface: "admin",
+      }),
+    );
+
+    assert.match(markup, /Application approved\./);
+    assert.match(markup, /Steward access is active/);
+    assert.match(markup, /Next step: the steward submits the first Stellar payout address/);
+    assert.match(markup, /No funding batch can be created until that address is verified/);
   });
 });

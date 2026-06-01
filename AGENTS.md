@@ -236,5 +236,6 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Steward portal pages must render an empty payout state for scoped initiatives with no submitted/settled batches; never dereference `currentBatch` before a batch exists.
 - AYRA public advisor must have exactly one mounted launcher per public page; keep `AdvisorPanel` as the single shell component and avoid re-adding legacy advisor widgets.
 - Steward portal copy and banners must distinguish first-time payout-address setup from later replacements, and the post-submit state must name pending AYRA verification.
+- Admin approval status banners must state what changed, what access or records were created, and the next steward/operator step; cover the rendered banner with UI and browser regression tests.
 - Status-driven modal components must SSR the dialog on first paint and only portal after client mount; returning `null` until hydration hides server-action feedback.
 - Application intake browser constraints must mirror `applicationSchema`; otherwise short fields reach `/apply?status=invalid` with no field-level correction path.

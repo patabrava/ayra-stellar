@@ -17,6 +17,7 @@ export type JourneyStatus = {
   label: string;
   title: string;
   body: string;
+  details?: string[];
 };
 
 type AuthErrorShape = {
@@ -124,7 +125,12 @@ export function getJourneyStatus(
         label: "Access granted",
         title: "Application approved.",
         body:
-          "The applicant now has portal access. Their next step is to submit the first Stellar payout address in the steward portal.",
+          "The applicant now has steward portal access. AYRA created the project records needed for their scoped workspace.",
+        details: [
+          "Steward access is active for the approved applicant account.",
+          "Next step: the steward submits the first Stellar payout address in the steward portal.",
+          "No funding batch can be created until that address is verified and locked.",
+        ],
       };
     case "payout-verified":
       return {
