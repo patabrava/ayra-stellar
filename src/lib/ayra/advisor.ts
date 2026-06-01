@@ -197,6 +197,51 @@ const advisorStopWords = new Set([
   "live",
 ]);
 
+const ayraWebsiteSources = [
+  publicSource({
+    id: "ayra:north-star",
+    title: "AYRA North Star",
+    href: "https://www.ayra.haus/",
+    content:
+      "AYRA builds impact zones in places the team cares about. Season 1 starts in Providencia, in the Caribbean of Colombia, as a real-life technology sandbox that brings the island onto practical tech rails. The public story is place-first: local partners, local students, artists, digital nomads, and companies test real adoption in the field instead of only announcing ideas.",
+  }),
+  publicSource({
+    id: "ayra:studio-model",
+    title: "AYRA Studio model",
+    href: "https://www.ayra.haus/",
+    content:
+      "An AYRA Studio is a sponsored adoption sandbox in Providencia: one company, one vertical, three teams, up to nine local student fellows, one 100-point scorecard, one winner, and one continuation path. A sponsor backs one Studio with a 37,500 EUR hard cap. The teams push adoption of real products, stacks, and systems with local partners, while selected artists turn the work into stories, films, exhibitions, and public moments.",
+  }),
+  publicSource({
+    id: "ayra:season-timeline",
+    title: "AYRA Season 1 timeline",
+    href: "https://www.ayra.haus/",
+    content:
+      "AYRA Season 1 has three public phases. Espacios runs from September 2026 through January 2027 across Berlin, Barcelona, Hong Kong, NYC, and Bogota, revealing all seven Studios. Providencia runs from February through April 2027 as a three-month residency where teams ship with local partners alongside students, artists, and digital nomads. Cartagena follows in late April or May 2027 as a three-day finale with winners, Season Awards, films, exhibitions, performances, and distribution.",
+  }),
+  publicSource({
+    id: "ayra:studio-sponsor",
+    title: "AYRA Studio sponsorship",
+    href: "https://www.ayra.haus/",
+    content:
+      "A sponsor reserves one Studio by choosing one vertical, then sending or selecting three teams to build adoption in Providencia. The 37,500 EUR hard cap backs the vertical, the three teams moving through Season 1, up to nine local student fellows, the 100-point scorecard, the winner selection, a sponsor report, and the Cartagena finale. The budget position is hard-capped, transparent, and published monthly.",
+  }),
+  publicSource({
+    id: "ayra:verticals",
+    title: "AYRA Season 1 verticals",
+    href: "https://www.ayra.haus/",
+    content:
+      "AYRA Season 1 lists seven verticals: Regenerative Life for reef, mangrove, land, biodiversity, and food; Robotics and Physical Systems for drones, sensors, automation, and physical operations; Payments and Local Commerce for wallets, merchants, ticketing, and payouts; Culture and Identity for heritage, stories, music, and creators; Learning and Human Development for schools, skills, language, craft, and mentorship; Civic and Public Systems for governance, public services, and safety; and Compute and Agents for local compute, AI agents, and data infrastructure.",
+  }),
+  publicSource({
+    id: "ayra:traction",
+    title: "AYRA ground traction",
+    href: "https://www.ayra.haus/",
+    content:
+      "The AYRA north-star material names two proof points for why the model can work on the ground. VIIO, AYRA's on-chain payments partner, operates in production as a B2SME wallet with regulated infrastructure partners and reported performance including 326M USD total payment volume, 650 active SME accounts, 11,900 operations, and an average transaction size around 27K USD. Providencia impact traction through Climate Future includes about 1,500 trees and shrubs planted, more than 420 children engaged across schools, animal welfare programs with about 30 dogs and 50 cats adopted, and about 95 percent of known street dogs regularly supported or adopted.",
+  }),
+] satisfies AdvisorSource[];
+
 function hasPrivateContent(input: string) {
   return privateContentPatterns.some((pattern) => pattern.test(input));
 }
@@ -267,6 +312,7 @@ export function buildAdvisorSources(
     state.tracks[0]?.slug;
 
   const sources: AdvisorSource[] = [
+    ...ayraWebsiteSources,
     publicSource({
       id: "ayra:public-boundary",
       title: "AYRA public proof boundary",
@@ -481,7 +527,10 @@ export function buildAdvisorPrompt(
   return [
     "You are the AYRA public advisor embedded in the transparency app.",
     "Answer only from the source pack below.",
+    "Warm, conversational tone: sound like a clear human guide, not a database. Use short paragraphs, explain terms plainly, and connect facts into a useful answer.",
+    "If the user writes AIRA, treat it as AYRA unless they clearly mean something else.",
     "Do not reveal private contacts, emails, phone numbers, payout addresses, raw receipt paths, failed payment details, or internal reconciliation notes.",
+    "For general AYRA, Season, Studio, sponsorship, vertical, timeline, traction, or Providencia questions, use the AYRA North Star and Studio sources before project-proof sources.",
     "For funding questions, answer exact public totals when the source pack provides them. Use the terms Cleared and In flight.",
     "For approved, active, live, or funded project questions, use the approved-projects source. In AYRA public state, live and funding are the public approval statuses; draft is not public yet.",
     "Explain transaction hashes in plain public language: how to watch them, what they do, where they resolve, and which proof pack or explorer page to open.",
@@ -536,6 +585,11 @@ export function fallbackAdvisorAnswer(
   sources: AdvisorSource[],
 ): AdvisorAnswer {
   const loweredQuestion = question.toLowerCase();
+  const asksAyraOverview = isAyraOverviewQuestion(loweredQuestion);
+  const asksStudio = isStudioQuestion(loweredQuestion);
+  const asksSeason = isSeasonQuestion(loweredQuestion);
+  const asksVerticals = isVerticalQuestion(loweredQuestion);
+  const asksTraction = isTractionQuestion(loweredQuestion);
   const asksApprovedProjects = isApprovedProjectsQuestion(question);
   const asksFunding =
     /\b(paid|settled|cleared|funded|funding|money|amount|batch|sponsor)\b/.test(
@@ -554,6 +608,81 @@ export function fallbackAdvisorAnswer(
   const stellarSource =
     sources.find((item) => item.id.startsWith("stellar:")) ??
     sources.find((item) => item.id === "stellar:trace-rules");
+  const northStarSource = sources.find((item) => item.id === "ayra:north-star");
+  const studioSource = sources.find((item) => item.id === "ayra:studio-model");
+  const seasonSource = sources.find((item) => item.id === "ayra:season-timeline");
+  const verticalsSource = sources.find((item) => item.id === "ayra:verticals");
+  const tractionSource = sources.find((item) => item.id === "ayra:traction");
+
+  if (asksAyraOverview && northStarSource) {
+    return {
+      answer:
+        "AYRA is a place-first impact and technology season. The first zone is Providencia, in the Caribbean of Colombia, where AYRA brings companies, local partners, student fellows, artists, and builders together to test real adoption on the ground. Think of it as a real-life tech sandbox: not just a demo day, but a season where teams ship useful systems with the island.",
+      citations: [advisorCitation(northStarSource)],
+      followups: [
+        "How does an AYRA Studio work?",
+        "Why Providencia first?",
+        "What are the seven verticals?",
+      ],
+      status: "answered",
+    };
+  }
+
+  if (asksStudio && studioSource) {
+    return {
+      answer:
+        "An AYRA Studio is the working unit of the season: one company backs one vertical, three teams test adoption with local partners, and up to nine local student fellows help make it operational. The sponsor cap is 37,500 EUR, and the work is judged through a 100-point scorecard with one winner and a continuation path after the season.",
+      citations: [advisorCitation(studioSource)],
+      followups: [
+        "What does the sponsor budget cover?",
+        "Which verticals can a sponsor choose?",
+        "What happens in Providencia?",
+      ],
+      status: "answered",
+    };
+  }
+
+  if (asksSeason && seasonSource) {
+    return {
+      answer:
+        "Season 1 moves in three steps: Espacios from September 2026 to January 2027 across Berlin, Barcelona, Hong Kong, NYC, and Bogota; the Providencia residency from February to April 2027; then the Cartagena finale in late April or May 2027, where winners and Season Awards are presented through public stories, films, exhibitions, and performances.",
+      citations: [advisorCitation(seasonSource)],
+      followups: [
+        "What happens during the Providencia residency?",
+        "How does the Cartagena finale work?",
+        "What is Espacios?",
+      ],
+      status: "answered",
+    };
+  }
+
+  if (asksVerticals && verticalsSource) {
+    return {
+      answer:
+        "The seven Season 1 verticals are Regenerative Life, Robotics and Physical Systems, Payments and Local Commerce, Culture and Identity, Learning and Human Development, Civic and Public Systems, and Compute and Agents. Each vertical gives a sponsor and its teams a concrete lane for adoption work in Providencia.",
+      citations: [advisorCitation(verticalsSource)],
+      followups: [
+        "Which vertical fits local commerce?",
+        "What is Compute and Agents?",
+        "How does a sponsor reserve one vertical?",
+      ],
+      status: "answered",
+    };
+  }
+
+  if (asksTraction && tractionSource) {
+    return {
+      answer:
+        "AYRA points to two kinds of ground traction. On the payments side, VIIO is already operating as a B2SME wallet with production volume and regulated infrastructure partners. On the Providencia impact side, Climate Future programs have already planted trees and shrubs, worked with children across schools, and supported animal welfare on the island. That matters because AYRA is meant to build from existing local and operational proof, not from a blank slate.",
+      citations: [advisorCitation(tractionSource)],
+      followups: [
+        "Who is VIIO?",
+        "What has happened in Providencia already?",
+        "How does this connect to Stellar proof?",
+      ],
+      status: "answered",
+    };
+  }
 
   if (asksApprovedProjects && approvedProjectsSource) {
     return {
@@ -639,6 +768,8 @@ function scoreSource(sourceItem: AdvisorSource, route: AdvisorRouteContext) {
   if (sourceItem.id.startsWith("approved-projects:")) score += 6;
   if (sourceItem.id.startsWith("funding:")) score += 2;
   if (sourceItem.id.startsWith("stellar:")) score += 2;
+  if (sourceItem.id.startsWith("ayra:")) score += 2;
+  if (sourceItem.id === "ayra:north-star") score += 2;
   if (sourceItem.id === "ayra:public-boundary") score += 1;
   return score;
 }
@@ -674,6 +805,50 @@ function groundedDecline(answer: string): AdvisorAnswer {
     ],
     status: "grounded_decline",
   };
+}
+
+function advisorCitation(source: AdvisorSource): AdvisorCitation {
+  return {
+    sourceId: source.id,
+    label: source.title,
+    href: source.href,
+  };
+}
+
+function isAyraOverviewQuestion(loweredQuestion: string) {
+  return (
+    /\b(ayra|aira)\b/.test(loweredQuestion) &&
+    /\b(what|who|explain|about|overview|mean|mission|north star|north-star|purpose|why)\b/.test(
+      loweredQuestion,
+    )
+  );
+}
+
+function isStudioQuestion(loweredQuestion: string) {
+  return (
+    /\b(studio|studios|sponsor|sponsorship|back|reserve|budget|37,?500|37500|sandbox)\b/.test(
+      loweredQuestion,
+    ) &&
+    /\b(ayra|aira|studio|studios|sponsor|sponsorship)\b/.test(loweredQuestion)
+  );
+}
+
+function isSeasonQuestion(loweredQuestion: string) {
+  return /\b(season|timeline|espacios|cartagena|residency|finale|when|2026|2027)\b/.test(
+    loweredQuestion,
+  );
+}
+
+function isVerticalQuestion(loweredQuestion: string) {
+  return /\b(vertical|verticals|regenerative|robotics|payments|commerce|culture|learning|civic|compute|agents)\b/.test(
+    loweredQuestion,
+  );
+}
+
+function isTractionQuestion(loweredQuestion: string) {
+  return /\b(traction|proof|viio|partner|partners|climate future|trees|children|dogs|cats|why this works)\b/.test(
+    loweredQuestion,
+  );
 }
 
 function tokenizeAdvisorText(text: string) {

@@ -110,6 +110,47 @@ describe("AYRA advisor public source contract", () => {
     assert.match(stellar.content, /Stellar/i);
   });
 
+  it("builds public AYRA north-star facts from the website knowledge source", () => {
+    const sources = buildAdvisorSources(createDemoState(), {});
+    const northStar = sources.find((source) => source.id === "ayra:north-star");
+    const studioModel = sources.find((source) => source.id === "ayra:studio-model");
+    const season = sources.find((source) => source.id === "ayra:season-timeline");
+    const verticals = sources.find((source) => source.id === "ayra:verticals");
+
+    assert.ok(northStar);
+    assert.match(northStar.content, /impact zones/i);
+    assert.match(northStar.content, /Providencia/i);
+    assert.ok(studioModel);
+    assert.match(studioModel.content, /one company, one vertical, three teams/i);
+    assert.ok(season);
+    assert.match(season.content, /September 2026/i);
+    assert.ok(verticals);
+    assert.match(verticals.content, /Regenerative Life/i);
+    assert.match(verticals.content, /Compute and Agents/i);
+  });
+
+  it("falls back conversationally for general AYRA questions", () => {
+    const sources = buildAdvisorSources(createDemoState(), {});
+    const response = fallbackAdvisorAnswer("What is AYRA?", sources);
+
+    assert.equal(response.status, "answered");
+    assert.match(response.answer, /AYRA is/i);
+    assert.match(response.answer, /Providencia/i);
+    assert.doesNotMatch(response.answer, /once public sources support/i);
+    assert.equal(response.citations[0]?.sourceId, "ayra:north-star");
+  });
+
+  it("falls back conversationally for Studio and sponsor questions", () => {
+    const sources = buildAdvisorSources(createDemoState(), {});
+    const response = fallbackAdvisorAnswer("How does a Studio sponsorship work?", sources);
+
+    assert.equal(response.status, "answered");
+    assert.match(response.answer, /Studio/i);
+    assert.match(response.answer, /37,500/i);
+    assert.match(response.answer, /three teams/i);
+    assert.equal(response.citations[0]?.sourceId, "ayra:studio-model");
+  });
+
   it("falls back deterministically for approved-project questions", () => {
     const sources = buildAdvisorSources(createDemoState(), {});
     const response = fallbackAdvisorAnswer(
@@ -239,9 +280,11 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.match(prompt, /SOURCE ID: ayra:approved-projects/);
+    assert.match(prompt, /SOURCE ID: ayra:north-star/);
     assert.match(prompt, /SOURCE ID: funding:providencia:reforestation/);
     assert.match(prompt, /SOURCE ID: stellar:providencia:reforestation/);
     assert.match(prompt, /Do not reveal private contacts/i);
+    assert.match(prompt, /Warm, conversational tone/i);
     assert.match(prompt, /approved-projects source/i);
     assert.match(prompt, /live and funding are the public approval statuses/i);
     assert.match(prompt, /Conversation history:/i);
@@ -316,6 +359,27 @@ describe("AYRA advisor API route", () => {
       assert.match(body.answer, /public approval states are live and funding/i);
       assert.match(body.answer, /Reforestation/i);
       assert.equal(body.citations[0]?.sourceId, "ayra:approved-projects");
+    });
+  });
+
+  it("returns deterministic fallback AYRA overview answers without GEMINI_API_KEY", async () => {
+    await withAdvisorFallbackEnv(async () => {
+      const response = await postAdvisor(
+        advisorRequest({
+          question: "What is AYRA?",
+          route: {
+            trackSlug: "providencia",
+            initiativeSlug: "reforestation",
+          },
+        }),
+      );
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(body.mode, "deterministic-fallback");
+      assert.match(body.answer, /AYRA is/i);
+      assert.match(body.answer, /Providencia/i);
+      assert.equal(body.citations[0]?.sourceId, "ayra:north-star");
     });
   });
 
