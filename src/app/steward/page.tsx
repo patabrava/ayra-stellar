@@ -8,6 +8,7 @@ import {
   OpsNav,
   StatusBannerForSurface,
 } from "@/components/ayra/ui";
+import { StewardStatusModal } from "@/components/ayra/steward-status-modal";
 import { submitPayoutAddressAction, submitUpdateAction } from "@/lib/ayra/actions";
 import { requireStewardSession } from "@/lib/ayra/session";
 import {
@@ -100,6 +101,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
 
   return (
     <main className="ops-shell">
+      <StewardStatusModal status={params?.status} />
       <OpsNav
         role="GRANTEE"
         scope={`${initiative.name} · Providencia`}

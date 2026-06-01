@@ -53,7 +53,7 @@ describe("AYRA steward and admin journey status copy", () => {
     assert.deepEqual(getJourneyStatus("steward", "payout-submitted"), {
       tone: "warn",
       label: "Pending review",
-      title: "Your first Stellar payout address is pending AYRA verification.",
+      title: "Your Stellar payout address is pending AYRA verification.",
       body:
         "AYRA now has the address you submitted. You can keep working on updates while the address is verified and locked for the first disbursement.",
     });
@@ -78,7 +78,7 @@ describe("AYRA steward and admin journey status copy", () => {
     assert.deepEqual(getJourneyStatus("steward", "demo-payout-submitted"), {
       tone: "warn",
       label: "Pending review",
-      title: "Your first Stellar payout address is pending AYRA verification.",
+      title: "Your Stellar payout address is pending AYRA verification.",
       body:
         "AYRA now has the address you submitted. You can keep working on updates while the address is verified and locked for the first disbursement.",
     });

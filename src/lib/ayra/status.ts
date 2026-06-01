@@ -69,7 +69,7 @@ export function getJourneyStatus(
         return {
           tone: "warn",
           label: "Pending review",
-          title: "Your first Stellar payout address is pending AYRA verification.",
+          title: "Your Stellar payout address is pending AYRA verification.",
           body:
             "AYRA now has the address you submitted. You can keep working on updates while the address is verified and locked for the first disbursement.",
         };
@@ -103,7 +103,7 @@ export function getJourneyStatus(
           label: "Needs attention",
           title: "Some steward fields need another pass.",
           body:
-            "Check the address format, milestone, and update text, then submit again.",
+            "Stellar payout addresses start with G. Do not paste an S-prefixed secret seed or private key; use the public account address you want AYRA to verify.",
         };
       case "error":
         return {
