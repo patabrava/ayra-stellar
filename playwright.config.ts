@@ -16,7 +16,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      "env NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_ANON_KEY= SUPABASE_SERVICE_ROLE_KEY= GEMINI_API_KEY= AYRA_SDP_MODE=mock npm run dev -- --hostname 127.0.0.1 --port " +
+      "env NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_ANON_KEY= SUPABASE_SERVICE_ROLE_KEY= GEMINI_API_KEY= AYRA_SDP_MODE=mock AYRA_USD_COP_RATE=3900 npm run dev -- --hostname 127.0.0.1 --port " +
       port,
     url: baseURL,
     reuseExistingServer: !process.env.CI,

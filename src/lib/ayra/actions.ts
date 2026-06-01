@@ -27,6 +27,10 @@ import {
 } from "@/lib/ayra/sdp";
 import { verifyStellarUsdcPayment, StellarProofError } from "@/lib/ayra/stellar-proof";
 import { insertPublicApplication } from "@/lib/ayra/public-write";
+import {
+  getUsdCopRate,
+  normalizeBatchCurrencyAmounts,
+} from "@/lib/ayra/currency";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loginStatusForAuthError } from "@/lib/ayra/status";
@@ -54,12 +58,15 @@ const batchSchema = z.object({
   periodLabel: z.string().trim().min(4),
   sponsorId: z.string().trim().optional(),
   category: z.string().trim().min(2),
-  amountUsdc: z.coerce
-    .number()
-    .positive()
-    .refine(hasCentsPrecision, "USDC amount must use at most two decimals."),
-  localAmount: z.coerce.number().nonnegative(),
+  amountUsdc: optionalPositiveNumber().refine(
+    (value) => value === undefined || hasCentsPrecision(value),
+    "USDC amount must use at most two decimals.",
+  ),
+  localAmount: optionalPositiveNumber(),
   localCurrency: z.enum(["COP", "USD"]),
+  amountSource: z.enum(["usdc", "local"]).optional(),
+}).refine((value) => value.amountUsdc !== undefined || value.localAmount !== undefined, {
+  message: "A USDC or local amount is required.",
 });
 
 const payoutAddressSchema = z.object({
@@ -96,6 +103,14 @@ function optionalText(formData: FormData, key: string) {
 function hasCentsPrecision(value: number) {
   const cents = value * 100;
   return Number.isSafeInteger(Math.round(cents)) && Math.abs(cents - Math.round(cents)) < 1e-8;
+}
+
+function optionalPositiveNumber() {
+  return z.preprocess(
+    (value) =>
+      typeof value === "string" && value.trim().length === 0 ? undefined : value,
+    z.coerce.number().positive().optional(),
+  );
 }
 
 function optionalFile(formData: FormData, key: string) {
@@ -553,8 +568,17 @@ export async function createBatchAction(formData: FormData) {
     amountUsdc: text(formData, "amountUsdc"),
     localAmount: text(formData, "localAmount"),
     localCurrency: text(formData, "localCurrency"),
+    amountSource: optionalText(formData, "amountSource"),
   });
   if (!parsed.success) redirectWithStatus("/admin", "invalid");
+
+  let normalizedAmounts;
+  try {
+    const { rate } = await getUsdCopRate();
+    normalizedAmounts = normalizeBatchCurrencyAmounts(parsed.data, rate);
+  } catch {
+    redirectWithStatus("/admin", "exchange-rate-error");
+  }
 
   const session = await requireAdminSession("/admin");
   if (session.isDemo) demoRedirect("/admin", "batch-created");
@@ -585,9 +609,9 @@ export async function createBatchAction(formData: FormData) {
     .insert({
       batch_id: data.id,
       category: parsed.data.category,
-      amount_usdc: parsed.data.amountUsdc,
-      local_amount: parsed.data.localAmount,
-      local_currency: parsed.data.localCurrency,
+      amount_usdc: normalizedAmounts.amountUsdc,
+      local_amount: normalizedAmounts.localAmount,
+      local_currency: normalizedAmounts.localCurrency,
       status: "draft",
     })
     .select("id")
@@ -599,9 +623,9 @@ export async function createBatchAction(formData: FormData) {
     sponsor_id: parsed.data.sponsorId ?? null,
     batch_id: data.id,
     category: parsed.data.category,
-    amount_usdc: parsed.data.amountUsdc,
-    local_amount: parsed.data.localAmount,
-    local_currency: parsed.data.localCurrency,
+    amount_usdc: normalizedAmounts.amountUsdc,
+    local_amount: normalizedAmounts.localAmount,
+    local_currency: normalizedAmounts.localCurrency,
     status: "batched",
     notes: "Created from admin one-line batch form.",
     created_by_profile_id: session.context.profile.id,

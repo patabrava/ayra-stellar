@@ -20,3 +20,17 @@ test("admin approval shows confirmation and next steps", async ({ page }) => {
     "No funding batch can be created until that address is verified",
   );
 });
+
+test("admin one-line batch converts USDC and COP both ways", async ({ page }) => {
+  await page.goto("/admin#batches");
+  await expect(page.getByText("Daily market rate: 1 USD = 3,900.00 COP")).toBeVisible();
+
+  const usdc = page.getByLabel("USDC");
+  const cop = page.getByLabel("COP");
+
+  await usdc.fill("2");
+  await expect(cop).toHaveValue("7800");
+
+  await cop.fill("19500");
+  await expect(usdc).toHaveValue("5");
+});

@@ -8,6 +8,7 @@ import {
   OpsNav,
   StatusBannerForSurface,
 } from "@/components/ayra/ui";
+import { BatchCurrencyFields } from "@/components/ayra/batch-currency-fields";
 import {
   approveApplicationAction,
   createBatchAction,
@@ -16,6 +17,7 @@ import {
   syncBatchStatusAction,
   verifyPayoutAddressAction,
 } from "@/lib/ayra/actions";
+import { getUsdCopRate } from "@/lib/ayra/currency";
 import { requireAdminSession } from "@/lib/ayra/session";
 import { formatLocal, getProofPack, type AyraState } from "@/lib/ayra/domain";
 
@@ -63,6 +65,12 @@ export default async function AdminPage({ searchParams }: PageProps) {
     state.batches.find((batch) => batch.status === "submitted") ??
     state.batches[0]!;
   const proof = getProofPack(state, proofBatch.id);
+  let usdCopRate: Awaited<ReturnType<typeof getUsdCopRate>> | null = null;
+  try {
+    usdCopRate = await getUsdCopRate();
+  } catch {
+    usdCopRate = null;
+  }
   const paymentRailLabel =
     process.env.AYRA_SDP_MODE === "testnet"
       ? "Stellar testnet"
@@ -472,28 +480,30 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   <label htmlFor="category">Category</label>
                   <input id="category" name="category" defaultValue="Crew wages" />
                 </div>
-                <div className="grid-3">
-                  <div className="field">
-                    <label htmlFor="amountUsdc">USDC</label>
-                    <input id="amountUsdc" name="amountUsdc" defaultValue="3600" />
+                {usdCopRate ? (
+                  <BatchCurrencyFields
+                    defaultAmountUsdc={3600}
+                    rateUpdatedAt={usdCopRate.updatedAt}
+                    usdCopRate={usdCopRate.rate}
+                  />
+                ) : (
+                  <div
+                    className="border border-rule bg-[var(--ops-surface)] px-4 py-3 text-sm text-ink-muted"
+                    role="status"
+                  >
+                    Daily USD/COP rate unavailable. Batch creation is paused until
+                    the market-rate source is reachable.
                   </div>
-                  <div className="field">
-                    <label htmlFor="localAmount">COP</label>
-                    <input id="localAmount" name="localAmount" defaultValue="14040000" />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="localCurrency">Currency</label>
-                    <select id="localCurrency" name="localCurrency" defaultValue="COP">
-                      <option>COP</option>
-                      <option>USD</option>
-                    </select>
-                  </div>
-                </div>
+                )}
                 <div className="field">
                   <label htmlFor="receiptFile">Private receipt</label>
                   <input id="receiptFile" name="receiptFile" type="file" />
                 </div>
-                <button className="btn primary justify-self-start" type="submit">
+                <button
+                  className="btn primary justify-self-start"
+                  disabled={!usdCopRate}
+                  type="submit"
+                >
                   Create ready batch
                 </button>
               </div>

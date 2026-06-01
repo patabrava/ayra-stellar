@@ -204,6 +204,14 @@ export function getJourneyStatus(
         body:
           "Check the initiative, batch, and amount values, then retry.",
       };
+    case "exchange-rate-error":
+      return {
+        tone: "err",
+        label: "Rate unavailable",
+        title: "AYRA could not load the daily USD/COP rate.",
+        body:
+          "The one-line batch was not saved. Refresh the admin console and retry once the market-rate source is reachable.",
+      };
     case "receipt-error":
       return {
         tone: "err",
