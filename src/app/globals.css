@@ -45,6 +45,7 @@
   --pad-page: clamp(20px, 4vw, 80px);
   --press-scale: 0.985;
   --press-shift: 1px;
+  --action-cursor: url("/cursors/ayra-sprout.svg") 9 25, pointer;
 }
 
 @theme inline {
@@ -89,6 +90,36 @@ select {
   color: inherit;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  :where(
+    a[href],
+    button,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    select,
+    summary,
+    [role="button"],
+    [role="link"],
+    [tabindex]:not([tabindex="-1"])
+  ):where(:not(:disabled, [disabled], [aria-disabled="true"])) {
+    cursor: var(--action-cursor);
+  }
+
+  :where(
+    button,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    select,
+    [role="button"],
+    [role="link"],
+    [tabindex]:not([tabindex="-1"])
+  ):where(:disabled, [disabled], [aria-disabled="true"]) {
+    cursor: not-allowed;
+  }
+}
+
 ::selection {
   background: color-mix(in oklab, var(--accent) 45%, transparent);
   color: var(--foreground);
@@ -116,8 +147,102 @@ select {
   transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+:where(
+  .btn,
+  .public-anchor,
+  .tab,
+  .google-login-btn,
+  .ops-modal-close,
+  .advisor-launcher,
+  .advisor-close,
+  .advisor-quick-action,
+  .advisor-followup,
+  .advisor-citation,
+  .advisor-submit
+) {
+  --bloom-color: var(--accent-admin);
+}
+
+:where(
+  .btn,
+  .public-anchor,
+  .tab,
+  .google-login-btn,
+  .advisor-quick-action,
+  .advisor-followup,
+  .advisor-citation,
+  .advisor-submit
+) {
+  isolation: isolate;
+  position: relative;
+}
+
+:where(
+  .btn,
+  .public-anchor,
+  .tab,
+  .google-login-btn,
+  .ops-modal-close,
+  .advisor-launcher,
+  .advisor-close,
+  .advisor-quick-action,
+  .advisor-followup,
+  .advisor-citation,
+  .advisor-submit
+)::after {
+  border: 1px solid color-mix(in oklab, var(--bloom-color) 72%, transparent);
+  content: "";
+  inset: -4px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: scale(0.94);
+  transition: opacity 160ms, transform 180ms;
+}
+
+:where(
+  .btn,
+  .public-anchor,
+  .tab,
+  .google-login-btn,
+  .ops-modal-close,
+  .advisor-launcher,
+  .advisor-close,
+  .advisor-quick-action,
+  .advisor-followup,
+  .advisor-citation,
+  .advisor-submit
+):where(:hover, :focus-visible):where(:not(:disabled, [aria-disabled="true"]))::after {
+  opacity: 0.7;
+  transform: scale(1);
+}
+
+.public-shell :where(.btn, .public-anchor, .advisor-launcher, .advisor-close, .advisor-quick-action, .advisor-followup, .advisor-citation, .advisor-submit),
+.public-proof :where(.btn, .public-anchor, .advisor-launcher, .advisor-close, .advisor-quick-action, .advisor-followup, .advisor-citation, .advisor-submit),
+.proof-pack :where(.btn, .public-anchor) {
+  --bloom-color: var(--public-leaf);
+}
+
 :where(.btn, .public-anchor, .tab, .google-login-btn, .ops-modal-close):where(:not(:disabled, [aria-disabled="true"])):active {
   transform: translateY(var(--press-shift)) scale(var(--press-scale));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(
+    .btn,
+    .public-anchor,
+    .tab,
+    .google-login-btn,
+    .ops-modal-close,
+    .advisor-launcher,
+    .advisor-close,
+    .advisor-quick-action,
+    .advisor-followup,
+    .advisor-citation,
+    .advisor-submit
+  )::after {
+    transition: none;
+  }
 }
 
 .display {
