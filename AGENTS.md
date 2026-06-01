@@ -228,6 +228,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Standalone `tsx` scripts must call `loadEnvConfig(process.cwd())`, avoid top-level await under this CommonJS build, and reuse the Node WebSocket transport for Supabase clients.
 - Keep SDP env examples, `src/lib/ayra/sdp.ts`, and `docs/ayra-stellar-sdp-testnet-runbook.md` aligned on `AYRA_SDP_MODE` plus `STELLAR_SDP_*`; stale `SDP_*` placeholders send setup down the wrong path.
 - USDC proof sync must fail closed when `STELLAR_USDC_ISSUER` is missing; never let Horizon verification publish an arbitrary USDC issuer.
+- Stellar SDP retries must be idempotent: reuse existing DRAFT/READY disbursements on duplicate-name create conflicts, and reuse the existing receiver email when a wallet is already registered; otherwise retries fail with 409 before payments are created.
 - Playwright fallback advisor smokes must blank `GEMINI_API_KEY` in `webServer.command`; Next loads `.env`, so local keys otherwise bypass deterministic fallback.
 - Playwright advisor smokes must assert public UI labels such as `Public records`, not internal mode strings like `deterministic-fallback`.
 - Gemini Developer API REST structured output must use `generationConfig.responseMimeType` plus `responseSchema`; `responseFormat.text.mimeType` can 400 even when SDK examples show it.

@@ -71,6 +71,10 @@ type SdpDisbursementResponse = {
   id?: string;
   name?: string;
   status?: string;
+  asset?: {
+    id?: string;
+  };
+  registration_contact_type?: string;
 };
 
 type SdpPaymentResponse = {
@@ -80,6 +84,15 @@ type SdpPaymentResponse = {
   external_payment_id?: string;
 };
 
+type SdpReceiverResponse = {
+  id?: string;
+  email?: string;
+  wallets?: Array<{
+    stellar_address?: string;
+    status?: string;
+  }>;
+};
+
 export class SdpGatewayError extends Error {
   events: SdpGatewayEvent[];
 
@@ -87,6 +100,20 @@ export class SdpGatewayError extends Error {
     super(message);
     this.name = "SdpGatewayError";
     this.events = events;
+  }
+}
+
+class SdpHttpError extends Error {
+  action: SdpGatewayEvent["action"];
+  status: number;
+  body: string;
+
+  constructor(action: SdpGatewayEvent["action"], status: number, body: string) {
+    super(sdpHttpErrorMessage(action, status, body));
+    this.name = "SdpHttpError";
+    this.action = action;
+    this.status = status;
+    this.body = body;
   }
 }
 
@@ -226,7 +253,11 @@ export function createTestnetSdpGateway(
           events,
         };
       } catch (error) {
-        const event = toErrorEvent("stellar-sdp", "create_batch", error);
+        const event = toErrorEvent(
+          "stellar-sdp",
+          sdpErrorAction(error, "create_batch"),
+          error,
+        );
         events.push(event);
         throw new SdpGatewayError(event.message ?? "SDP submit failed", events);
       }
@@ -252,7 +283,11 @@ export function createTestnetSdpGateway(
           events,
         };
       } catch (error) {
-        const event = toErrorEvent("stellar-sdp", "sync_status", error);
+        const event = toErrorEvent(
+          "stellar-sdp",
+          sdpErrorAction(error, "sync_status"),
+          error,
+        );
         events.push(event);
         throw new SdpGatewayError(event.message ?? "SDP sync failed", events);
       }
@@ -272,26 +307,58 @@ class TestnetSdpClient {
   async createDisbursement(
     batch: SdpBatchRef,
   ): Promise<SdpDisbursementResponse & { id: string }> {
-    const json = await this.requestJson<SdpDisbursementResponse>(
-      "/disbursements",
-      {
-        method: "POST",
-        authorization: this.config.createAuthorization,
-        json: {
-          name: batch.code,
-          asset_id: this.config.assetId,
-          registration_contact_type: this.config.registrationContactType,
-          wallet_id: "",
-          verification_field: "",
+    try {
+      const json = await this.requestJson<SdpDisbursementResponse>(
+        "/disbursements",
+        {
+          method: "POST",
+          authorization: this.config.createAuthorization,
+          json: {
+            name: batch.code,
+            asset_id: this.config.assetId,
+            registration_contact_type: this.config.registrationContactType,
+            wallet_id: "",
+            verification_field: "",
+          },
         },
-      },
-      "create_batch",
-    );
-    if (!json.id) throw new Error("SDP create response did not include id");
-    return { ...json, id: json.id };
+        "create_batch",
+      );
+      if (!json.id) throw new Error("SDP create response did not include id");
+      return { ...json, id: json.id };
+    } catch (error) {
+      if (!isDuplicateDisbursementConflict(error)) throw error;
+      const existing = await this.findReusableDisbursement(batch).catch(() => null);
+      if (!existing?.id) throw error;
+      return { ...existing, id: existing.id };
+    }
   }
 
   async uploadInstructions(
+    disbursementId: string,
+    batch: SdpBatchRef,
+    lineItems: SdpLineItemRef[],
+  ) {
+    try {
+      await this.uploadInstructionsWithLineItems(disbursementId, batch, lineItems);
+      return;
+    } catch (error) {
+      if (!isDuplicateWalletConflict(error)) throw error;
+
+      const resolvedLineItems =
+        await this.lineItemsWithRegisteredReceiverEmails(lineItems).catch(() => null);
+      if (!resolvedLineItems || !hasReceiverEmailChange(lineItems, resolvedLineItems)) {
+        throw error;
+      }
+
+      await this.uploadInstructionsWithLineItems(
+        disbursementId,
+        batch,
+        resolvedLineItems,
+      );
+    }
+  }
+
+  private async uploadInstructionsWithLineItems(
     disbursementId: string,
     batch: SdpBatchRef,
     lineItems: SdpLineItemRef[],
@@ -311,6 +378,74 @@ class TestnetSdpClient {
         body,
       },
       "upload_instructions",
+    );
+  }
+
+  private async lineItemsWithRegisteredReceiverEmails(
+    lineItems: SdpLineItemRef[],
+  ) {
+    const receivers = await this.listReceivers();
+    const receiverEmailByWallet = new Map<string, string>();
+    for (const receiver of receivers) {
+      if (!receiver.email) continue;
+      for (const wallet of receiver.wallets ?? []) {
+        if (
+          wallet.status === "REGISTERED" &&
+          wallet.stellar_address
+        ) {
+          receiverEmailByWallet.set(
+            normalizeStellarAddress(wallet.stellar_address),
+            receiver.email,
+          );
+        }
+      }
+    }
+
+    return lineItems.map((lineItem) => {
+      const receiverEmail = receiverEmailByWallet.get(
+        normalizeStellarAddress(lineItem.walletAddress),
+      );
+      return receiverEmail && receiverEmail !== lineItem.receiverEmail
+        ? { ...lineItem, receiverEmail }
+        : lineItem;
+    });
+  }
+
+  private async listReceivers() {
+    const receivers: SdpReceiverResponse[] = [];
+    const pageLimit = 100;
+    const maxPages = 10;
+    for (let page = 1; page <= maxPages; page += 1) {
+      const json = await this.requestJson<unknown>(
+        `/receivers?page=${page}&page_limit=${pageLimit}`,
+        {
+          method: "GET",
+          authorization: this.config.createAuthorization,
+        },
+        "upload_instructions",
+      );
+      receivers.push(...extractReceivers(json));
+      const pages = extractPaginationPages(json);
+      if (!pages || page >= pages) break;
+    }
+    return receivers;
+  }
+
+  private async findReusableDisbursement(batch: SdpBatchRef) {
+    const json = await this.requestJson<unknown>(
+      `/disbursements?q=${encodeURIComponent(batch.code)}&page=1&page_limit=20`,
+      {
+        method: "GET",
+        authorization: this.config.createAuthorization,
+      },
+      "create_batch",
+    );
+    return extractDisbursements(json).find(
+      (item) =>
+        item.name === batch.code &&
+        (item.status === "DRAFT" || item.status === "READY") &&
+        item.asset?.id === this.config.assetId &&
+        item.registration_contact_type === this.config.registrationContactType,
     );
   }
 
@@ -399,8 +534,45 @@ class TestnetSdpClient {
 }
 
 async function sdpHttpError(action: SdpGatewayEvent["action"], response: Response) {
-  await response.text().catch(() => "");
-  return new Error(`SDP ${action} failed with HTTP ${response.status}`);
+  const body = await response.text().catch(() => "");
+  return new SdpHttpError(action, response.status, body);
+}
+
+function sdpHttpErrorMessage(
+  action: SdpGatewayEvent["action"],
+  status: number,
+  body: string,
+) {
+  if (status === 409 && /wallet address .*already registered to another receiver/i.test(body)) {
+    return `SDP ${action} failed: wallet address is already registered to another SDP receiver.`;
+  }
+  if (status === 409 && /disbursement already exists/i.test(body)) {
+    return `SDP ${action} failed: disbursement already exists.`;
+  }
+  return `SDP ${action} failed with HTTP ${status}`;
+}
+
+function sdpErrorAction(
+  error: unknown,
+  fallback: SdpGatewayEvent["action"],
+) {
+  return error instanceof SdpHttpError ? error.action : fallback;
+}
+
+function isDuplicateWalletConflict(error: unknown) {
+  return (
+    error instanceof SdpHttpError &&
+    error.status === 409 &&
+    /wallet address .*already registered to another receiver/i.test(error.body)
+  );
+}
+
+function isDuplicateDisbursementConflict(error: unknown) {
+  return (
+    error instanceof SdpHttpError &&
+    error.status === 409 &&
+    /disbursement already exists/i.test(error.body)
+  );
 }
 
 function toErrorEvent(
@@ -427,8 +599,57 @@ function extractPayments(json: unknown): SdpPaymentResponse[] {
   return [];
 }
 
+function extractReceivers(json: unknown): SdpReceiverResponse[] {
+  if (Array.isArray(json)) return json.filter(isReceiver);
+  if (json && typeof json === "object") {
+    const data = (json as { data?: unknown }).data;
+    if (Array.isArray(data)) return data.filter(isReceiver);
+    if (isReceiver(data)) return [data];
+    if (isReceiver(json)) return [json];
+  }
+  return [];
+}
+
+function extractDisbursements(json: unknown): SdpDisbursementResponse[] {
+  if (Array.isArray(json)) return json.filter(isDisbursement);
+  if (json && typeof json === "object") {
+    const data = (json as { data?: unknown }).data;
+    if (Array.isArray(data)) return data.filter(isDisbursement);
+    if (isDisbursement(data)) return [data];
+    if (isDisbursement(json)) return [json];
+  }
+  return [];
+}
+
+function extractPaginationPages(json: unknown) {
+  if (!json || typeof json !== "object") return null;
+  const pages = (json as { pagination?: { pages?: unknown } }).pagination?.pages;
+  return typeof pages === "number" && Number.isFinite(pages) ? pages : null;
+}
+
 function isPayment(value: unknown): value is SdpPaymentResponse {
   return Boolean(value && typeof value === "object" && "id" in value);
+}
+
+function isReceiver(value: unknown): value is SdpReceiverResponse {
+  return Boolean(value && typeof value === "object" && "id" in value);
+}
+
+function isDisbursement(value: unknown): value is SdpDisbursementResponse {
+  return Boolean(value && typeof value === "object" && "id" in value);
+}
+
+function normalizeStellarAddress(value: string) {
+  return value.trim().toUpperCase();
+}
+
+function hasReceiverEmailChange(
+  original: SdpLineItemRef[],
+  resolved: SdpLineItemRef[],
+) {
+  return original.some(
+    (lineItem, index) => lineItem.receiverEmail !== resolved[index]?.receiverEmail,
+  );
 }
 
 export function createSdpGateway(

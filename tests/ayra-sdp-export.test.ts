@@ -177,6 +177,142 @@ describe("AYRA SDP gateway and CSV exports", () => {
     assert.match(calls.find((call) => call.csv)?.csv ?? "", /walletAddressMemo/);
   });
 
+  it("retries instruction upload with the existing SDP receiver for a registered wallet", async () => {
+    const lineItems = [sdpLineItems[0]!];
+    const uploadCsvs: string[] = [];
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const url = String(input);
+
+      if (url.endsWith("/disbursements")) {
+        return Response.json({ id: "sdp-disbursement-1", status: "DRAFT" }, { status: 201 });
+      }
+
+      if (url.endsWith("/disbursements/sdp-disbursement-1/instructions")) {
+        assert.ok(init?.body instanceof FormData);
+        const file = init.body.get("file");
+        assert.ok(file && typeof file === "object" && "text" in file);
+        uploadCsvs.push(await (file as Blob).text());
+        if (uploadCsvs.length === 1) {
+          return Response.json(
+            {
+              error: `wallet address ${lineItems[0].walletAddress} is already registered to another receiver: wallet address already in use`,
+            },
+            { status: 409 },
+          );
+        }
+        return Response.json({ message: "File uploaded successfully" }, { status: 201 });
+      }
+
+      if (url.endsWith("/receivers?page=1&page_limit=100")) {
+        return Response.json({
+          pagination: { pages: 1, total: 1 },
+          data: [
+            {
+              id: "receiver-existing",
+              email: "existing-receiver@example.org",
+              wallets: [
+                {
+                  stellar_address: lineItems[0].walletAddress.toLowerCase(),
+                  status: "REGISTERED",
+                },
+              ],
+            },
+          ],
+        });
+      }
+
+      if (url.endsWith("/disbursements/sdp-disbursement-1/status")) {
+        return Response.json({ message: "Disbursement started" }, { status: 200 });
+      }
+
+      if (url.includes("/payments?")) {
+        const paymentId = new URL(url).searchParams.get("q");
+        return Response.json({
+          data: [
+            {
+              id: `sdp-${paymentId}`,
+              external_payment_id: paymentId,
+              status: "SUCCESS",
+            },
+          ],
+        });
+      }
+
+      return new Response("unexpected", { status: 500 });
+    };
+
+    const gateway = createTestnetSdpGateway(testnetConfig, fetchImpl);
+    const submitted = await gateway.submitBatch(
+      { id: "batch-1", code: "PV-TEST-MAY26" },
+      lineItems,
+    );
+
+    assert.equal(uploadCsvs.length, 2);
+    assert.match(uploadCsvs[0] ?? "", /^receiver@example\.org,/m);
+    assert.match(uploadCsvs[1] ?? "", /^existing-receiver@example\.org,/m);
+    assert.equal(submitted.payments[0]?.paymentId, "sdp-pv-test-may26-line-1");
+  });
+
+  it("reuses an existing draft SDP disbursement after a duplicate create conflict", async () => {
+    const calls: string[] = [];
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const url = String(input);
+      calls.push(`${init?.method} ${new URL(url).pathname}${new URL(url).search}`);
+
+      if (url.endsWith("/disbursements")) {
+        return Response.json({ error: "disbursement already exists" }, { status: 409 });
+      }
+
+      if (url.endsWith("/disbursements?q=PV-TEST-MAY26&page=1&page_limit=20")) {
+        return Response.json({
+          pagination: { pages: 1, total: 1 },
+          data: [
+            {
+              id: "sdp-existing-draft",
+              name: "PV-TEST-MAY26",
+              status: "DRAFT",
+              asset: { id: "asset-usdc" },
+              registration_contact_type: "EMAIL_AND_WALLET_ADDRESS",
+            },
+          ],
+        });
+      }
+
+      if (url.endsWith("/disbursements/sdp-existing-draft/instructions")) {
+        return Response.json({ message: "File uploaded successfully" }, { status: 201 });
+      }
+
+      if (url.endsWith("/disbursements/sdp-existing-draft/status")) {
+        return Response.json({ message: "Disbursement started" }, { status: 200 });
+      }
+
+      if (url.includes("/payments?")) {
+        const paymentId = new URL(url).searchParams.get("q");
+        return Response.json({
+          data: [
+            {
+              id: `sdp-${paymentId}`,
+              external_payment_id: paymentId,
+              status: "SUCCESS",
+            },
+          ],
+        });
+      }
+
+      return new Response("unexpected", { status: 500 });
+    };
+
+    const gateway = createTestnetSdpGateway(testnetConfig, fetchImpl);
+    const submitted = await gateway.submitBatch(
+      { id: "batch-1", code: "PV-TEST-MAY26" },
+      [sdpLineItems[0]!],
+    );
+
+    assert.equal(submitted.externalBatchId, "sdp-existing-draft");
+    assert.ok(calls.includes("GET /disbursements?q=PV-TEST-MAY26&page=1&page_limit=20"));
+    assert.ok(calls.includes("POST /disbursements/sdp-existing-draft/instructions"));
+  });
+
   it("does not map broad SDP payment search results without an exact payment id match", async () => {
     const fetchImpl: typeof fetch = async (input, init) => {
       const url = String(input);
@@ -245,6 +381,34 @@ describe("AYRA SDP gateway and CSV exports", () => {
       (error) => {
         assert.ok(error instanceof SdpGatewayError);
         assert.equal(error.events[0]?.status, "error");
+        assert.doesNotMatch(error.message, /secret-token-value/);
+        return true;
+      },
+    );
+  });
+
+  it("keeps instruction upload failures on the upload action", async () => {
+    const gateway = createTestnetSdpGateway(testnetConfig, async (input) => {
+      const url = String(input);
+      if (url.endsWith("/disbursements")) {
+        return Response.json({ id: "sdp-disbursement-1", status: "DRAFT" }, { status: 201 });
+      }
+      if (url.endsWith("/disbursements/sdp-disbursement-1/instructions")) {
+        return new Response("secret-token-value", { status: 500 });
+      }
+      return new Response("unexpected", { status: 500 });
+    });
+
+    await assert.rejects(
+      () =>
+        gateway.submitBatch(
+          { id: "batch-1", code: "PV-TEST-MAY26" },
+          sdpLineItems,
+        ),
+      (error) => {
+        assert.ok(error instanceof SdpGatewayError);
+        assert.equal(error.events[0]?.action, "create_batch");
+        assert.equal(error.events[1]?.action, "upload_instructions");
         assert.doesNotMatch(error.message, /secret-token-value/);
         return true;
       },
