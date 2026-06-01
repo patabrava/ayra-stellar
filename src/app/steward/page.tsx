@@ -403,7 +403,10 @@ export default async function StewardPage({ searchParams }: PageProps) {
                               Verified
                             </Link>
                           ) : (
-                            <Hash value={line.sdpPaymentId} />
+                            <Hash
+                              pendingLabel="Settlement reference pending"
+                              value={line.sdpPaymentId}
+                            />
                           )}
                         </td>
                       </tr>

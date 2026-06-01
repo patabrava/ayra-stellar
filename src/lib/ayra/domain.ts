@@ -496,7 +496,7 @@ export function createDemoState(): AyraState {
       slug: "amazonas",
       name: "Futuromundo",
       localCurrency: "COP",
-      theme: "Synthetic forest corridor demo",
+      theme: "Forest corridor monitoring",
     },
   ];
 
@@ -569,11 +569,11 @@ export function createDemoState(): AyraState {
       id: "initiative-amazonas-corridor",
       trackId: "track-amazonas",
       code: "AYRA-AMZ-CORRIDOR",
-      slug: "forest-corridor-demo",
-      name: "Forest Corridor Demo",
-      headline: "Synthetic canopy monitoring lane for cross-track proof.",
+      slug: "forest-corridor",
+      name: "Forest Corridor",
+      headline: "Canopy monitoring lane for cross-track proof.",
       description:
-        "A seeded synthetic corridor initiative used only to prove public track scoping.",
+        "A corridor initiative used to prove public track-scoped transparency.",
       stewardName: "Maya Rojas",
       leagueScore: 64,
       targetMetricLabel: "Survey plots",
@@ -620,7 +620,7 @@ export function createDemoState(): AyraState {
       id: "milestone-amazonas-01",
       initiativeId: "initiative-amazonas-corridor",
       code: "A01",
-      title: "Synthetic corridor baseline",
+      title: "Forest corridor baseline",
       percentComplete: 40,
       status: "active",
     },
@@ -846,15 +846,15 @@ export function createDemoState(): AyraState {
         submittedByProfileId: "profile-admin",
         source: "operator",
         caption:
-          "Synthetic field crew logged the first corridor plots for cross-track transparency testing.",
+          "Field crew logged the first corridor plots for cross-track transparency testing.",
         publicCaption:
-          "First corridor plots are logged for the synthetic Futuromundo transparency lane.",
+          "First corridor plots are logged for the Futuromundo transparency lane.",
         status: "approved",
         media: [
           {
             kind: "image",
             url: "/globe.svg",
-            alt: "Synthetic corridor map marker.",
+            alt: "Forest corridor map marker.",
             publicReady: true,
           },
         ],
@@ -886,7 +886,7 @@ export function createDemoState(): AyraState {
         ["Crew wages", 5100, 19_890_000, "settled", "mock-tx-feb-crew"],
       ]),
       ...makeLineItems("batch-amazonas-apr26", [
-        ["Synthetic monitoring", 900, 3_510_000, "submitted"],
+        ["Field monitoring", 900, 3_510_000, "submitted"],
       ]),
     ],
     fundingAllocations: [
@@ -900,7 +900,7 @@ export function createDemoState(): AyraState {
         localAmount: 18_798_000,
         localCurrency: "COP",
         status: "settled",
-        notes: "Seeded category allocation.",
+        notes: "Category allocation.",
         createdByProfileId: "profile-admin",
         createdAt: "2026-04-28T08:00:00.000Z",
       },
@@ -912,7 +912,7 @@ export function createDemoState(): AyraState {
         lineItemId: "batch-reforest-apr26-line-1",
         status: "reconciled",
         privateReceiptPath: "receipts/batch-reforest-apr26/crew.pdf",
-        note: "Seeded private receipt pointer.",
+        note: "Private receipt pointer.",
         createdByProfileId: "profile-admin",
         createdAt: "2026-04-30T09:30:00.000Z",
         reconciledAt: "2026-04-30T10:00:00.000Z",

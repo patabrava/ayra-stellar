@@ -12,8 +12,8 @@ describe("AYRA public Supabase writes", () => {
         NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
       },
       {
-        applicantName: "Codex UI Steward",
-        applicantEmail: "codex-ui@example.org",
+        applicantName: "AYRA UI Steward",
+        applicantEmail: "ayra-ui@example.org",
         proposedTrackName: "Providencia",
         proposedInitiativeName: "UI nursery",
         scopeSummary: "Browser-managed public intake.",
@@ -34,8 +34,8 @@ describe("AYRA public Supabase writes", () => {
       "return=minimal",
     );
     assert.deepEqual(JSON.parse(String(request?.init.body)), {
-      applicant_name: "Codex UI Steward",
-      applicant_email: "codex-ui@example.org",
+      applicant_name: "AYRA UI Steward",
+      applicant_email: "ayra-ui@example.org",
       proposed_track_name: "Providencia",
       proposed_initiative_name: "UI nursery",
       scope_summary: "Browser-managed public intake.",

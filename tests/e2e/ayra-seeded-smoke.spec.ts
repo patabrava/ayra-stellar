@@ -25,7 +25,7 @@ test("seeded MVP journey from application intake to public disbursement proof", 
     "AYRA public approval states are live and funding.",
   );
   await expect(page.getByText("AYRA approved projects")).toBeVisible();
-  await expect(page.getByText("DETERMINISTIC FALLBACK")).toBeVisible();
+  await expect(page.getByText("Public records", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Close advisor" }).click();
   await expect(page.getByRole("dialog", { name: "Ask AYRA" })).toBeHidden();
 
@@ -49,7 +49,7 @@ test("seeded MVP journey from application intake to public disbursement proof", 
     "aria-current",
     "page",
   );
-  await expect(page.getByRole("link", { name: "Open Forest Corridor Demo" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Forest Corridor" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Latest first");
 
   await page.goto("/apply");
@@ -80,8 +80,10 @@ test("seeded MVP journey from application intake to public disbursement proof", 
   await expect(page.getByRole("heading", { name: "Updates publisher" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Batches" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Proof packs" })).toBeVisible();
-  await expect(page.getByText("SDP mode").first()).toBeVisible();
-  await expect(page.getByText("Mock").first()).toBeVisible();
+  await expect(page.getByText("Payment rail").first()).toBeVisible();
+  await expect(page.getByText("Provider setup pending").first()).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("Mock");
+  await expect(page.locator("body")).not.toContainText("mock-");
   await expect(page.getByRole("link", { name: /Export CSV/ })).toBeVisible();
   await expect(page.locator("body")).not.toContainText(
     "receipts/batch-reforest-apr26/crew.pdf",

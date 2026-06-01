@@ -7,8 +7,8 @@ import {
 } from "../src/lib/ayra/application-intake";
 
 const validApplication = {
-  applicantName: "Codex Steward",
-  applicantEmail: "codex-steward@example.org",
+  applicantName: "AYRA Steward",
+  applicantEmail: "ayra-steward@example.org",
   proposedTrackName: "Providencia",
   proposedInitiativeName: "Mangrove nursery",
   scopeSummary:

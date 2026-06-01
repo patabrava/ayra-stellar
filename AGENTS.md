@@ -229,6 +229,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Keep SDP env examples, `src/lib/ayra/sdp.ts`, and `docs/ayra-stellar-sdp-testnet-runbook.md` aligned on `AYRA_SDP_MODE` plus `STELLAR_SDP_*`; stale `SDP_*` placeholders send setup down the wrong path.
 - USDC proof sync must fail closed when `STELLAR_USDC_ISSUER` is missing; never let Horizon verification publish an arbitrary USDC issuer.
 - Playwright fallback advisor smokes must blank `GEMINI_API_KEY` in `webServer.command`; Next loads `.env`, so local keys otherwise bypass deterministic fallback.
+- Playwright advisor smokes must assert public UI labels such as `Public records`, not internal mode strings like `deterministic-fallback`.
 - Gemini Developer API REST structured output must use `generationConfig.responseMimeType` plus `responseSchema`; `responseFormat.text.mimeType` can 400 even when SDK examples show it.
 - Gemini Developer API `responseSchema` rejects unsupported JSON Schema fields such as `additionalProperties`; keep schemas to the accepted subset and validate extra fields locally with Zod.
 - Seeded operator email changes must be applied to live `profiles` plus `user_roles`; a successful magic-link session still redirects with `admin-required` when the authenticated profile only has `applicant`.

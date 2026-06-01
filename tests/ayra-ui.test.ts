@@ -22,13 +22,15 @@ describe("AYRA UI hash renderer", () => {
     assert.match(markup, /rel="noopener noreferrer"/);
   });
 
-  it("keeps non-transaction references as plain hashes", () => {
+  it("hides placeholder provider references from the UI", () => {
     const markup = renderToStaticMarkup(
       createElement(Hash, { value: "mock-payment-apr-3" }),
     );
 
     assert.match(markup, /^<span /);
     assert.doesNotMatch(markup, /href=/);
+    assert.doesNotMatch(markup, /mock-payment-apr-3/);
+    assert.match(markup, /Reference pending/);
   });
 });
 

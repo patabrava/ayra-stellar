@@ -63,7 +63,10 @@ export default async function AdminPage({ searchParams }: PageProps) {
     state.batches.find((batch) => batch.status === "submitted") ??
     state.batches[0]!;
   const proof = getProofPack(state, proofBatch.id);
-  const sdpMode = process.env.AYRA_SDP_MODE === "testnet" ? "Testnet" : "Mock";
+  const paymentRailLabel =
+    process.env.AYRA_SDP_MODE === "testnet"
+      ? "Stellar testnet"
+      : "Provider setup pending";
 
   return (
     <main className="ops-shell">
@@ -105,7 +108,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
           <div className="stat-grid mb-5">
             <div className="stat">
-              <div className="stat-k">Allocation plan · seeded</div>
+              <div className="stat-k">Allocation plan</div>
               <div className="stat-v">
                 <Money amount={allocated} />
               </div>
@@ -126,8 +129,8 @@ export default async function AdminPage({ searchParams }: PageProps) {
               <div className="stat-d">applications, updates, payout checks</div>
             </div>
             <div className="stat">
-              <div className="stat-k">SDP mode</div>
-              <div className="stat-v text-2xl">{sdpMode}</div>
+              <div className="stat-k">Payment rail</div>
+              <div className="stat-v text-2xl">{paymentRailLabel}</div>
               <div className="stat-d">server boundary only</div>
             </div>
           </div>
@@ -457,7 +460,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                 ) : null}
                 <div className="grid-2">
                   <div className="field">
-                    <label htmlFor="code">Code</label>
+                    <label htmlFor="code">Batch reference</label>
                     <input id="code" name="code" defaultValue="PV-REFOREST-MAY26" />
                   </div>
                   <div className="field">
@@ -530,7 +533,10 @@ export default async function AdminPage({ searchParams }: PageProps) {
                         </Chip>
                       </td>
                       <td>
-                        <Hash value={line.transactionHash ?? line.sdpPaymentId} />
+                        <Hash
+                          pendingLabel="Settlement reference pending"
+                          value={line.transactionHash ?? line.sdpPaymentId}
+                        />
                       </td>
                     </tr>
                   ))}

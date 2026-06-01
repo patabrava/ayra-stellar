@@ -32,8 +32,18 @@ export function Chip({
   return <span className={tone ? `chip ${tone}` : "chip"}>{children}</span>;
 }
 
-export function Hash({ value }: { value?: string }) {
+export function Hash({
+  value,
+  pendingLabel = "Reference pending",
+}: {
+  value?: string;
+  pendingLabel?: string;
+}) {
   if (!value) return <span className="text-ink-muted">-</span>;
+  if (isInternalPlaceholderReference(value)) {
+    return <span className="text-ink-muted">{pendingLabel}</span>;
+  }
+
   const explorerUrl = getStellarExpertTransactionUrl(value);
 
   if (explorerUrl) {
@@ -52,6 +62,10 @@ export function Hash({ value }: { value?: string }) {
   }
 
   return <span className="hashish">{value}</span>;
+}
+
+function isInternalPlaceholderReference(value: string) {
+  return /^(mock|demo)-/i.test(value);
 }
 
 function getStellarExpertTransactionUrl(value: string) {
