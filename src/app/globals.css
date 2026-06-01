@@ -45,7 +45,7 @@
   --pad-page: clamp(20px, 4vw, 80px);
   --press-scale: 0.985;
   --press-shift: 1px;
-  --action-cursor: url("/cursors/ayra-sprout.svg") 9 25, pointer;
+  --action-cursor: pointer;
 }
 
 @theme inline {

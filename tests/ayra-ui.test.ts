@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -47,5 +48,14 @@ describe("AYRA journey status banner", () => {
     assert.match(markup, /Steward access is active/);
     assert.match(markup, /Next step: the steward submits the first Stellar payout address/);
     assert.match(markup, /No funding batch can be created until that address is verified/);
+  });
+});
+
+describe("AYRA global clickable cursor", () => {
+  it("uses the native hand cursor instead of the old leaf asset", () => {
+    const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
+
+    assert.match(css, /--action-cursor:\s*pointer;/);
+    assert.doesNotMatch(css, /\/cursors\/ayra-sprout\.svg/);
   });
 });
