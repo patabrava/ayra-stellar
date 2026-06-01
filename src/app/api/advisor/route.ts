@@ -84,12 +84,23 @@ export async function POST(request: Request) {
   }
 
   try {
+    const geminiAnswer = await generateGeminiAdvisorAnswer(
+      parsed.data.question,
+      retrievalSources,
+      parsed.data.history ?? [],
+    );
+    if (
+      geminiAnswer.status === "grounded_decline" &&
+      fallbackAnswer.status === "answered"
+    ) {
+      return advisorJson({
+        ...fallbackAnswer,
+        mode: "deterministic-fallback",
+      });
+    }
+
     return advisorJson({
-      ...(await generateGeminiAdvisorAnswer(
-        parsed.data.question,
-        retrievalSources,
-        parsed.data.history ?? [],
-      )),
+      ...geminiAnswer,
       mode: "gemini",
     });
   } catch (error) {

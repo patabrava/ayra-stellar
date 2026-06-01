@@ -39,6 +39,32 @@ async function withAdvisorFallbackEnv<T>(run: () => Promise<T>) {
   }
 }
 
+async function withMockedGemini<T>(
+  responseBody: unknown,
+  run: () => Promise<T>,
+) {
+  const previousApiKey = process.env.GEMINI_API_KEY;
+  const previousFetch = globalThis.fetch;
+
+  process.env.GEMINI_API_KEY = "test-gemini-key";
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify(responseBody), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+
+  try {
+    return await run();
+  } finally {
+    if (previousApiKey === undefined) {
+      delete process.env.GEMINI_API_KEY;
+    } else {
+      process.env.GEMINI_API_KEY = previousApiKey;
+    }
+    globalThis.fetch = previousFetch;
+  }
+}
+
 function advisorRequest(body: unknown) {
   return new Request("http://localhost/api/advisor", {
     method: "POST",
@@ -381,6 +407,48 @@ describe("AYRA advisor API route", () => {
       assert.match(body.answer, /Providencia/i);
       assert.equal(body.citations[0]?.sourceId, "ayra:north-star");
     });
+  });
+
+  it("uses the grounded fallback when Gemini declines a supported AYRA overview", async () => {
+    await withMockedGemini(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    answer:
+                      "The sources do not contain a definition of AYRA.",
+                    citations: [],
+                    followups: [],
+                    status: "grounded_decline",
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      },
+      async () => {
+        const response = await postAdvisor(
+          advisorRequest({
+            question: "What is AYRA?",
+            route: {
+              trackSlug: "providencia",
+              initiativeSlug: "reforestation",
+            },
+          }),
+        );
+        const body = await response.json();
+
+        assert.equal(response.status, 200);
+        assert.equal(body.mode, "deterministic-fallback");
+        assert.equal(body.status, "answered");
+        assert.match(body.answer, /AYRA is/i);
+        assert.equal(body.citations[0]?.sourceId, "ayra:north-star");
+      },
+    );
   });
 
   it("returns 400 for malformed advisor questions", async () => {
