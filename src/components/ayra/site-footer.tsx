@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Heart } from "lucide-react";
 
+import { PUBLIC_CONTACT_EMAIL } from "@/lib/ayra/contact";
+
 function XIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -58,9 +60,9 @@ export function SiteFooter() {
           </Link>
           <a
             className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)] normal-case tracking-normal"
-            href="mailto:contact@ayra.haus"
+            href={`mailto:${PUBLIC_CONTACT_EMAIL}`}
           >
-            contact@ayra.haus
+            {PUBLIC_CONTACT_EMAIL}
           </a>
         </div>
 

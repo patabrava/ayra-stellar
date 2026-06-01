@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AyraLogo } from "@/components/ayra/ui";
 import { SiteFooter } from "@/components/ayra/site-footer";
+import { PUBLIC_CONTACT_EMAIL } from "@/lib/ayra/contact";
 
 export const metadata = {
   title: "Privacy | AYRA Stellar",
@@ -74,9 +75,9 @@ export default function PrivacyPage() {
             Questions about this site or its privacy handling can be sent to{" "}
             <a
               className="text-[var(--public-fg)] underline underline-offset-4"
-              href="mailto:contact@ayra.haus"
+              href={`mailto:${PUBLIC_CONTACT_EMAIL}`}
             >
-              contact@ayra.haus
+              {PUBLIC_CONTACT_EMAIL}
             </a>
             .
           </p>
