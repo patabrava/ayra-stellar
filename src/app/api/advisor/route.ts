@@ -92,8 +92,11 @@ export async function POST(request: Request) {
       )),
       mode: "gemini",
     });
-  } catch {
-    console.error("AYRA advisor Gemini generation failed; using fallback.");
+  } catch (error) {
+    console.error(
+      "AYRA advisor Gemini generation failed; using fallback.",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     return advisorJson({
       ...fallbackAnswer,
       mode: "deterministic-fallback",

@@ -33,6 +33,10 @@ const quickQuestions = [
   "What is the public approval list?",
 ] as const;
 
+function advisorModeLabel(mode: AdvisorApiResponse["mode"]) {
+  return mode === "gemini" ? "Conversational" : "Public records";
+}
+
 export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPanelProps) {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
@@ -266,7 +270,7 @@ export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPa
                           : "Grounded decline"}
                       </Chip>
                       <span className="advisor-mode">
-                        {response.mode.replaceAll("-", " ").toUpperCase()}
+                        {advisorModeLabel(response.mode)}
                       </span>
                     </div>
                     <p className="advisor-answer">{response.answer}</p>

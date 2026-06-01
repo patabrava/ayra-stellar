@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-import { AiAdvisor } from "@/components/ayra/ai-advisor";
 import { AyraLogo } from "@/components/ayra/ui";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
 import { SiteFooter } from "@/components/ayra/site-footer";
@@ -190,7 +189,6 @@ export default async function Home({ searchParams }: PageProps) {
         ) : null}
       </section>
 
-      <AiAdvisor trackSlug={wall.track.slug} />
       <SiteFooter />
     </main>
   );
