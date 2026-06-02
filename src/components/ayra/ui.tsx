@@ -64,6 +64,32 @@ export function Hash({
   return <span className="hashish">{value}</span>;
 }
 
+export function StellarTransactionVerificationLink({
+  transactionHash,
+}: {
+  transactionHash?: string;
+}) {
+  const explorerUrl = transactionHash
+    ? getStellarExpertTransactionUrl(transactionHash)
+    : null;
+  if (!explorerUrl || !transactionHash) {
+    return <span className="text-ink-muted">Verification URL pending</span>;
+  }
+
+  return (
+    <a
+      aria-label={`Verify Stellar testnet transaction ${transactionHash}`}
+      className="hashish"
+      href={explorerUrl}
+      rel="noopener noreferrer"
+      target="_blank"
+      title="Verify on Stellar Expert"
+    >
+      Verify on Stellar Expert
+    </a>
+  );
+}
+
 function isInternalPlaceholderReference(value: string) {
   return /^(mock|demo)-/i.test(value);
 }

@@ -10,7 +10,12 @@ import {
   BatchInitiativeTarget,
   type BatchInitiativeTargetOption,
 } from "@/components/ayra/batch-initiative-target";
-import { Chip, Hash, Money } from "@/components/ayra/ui";
+import {
+  Chip,
+  Hash,
+  Money,
+  StellarTransactionVerificationLink,
+} from "@/components/ayra/ui";
 import {
   createBatchAction,
   submitBatchAction,
@@ -96,49 +101,73 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                 </tr>
               </thead>
               <tbody>
-                {session.state.batches.map((batch) => (
-                  <tr key={batch.id}>
-                    <td>
-                      <div className="row-name">{batch.code}</div>
-                      <div className="row-meta">
-                        {batch.periodLabel} · {batch.initiativeId}
-                      </div>
-                    </td>
-                    <td>
-                      <Money amount={batchTotal(session.state, batch.id)} />
-                    </td>
-                    <td>
-                      <Chip tone={batch.status === "settled" ? "ok" : "info"}>
-                        {batch.status}
-                      </Chip>
-                    </td>
-                    <td>
-                      {batch.status === "ready" ? (
-                        <form action={submitBatchAction}>
-                          <input name="batchId" type="hidden" value={batch.id} />
-                          <button className="btn primary" type="submit">
-                            Submit <Send className="h-4 w-4" />
-                          </button>
-                        </form>
-                      ) : batch.status === "submitted" ? (
-                        <form action={syncBatchStatusAction}>
-                          <input name="batchId" type="hidden" value={batch.id} />
-                          <button className="btn" type="submit">
-                            Sync status
-                          </button>
-                        </form>
-                      ) : (
-                        <div className="grid gap-1">
-                          <span className="text-xs uppercase text-ink-muted">SDP batch</span>
-                          <Hash
-                            pendingLabel="Provider batch reference recorded"
-                            value={batch.sdpBatchId}
-                          />
+                {session.state.batches.map((batch) => {
+                  const settledTransactionHashes = session.state.batchLineItems
+                    .filter(
+                      (line) =>
+                        line.batchId === batch.id &&
+                        line.status === "settled" &&
+                        line.transactionHash,
+                    )
+                    .map((line) => line.transactionHash!);
+
+                  return (
+                    <tr key={batch.id}>
+                      <td>
+                        <div className="row-name">{batch.code}</div>
+                        <div className="row-meta">
+                          {batch.periodLabel} · {batch.initiativeId}
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td>
+                        <Money amount={batchTotal(session.state, batch.id)} />
+                      </td>
+                      <td>
+                        <Chip tone={batch.status === "settled" ? "ok" : "info"}>
+                          {batch.status}
+                        </Chip>
+                      </td>
+                      <td>
+                        {batch.status === "ready" ? (
+                          <form action={submitBatchAction}>
+                            <input name="batchId" type="hidden" value={batch.id} />
+                            <button className="btn primary" type="submit">
+                              Submit <Send className="h-4 w-4" />
+                            </button>
+                          </form>
+                        ) : batch.status === "submitted" ? (
+                          <form action={syncBatchStatusAction}>
+                            <input name="batchId" type="hidden" value={batch.id} />
+                            <button className="btn" type="submit">
+                              Sync status
+                            </button>
+                          </form>
+                        ) : (
+                          <div className="grid gap-1">
+                            <span className="text-xs uppercase text-ink-muted">SDP batch</span>
+                            <Hash
+                              pendingLabel="Provider batch reference recorded"
+                              value={batch.sdpBatchId}
+                            />
+                            <span className="mt-2 text-xs uppercase text-ink-muted">
+                              Explorer verification
+                            </span>
+                            {settledTransactionHashes.length > 0 ? (
+                              settledTransactionHashes.map((transactionHash) => (
+                                <StellarTransactionVerificationLink
+                                  key={transactionHash}
+                                  transactionHash={transactionHash}
+                                />
+                              ))
+                            ) : (
+                              <StellarTransactionVerificationLink />
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

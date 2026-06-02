@@ -4,7 +4,11 @@ import { describe, it } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { Hash, StatusBannerForSurface } from "../src/components/ayra/ui";
+import {
+  Hash,
+  StellarTransactionVerificationLink,
+  StatusBannerForSurface,
+} from "../src/components/ayra/ui";
 import {
   BatchInitiativeTarget,
   type BatchInitiativeTargetOption,
@@ -48,6 +52,22 @@ describe("AYRA UI hash renderer", () => {
     assert.doesNotMatch(markup, /href=/);
     assert.doesNotMatch(markup, /mock-payment-apr-3/);
     assert.match(markup, /Reference pending/);
+  });
+
+  it("renders an explicit admin explorer verification URL for settled transactions", () => {
+    const txHash =
+      "ef65b3c14e9bed2a6e1d4fc433755566d6d0753332bbdad028b45fdbfd48048d";
+    const markup = renderToStaticMarkup(
+      createElement(StellarTransactionVerificationLink, { transactionHash: txHash }),
+    );
+
+    assert.match(markup, /Verify on Stellar Expert/);
+    assert.match(
+      markup,
+      new RegExp(
+        `href="https://stellar\\.expert/explorer/testnet/tx/${txHash}"`,
+      ),
+    );
   });
 });
 
