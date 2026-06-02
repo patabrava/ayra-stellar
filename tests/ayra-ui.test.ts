@@ -13,6 +13,7 @@ import {
   BatchInitiativeTarget,
   type BatchInitiativeTargetOption,
 } from "../src/components/ayra/batch-initiative-target";
+import { UpdateMediaField } from "../src/components/ayra/update-media-field";
 
 describe("AYRA UI hash renderer", () => {
   it("links real Stellar transaction hashes to Stellar Expert testnet", () => {
@@ -135,5 +136,34 @@ describe("AYRA global clickable cursor", () => {
 
     assert.match(css, /--action-cursor:\s*pointer;/);
     assert.doesNotMatch(css, /\/cursors\/ayra-sprout\.svg/);
+  });
+});
+
+describe("AYRA steward media upload field", () => {
+  it("renders the public media upload as a designed card, not a visible native file button", () => {
+    const markup = renderToStaticMarkup(createElement(UpdateMediaField));
+
+    assert.match(markup, /class="field upload-field"/);
+    assert.match(markup, /class="upload-card"/);
+    assert.match(markup, /class="upload-input"/);
+    assert.match(markup, /Choose file/);
+    assert.match(markup, /No file selected yet/);
+  });
+
+  it("keeps the steward update form on the shared media upload component", () => {
+    const page = readFileSync(
+      new URL("../src/app/steward/page.tsx", import.meta.url),
+      "utf8",
+    );
+
+    assert.match(page, /<UpdateMediaField \/>/);
+    assert.doesNotMatch(page, /<input\s+[^>]*name="mediaFile"[^>]*type="file"/s);
+  });
+
+  it("keeps a formatted fallback for any raw file inputs that are added later", () => {
+    const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
+
+    assert.match(css, /\.field input\[type="file"\]/);
+    assert.match(css, /\.field input\[type="file"\]::file-selector-button/);
   });
 });

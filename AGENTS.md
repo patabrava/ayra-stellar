@@ -240,11 +240,13 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - AYRA public advisor answers render from the response shell only; history may feed API context but must not render a second visible assistant answer or routine `Answered` chip.
 - Steward payout-address feedback must distinguish first-time setup from replacements, name pending AYRA verification, and cover success/invalid/error redirects in both modal UX and browser regressions.
 - Steward update media submissions must attach `update_media` through a scoped server-side privileged write after steward authorization and keep Next Server Action body limits above accepted file sizes; user RLS can create pending updates but not media rows.
+- Steward public-media file inputs must render through `UpdateMediaField` with the custom upload-card UI; keep a styled native file-input fallback and a regression check so the browser default button never returns.
 - Admin approval status banners must state what changed, what access or records were created, and the next steward/operator step; cover the rendered banner with UI and browser regression tests.
 - Status-driven modal components must SSR the dialog on first paint and only portal after client mount; returning `null` until hydration hides server-action feedback.
 - Server-action redirects for login/apply/steward/admin submissions must map every success/error `status` to visible modal feedback and browser regressions.
 - Logout redirects may keep `status=signed-out` in the URL, but login status mapping must ignore it so signout never opens a confirmation modal.
 - Magic-link login actions must preflight role/application eligibility with service-role reads when configured; unknown emails get `application-required` feedback before Supabase OTP/user creation.
+- Google/auth callbacks and protected portal guards must resolve profile/role scope with minimal RLS-safe reads before loading operator state, and must not overwrite login blocker statuses with `signed-in`.
 - Action and status typography must use the landing display/body fonts; reserve monospace for hashes, addresses, timestamps, emails, and other literal technical references.
 - Application intake browser constraints must mirror `applicationSchema`; otherwise short fields reach `/apply?status=invalid` with no field-level correction path.
 - Admin one-line batch amounts must derive the non-edited USDC/COP side from the daily USD/COP rate in both UI and server action; never persist stale manual mismatches.

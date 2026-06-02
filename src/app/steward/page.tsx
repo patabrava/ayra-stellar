@@ -8,6 +8,7 @@ import {
   OpsNav,
   StatusBannerForSurface,
 } from "@/components/ayra/ui";
+import { UpdateMediaField } from "@/components/ayra/update-media-field";
 import { StewardStatusModal } from "@/components/ayra/steward-status-modal";
 import { submitPayoutAddressAction, submitUpdateAction } from "@/lib/ayra/actions";
 import { requireStewardSession } from "@/lib/ayra/session";
@@ -272,15 +273,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
                     />
                   </div>
                 </div>
-                <div className="field">
-                  <label htmlFor="mediaFile">Upload public media</label>
-                  <input
-                    id="mediaFile"
-                    name="mediaFile"
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/svg+xml,video/mp4"
-                  />
-                </div>
+                <UpdateMediaField />
                 <div className="flex flex-wrap justify-between gap-3 border-t border-rule pt-4">
                   <p className="max-w-md text-sm text-ink-muted">
                     Avoid full recipient names and private documents in public
