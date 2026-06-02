@@ -5,6 +5,7 @@ export type PublicApplicationInput = {
   proposedInitiativeName: string;
   scopeSummary: string;
   operationalNotes: string;
+  milestonePlan: string[];
   contactSignal: string;
 };
 
@@ -41,6 +42,7 @@ export async function insertPublicApplication(
         proposed_initiative_name: input.proposedInitiativeName,
         scope_summary: input.scopeSummary,
         operational_notes: input.operationalNotes,
+        milestone_plan: input.milestonePlan,
         contact_signal: input.contactSignal,
         status: "pending",
       }),

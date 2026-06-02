@@ -11,6 +11,7 @@ import {
   getPublicWallProjection,
   moderateUpdate,
   mockSdpGateway,
+  rejectApplication,
   settleBatchFromSdp,
   submitPayoutAddress,
   submitApplication,
@@ -42,8 +43,8 @@ describe("AYRA Stellar domain smoke path", () => {
     );
     assert.ok(wall.spending.every((item) => !item.recipientName));
     assert.ok(wall.spending.every((item) => item.category.length > 0));
-    assert.equal(wall.spending.length, 0);
-    assert.equal(wall.batches.length, 0);
+    assert.equal(wall.spending.length, 1);
+    assert.equal(wall.batches.length, 1);
     assert.ok(!JSON.stringify(wall).includes("leidy@ecoparque.co"));
   });
 
@@ -89,7 +90,7 @@ describe("AYRA Stellar domain smoke path", () => {
     assert.equal(project.track.slug, "providencia");
     assert.equal(project.initiative.slug, "reforestation");
     assert.ok(project.updates.length > 0);
-    assert.equal(project.batches.length, 0);
+    assert.equal(project.batches.length, 1);
     assert.ok(
       project.updates.every((update) => update.initiativeName === "Reforestation"),
     );
@@ -109,8 +110,8 @@ describe("AYRA Stellar domain smoke path", () => {
     );
     const serializedProject = JSON.stringify(project);
 
-    assert.equal(project.spending.length, 0);
-    assert.equal(project.batches.length, 0);
+    assert.equal(project.spending.length, 1);
+    assert.equal(project.batches.length, 1);
     assert.ok(!serializedProject.includes("mock-tx-"));
     assert.ok(!serializedProject.includes("mock-payment-"));
 
@@ -123,6 +124,48 @@ describe("AYRA Stellar domain smoke path", () => {
     assert.equal(proof.receipts.length, 0);
     assert.ok(!JSON.stringify(proof).includes("mock-tx-"));
     assert.ok(!JSON.stringify(proof).includes("mock-payment-"));
+  });
+
+  it("lets an admin reject a pending application without promoting access", () => {
+    let state = createDemoState();
+    const submitted = submitApplication(state, {
+      applicantEmail: "reject-me@example.org",
+      applicantName: "Reject Me",
+      proposedTrackName: "Providencia",
+      proposedInitiativeName: "Rejected pilot",
+      scopeSummary: "A proposal that should not enter the public registry.",
+      operationalNotes: "No portal access should be granted.",
+      contactSignal: "+57 300 000 0000",
+    });
+    state = submitted.state;
+
+    const result = rejectApplication(state, {
+      applicationId: submitted.application.id,
+      actorProfileId: "profile-admin",
+    });
+
+    assert.equal(result.application.status, "rejected");
+    assert.equal(result.application.decidedByProfileId, "profile-admin");
+    assert.ok(result.application.decidedAt);
+    assert.ok(
+      result.state.auditLogs.some(
+        (entry) =>
+          entry.action === "application.rejected" &&
+          entry.entityId === submitted.application.id,
+      ),
+    );
+    assert.ok(
+      !result.state.initiatives.some(
+        (initiative) => initiative.name === "Rejected pilot",
+      ),
+    );
+    assert.ok(
+      !result.state.userRoles.some(
+        (role) =>
+          role.profileId === submitted.application.applicantProfileId &&
+          (role.role === "steward" || role.role === "grantee_contact"),
+      ),
+    );
   });
 
   it("uses real Stellar transaction hashes for public proof volume", () => {

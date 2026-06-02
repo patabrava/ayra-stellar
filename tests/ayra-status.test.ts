@@ -74,6 +74,16 @@ describe("AYRA steward and admin journey status copy", () => {
     });
   });
 
+  it("maps admin application rejection to a clear confirmation", () => {
+    assert.deepEqual(getJourneyStatus("admin", "application-rejected"), {
+      tone: "warn",
+      label: "Application rejected",
+      title: "Application rejected.",
+      body:
+        "The proposal stays out of the active registry and no steward or grantee-contact access was granted.",
+    });
+  });
+
   it("normalizes demo status prefixes before choosing copy", () => {
     assert.deepEqual(getJourneyStatus("steward", "demo-payout-submitted"), {
       tone: "warn",
@@ -81,6 +91,34 @@ describe("AYRA steward and admin journey status copy", () => {
       title: "Your Stellar payout address is pending AYRA verification.",
       body:
         "AYRA now has the address you submitted. You can keep working on updates while the address is verified and locked for the first disbursement.",
+    });
+  });
+
+  it("maps signed-in redirects on protected portals to success feedback", () => {
+    assert.deepEqual(getJourneyStatus("admin", "signed-in"), {
+      tone: "ok",
+      label: "Signed in",
+      title: "You are signed in.",
+      body:
+        "Your operator session is active. You can review applications, submissions, payout addresses, and batch actions from this console.",
+    });
+
+    assert.deepEqual(getJourneyStatus("steward", "signed-in"), {
+      tone: "ok",
+      label: "Signed in",
+      title: "You are signed in.",
+      body:
+        "Your portal session is active. You can submit updates and manage the payout-address verification step for your scoped initiative.",
+    });
+  });
+
+  it("maps oversized steward media uploads to a clear retry state", () => {
+    assert.deepEqual(getJourneyStatus("steward", "media-too-large"), {
+      tone: "err",
+      label: "Upload too large",
+      title: "That media file is too large.",
+      body:
+        "Use an image or clip under 4 MB, then submit the update again. The rest of the draft is still safe to resend.",
     });
   });
 });
@@ -157,6 +195,7 @@ describe("AYRA login status copy", () => {
 
   it("ignores unrelated statuses", () => {
     assert.equal(getLoginStatus("submitted"), null);
+    assert.equal(getLoginStatus("signed-out"), null);
     assert.equal(getLoginStatus(undefined), null);
   });
 });

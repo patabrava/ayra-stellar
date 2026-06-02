@@ -63,6 +63,18 @@ export function getJourneyStatus(
 ): JourneyStatus | null {
   const normalized = normalizeJourneyStatus(status);
 
+  if (normalized === "signed-in") {
+    return {
+      tone: "ok",
+      label: "Signed in",
+      title: "You are signed in.",
+      body:
+        surface === "admin"
+          ? "Your operator session is active. You can review applications, submissions, payout addresses, and batch actions from this console."
+          : "Your portal session is active. You can submit updates and manage the payout-address verification step for your scoped initiative.",
+    };
+  }
+
   if (surface === "steward") {
     switch (normalized) {
       case "payout-submitted":
@@ -88,6 +100,14 @@ export function getJourneyStatus(
           title: "AYRA could not attach the media.",
           body:
             "Check the file or URL, then submit the update again. The rest of the draft is still safe to resend.",
+        };
+      case "media-too-large":
+        return {
+          tone: "err",
+          label: "Upload too large",
+          title: "That media file is too large.",
+          body:
+            "Use an image or clip under 4 MB, then submit the update again. The rest of the draft is still safe to resend.",
         };
       case "scope-denied":
         return {
@@ -131,6 +151,14 @@ export function getJourneyStatus(
           "Next step: the steward submits the first Stellar payout address in the steward portal.",
           "No funding batch can be created until that address is verified and locked.",
         ],
+      };
+    case "application-rejected":
+      return {
+        tone: "warn",
+        label: "Application rejected",
+        title: "Application rejected.",
+        body:
+          "The proposal stays out of the active registry and no steward or grantee-contact access was granted.",
       };
     case "payout-verified":
       return {
@@ -280,13 +308,6 @@ export function getLoginStatus(status?: string): LoginStatus | null {
         title: "Magic-link email limit reached.",
         body:
           "Supabase accepted this admin account, but the built-in mailer has temporarily blocked more emails to this address. Wait before requesting another link, or configure custom SMTP for production auth email.",
-      };
-    case "signed-out":
-      return {
-        tone: "ok",
-        title: "Signed out.",
-        body:
-          "Your session has ended. Use the email link form to sign back in whenever you are ready.",
       };
     case "sign-in-required":
       return {

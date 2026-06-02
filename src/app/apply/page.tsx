@@ -4,7 +4,10 @@ import { ArrowLeft, Send } from "lucide-react";
 import { AyraLogo } from "@/components/ayra/ui";
 import { ApplicationSubmitModal } from "@/components/ayra/application-submit-modal";
 import { submitApplicationAction } from "@/lib/ayra/actions";
-import { APPLICATION_FIELD_LIMITS } from "@/lib/ayra/application-intake";
+import {
+  APPLICATION_FIELD_LIMITS,
+  DEFAULT_APPLICATION_MILESTONES,
+} from "@/lib/ayra/application-intake";
 
 type PageProps = {
   searchParams?: Promise<{ status?: string }>;
@@ -113,6 +116,18 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                   minLength={APPLICATION_FIELD_LIMITS.operationalNotes}
                   name="operationalNotes"
                   placeholder="Milestones, contact model, update cadence, payout-address readiness, known risks."
+                  rows={4}
+                  required
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="milestonePlan">Milestones</label>
+                <textarea
+                  id="milestonePlan"
+                  minLength={APPLICATION_FIELD_LIMITS.milestonePlan}
+                  name="milestonePlan"
+                  defaultValue={DEFAULT_APPLICATION_MILESTONES.join("\n")}
                   rows={4}
                   required
                 />

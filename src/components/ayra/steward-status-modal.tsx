@@ -6,7 +6,7 @@ import { CircleAlert, CircleCheckBig, Info, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Chip } from "@/components/ayra/ui";
-import { getJourneyStatus } from "@/lib/ayra/status";
+import { getJourneyStatus, type JourneySurface } from "@/lib/ayra/status";
 
 function subscribeToClientMount(onStoreChange: () => void) {
   queueMicrotask(onStoreChange);
@@ -22,12 +22,22 @@ function getServerMountSnapshot() {
 }
 
 export function StewardStatusModal({ status }: { status?: string }) {
+  return <JourneyStatusModal status={status} surface="steward" />;
+}
+
+export function JourneyStatusModal({
+  status,
+  surface,
+}: {
+  status?: string;
+  surface: JourneySurface;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const journeyStatus = useMemo(
-    () => getJourneyStatus("steward", status),
-    [status],
+    () => getJourneyStatus(surface, status),
+    [surface, status],
   );
   const dialogRef = useRef<HTMLDivElement>(null);
   const mounted = useSyncExternalStore(
@@ -116,12 +126,14 @@ export function StewardStatusModal({ status }: { status?: string }) {
       : journeyStatus.tone === "info"
         ? Info
         : CircleAlert;
-  const modalTone = journeyStatus.tone === "ok" ? "ok" : "err";
+  const modalTone = journeyStatus.tone;
+  const bodyId = `${surface}-status-body`;
+  const titleId = `${surface}-status-title`;
   const modal = (
     <div className="ops-modal-scrim" onClick={dismiss} role="presentation">
       <div
-        aria-describedby="steward-status-body"
-        aria-labelledby="steward-status-title"
+        aria-describedby={bodyId}
+        aria-labelledby={titleId}
         aria-modal="true"
         className="ops-modal"
         ref={dialogRef}
@@ -130,7 +142,7 @@ export function StewardStatusModal({ status }: { status?: string }) {
         tabIndex={-1}
       >
         <button
-          aria-label="Close steward submission message"
+          aria-label={`Close ${surface} action message`}
           className="ops-modal-close"
           onClick={dismiss}
           type="button"
@@ -141,12 +153,22 @@ export function StewardStatusModal({ status }: { status?: string }) {
           <Icon className="h-5 w-5" />
         </div>
         <Chip tone={journeyStatus.tone}>{journeyStatus.label}</Chip>
-        <h2 className="mt-4 text-2xl font-medium" id="steward-status-title">
+        <h2 className="mt-4 text-2xl font-medium" id={titleId}>
           {journeyStatus.title}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-ink-muted" id="steward-status-body">
+        <p className="mt-3 text-sm leading-6 text-ink-muted" id={bodyId}>
           {journeyStatus.body}
         </p>
+        {journeyStatus.details?.length ? (
+          <ul className="mt-3 grid gap-1 text-sm leading-5 text-ink-muted">
+            {journeyStatus.details.map((detail) => (
+              <li className="flex gap-2" key={detail}>
+                <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 bg-[var(--ink)]" />
+                <span>{detail}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <div className="mt-6 flex justify-end">
           <button autoFocus className="btn primary" onClick={dismiss} type="button">
             Close

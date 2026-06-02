@@ -11,7 +11,11 @@ import {
   canSubmitForMilestone,
   googleProviderEnabledFromSettings,
 } from "@/lib/ayra/auth";
-import { applicationSchema } from "@/lib/ayra/application-intake";
+import {
+  DEFAULT_APPLICATION_MILESTONES,
+  applicationSchema,
+  normalizeMilestonePlan,
+} from "@/lib/ayra/application-intake";
 import { hasPublicSupabaseEnv } from "@/lib/ayra/data";
 import {
   loginPath,
@@ -41,6 +45,7 @@ const updateSchema = z.object({
   mediaUrl: z.string().trim().optional(),
   mediaAlt: z.string().trim().optional(),
 });
+const maxUpdateMediaBytes = 4 * 1024 * 1024;
 
 const idActionSchema = z.object({
   entityId: z.string().trim().min(1),
@@ -87,6 +92,7 @@ type ApplicationRow = {
   proposed_initiative_name: string;
   scope_summary: string;
   operational_notes: string;
+  milestone_plan: string[] | null;
   contact_signal: string;
 };
 
@@ -125,6 +131,10 @@ function optionalFile(formData: FormData, key: string) {
     return value as File;
   }
   return null;
+}
+
+function mediaKindFromFile(file: File | null) {
+  return file?.type.startsWith("video/") ? "video" : "image";
 }
 
 function redirectWithStatus(path: string, status: string): never {
@@ -323,6 +333,7 @@ export async function submitApplicationAction(formData: FormData) {
     proposedInitiativeName: text(formData, "proposedInitiativeName"),
     scopeSummary: text(formData, "scopeSummary"),
     operationalNotes: text(formData, "operationalNotes"),
+    milestonePlan: normalizeMilestonePlan(text(formData, "milestonePlan")),
     contactSignal: text(formData, "contactSignal"),
   });
 
@@ -368,9 +379,24 @@ export async function submitUpdateAction(formData: FormData) {
     : "grantee_contact";
 
   const supabase = session.supabase!;
-  const { data, error } = await supabase
+  const mediaFile = optionalFile(formData, "mediaFile");
+  if (mediaFile && mediaFile.size > maxUpdateMediaBytes) {
+    redirectWithStatus("/steward", "media-too-large");
+  }
+  let mediaUrl = parsed.data.mediaUrl;
+  let adminSupabase: SupabaseClient | null = null;
+  if (mediaFile || mediaUrl) {
+    try {
+      adminSupabase = createSupabaseAdminClient();
+    } catch {
+      redirectWithStatus("/steward", "media-error");
+    }
+  }
+  const updateId = crypto.randomUUID();
+  const { error } = await supabase
     .from("initiative_updates")
     .insert({
+      id: updateId,
       initiative_id: milestone.initiativeId,
       milestone_id: milestone.id,
       submitted_by_profile_id: session.context.profile.id,
@@ -378,40 +404,42 @@ export async function submitUpdateAction(formData: FormData) {
       caption: parsed.data.caption,
       status: "pending",
     })
-    .select("id")
-    .single();
   if (error) redirectWithStatus("/steward", "error");
 
-  const mediaFile = optionalFile(formData, "mediaFile");
-  let mediaUrl = parsed.data.mediaUrl;
   if (mediaFile) {
     const name = safeStorageName(mediaFile.name || "update-media");
-    const path = `updates/${data.id}/${Date.now()}-${name}`;
+    const path = `updates/${updateId}/${Date.now()}-${name}`;
     const uploaded = await uploadFile(
       supabase,
       "ayra-public-update-media",
       path,
       mediaFile,
     );
-    if (!uploaded) redirectWithStatus("/steward", "media-error");
+    if (!uploaded) {
+      await adminSupabase?.from("initiative_updates").delete().eq("id", updateId);
+      redirectWithStatus("/steward", "media-error");
+    }
     mediaUrl = publicStorageUrl(supabase, "ayra-public-update-media", uploaded);
   }
 
   if (mediaUrl) {
-    const media = await supabase.from("update_media").insert({
-      update_id: data.id,
-      kind: "image",
+    const media = await adminSupabase!.from("update_media").insert({
+      update_id: updateId,
+      kind: mediaKindFromFile(mediaFile),
       url: mediaUrl,
       alt: parsed.data.mediaAlt ?? "Submitted update media",
       public_ready: false,
     });
-    if (media.error) redirectWithStatus("/steward", "media-error");
+    if (media.error) {
+      await adminSupabase!.from("initiative_updates").delete().eq("id", updateId);
+      redirectWithStatus("/steward", "media-error");
+    }
   }
 
   await insertAudit(supabase, session, {
     action: "update.submitted",
     entityType: "initiative_update",
-    entityId: data.id,
+    entityId: updateId,
     after: { status: "pending" },
   });
   revalidatePath("/admin");
@@ -465,24 +493,24 @@ export async function approveApplicationAction(formData: FormData) {
   const parsed = idActionSchema.safeParse({
     entityId: text(formData, "applicationId"),
   });
-  if (!parsed.success) redirectWithStatus("/admin", "invalid");
+  if (!parsed.success) redirectWithStatus("/admin/applications", "invalid");
 
-  const session = await requireAdminSession("/admin");
-  if (session.isDemo) demoRedirect("/admin", "application-approved");
+  const session = await requireAdminSession("/admin/applications");
+  if (session.isDemo) demoRedirect("/admin/applications", "application-approved");
 
   const supabase = session.supabase!;
   const { data: application, error: applicationError } = await supabase
     .from("applications")
     .select(
-      "id,applicant_name,applicant_email,proposed_track_name,proposed_initiative_name,scope_summary,operational_notes,contact_signal",
+      "id,applicant_name,applicant_email,proposed_track_name,proposed_initiative_name,scope_summary,operational_notes,milestone_plan,contact_signal",
     )
     .eq("id", parsed.data.entityId)
     .eq("status", "pending")
     .single();
-  if (applicationError || !application) redirectWithStatus("/admin", "error");
+  if (applicationError || !application) redirectWithStatus("/admin/applications", "error");
 
   const promoted = await promoteApplication(supabase, application as ApplicationRow);
-  if (!promoted) redirectWithStatus("/admin", "promotion-error");
+  if (!promoted) redirectWithStatus("/admin/applications", "promotion-error");
 
   const { error } = await supabase
     .from("applications")
@@ -493,7 +521,7 @@ export async function approveApplicationAction(formData: FormData) {
     })
     .eq("id", parsed.data.entityId)
     .eq("status", "pending");
-  if (error) redirectWithStatus("/admin", "error");
+  if (error) redirectWithStatus("/admin/applications", "error");
 
   await insertAudit(supabase, session, {
     action: "application.approved",
@@ -506,17 +534,50 @@ export async function approveApplicationAction(formData: FormData) {
     },
   });
   revalidatePath("/admin");
-  redirectWithStatus("/admin", "application-approved");
+  revalidatePath("/admin/applications");
+  redirectWithStatus("/admin/applications", "application-approved");
+}
+
+export async function rejectApplicationAction(formData: FormData) {
+  const parsed = idActionSchema.safeParse({
+    entityId: text(formData, "applicationId"),
+  });
+  if (!parsed.success) redirectWithStatus("/admin/applications", "invalid");
+
+  const session = await requireAdminSession("/admin/applications");
+  if (session.isDemo) demoRedirect("/admin/applications", "application-rejected");
+
+  const supabase = session.supabase!;
+  const { error } = await supabase
+    .from("applications")
+    .update({
+      status: "rejected",
+      decided_by_profile_id: session.context.profile.id,
+      decided_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data.entityId)
+    .eq("status", "pending");
+  if (error) redirectWithStatus("/admin/applications", "error");
+
+  await insertAudit(supabase, session, {
+    action: "application.rejected",
+    entityType: "application",
+    entityId: parsed.data.entityId,
+    after: { status: "rejected" },
+  });
+  revalidatePath("/admin");
+  revalidatePath("/admin/applications");
+  redirectWithStatus("/admin/applications", "application-rejected");
 }
 
 export async function verifyPayoutAddressAction(formData: FormData) {
   const parsed = idActionSchema.safeParse({
     entityId: text(formData, "payoutAddressId"),
   });
-  if (!parsed.success) redirectWithStatus("/admin", "invalid");
+  if (!parsed.success) redirectWithStatus("/admin/registry", "invalid");
 
-  const session = await requireAdminSession("/admin");
-  if (session.isDemo) demoRedirect("/admin", "payout-verified");
+  const session = await requireAdminSession("/admin/registry");
+  if (session.isDemo) demoRedirect("/admin/registry", "payout-verified");
 
   const supabase = session.supabase!;
   const { data: payoutAddress, error: readError } = await supabase
@@ -524,7 +585,7 @@ export async function verifyPayoutAddressAction(formData: FormData) {
     .select("id,initiative_id")
     .eq("id", parsed.data.entityId)
     .single();
-  if (readError || !payoutAddress) redirectWithStatus("/admin", "error");
+  if (readError || !payoutAddress) redirectWithStatus("/admin/registry", "error");
 
   await supabase
     .from("payout_addresses")
@@ -543,7 +604,7 @@ export async function verifyPayoutAddressAction(formData: FormData) {
         optionalText(formData, "verificationNote") ?? "Manual v1 verification.",
     })
     .eq("id", parsed.data.entityId);
-  if (error) redirectWithStatus("/admin", "error");
+  if (error) redirectWithStatus("/admin/registry", "error");
 
   await insertAudit(supabase, session, {
     action: "payout_address.verified",
@@ -552,7 +613,8 @@ export async function verifyPayoutAddressAction(formData: FormData) {
     after: { status: "verified" },
   });
   revalidatePath("/admin");
-  redirectWithStatus("/admin", "payout-verified");
+  revalidatePath("/admin/registry");
+  redirectWithStatus("/admin/registry", "payout-verified");
 }
 
 export async function moderateUpdateAction(formData: FormData) {
@@ -562,10 +624,10 @@ export async function moderateUpdateAction(formData: FormData) {
     publicCaption: optionalText(formData, "publicCaption"),
     sanitizedFeedback: optionalText(formData, "sanitizedFeedback"),
   });
-  if (!parsed.success) redirectWithStatus("/admin", "invalid");
+  if (!parsed.success) redirectWithStatus("/admin/updates", "invalid");
 
-  const session = await requireAdminSession("/admin");
-  if (session.isDemo) demoRedirect("/admin", "update-moderated");
+  const session = await requireAdminSession("/admin/updates");
+  if (session.isDemo) demoRedirect("/admin/updates", "update-moderated");
 
   const status =
     parsed.data.action === "reject"
@@ -584,7 +646,7 @@ export async function moderateUpdateAction(formData: FormData) {
       published_at: status === "approved" ? new Date().toISOString() : null,
     })
     .eq("id", parsed.data.entityId);
-  if (error) redirectWithStatus("/admin", "error");
+  if (error) redirectWithStatus("/admin/updates", "error");
 
   if (status === "approved") {
     await supabase
@@ -601,7 +663,8 @@ export async function moderateUpdateAction(formData: FormData) {
   });
   revalidatePath("/");
   revalidatePath("/admin");
-  redirectWithStatus("/admin", "update-moderated");
+  revalidatePath("/admin/updates");
+  redirectWithStatus("/admin/updates", "update-moderated");
 }
 
 export async function createBatchAction(formData: FormData) {
@@ -616,25 +679,25 @@ export async function createBatchAction(formData: FormData) {
     localCurrency: text(formData, "localCurrency"),
     amountSource: optionalText(formData, "amountSource"),
   });
-  if (!parsed.success) redirectWithStatus("/admin", "invalid");
+  if (!parsed.success) redirectWithStatus("/admin/batches", "invalid");
 
   let normalizedAmounts;
   try {
     const { rate } = await getUsdCopRate();
     normalizedAmounts = normalizeBatchCurrencyAmounts(parsed.data, rate);
   } catch {
-    redirectWithStatus("/admin", "exchange-rate-error");
+    redirectWithStatus("/admin/batches", "exchange-rate-error");
   }
 
-  const session = await requireAdminSession("/admin");
-  if (session.isDemo) demoRedirect("/admin", "batch-created");
+  const session = await requireAdminSession("/admin/batches");
+  if (session.isDemo) demoRedirect("/admin/batches", "batch-created");
 
   const supabase = session.supabase!;
   const hasVerifiedAddress = await initiativeHasVerifiedAddress(
     supabase,
     parsed.data.initiativeId,
   );
-  if (!hasVerifiedAddress) redirectWithStatus("/admin", "payout-required");
+  if (!hasVerifiedAddress) redirectWithStatus("/admin/batches", "payout-required");
 
   const { data, error } = await supabase
     .from("funding_batches")
@@ -648,7 +711,7 @@ export async function createBatchAction(formData: FormData) {
     })
     .select("id")
     .single();
-  if (error) redirectWithStatus("/admin", "error");
+  if (error) redirectWithStatus("/admin/batches", "error");
 
   const lineItem = await supabase
     .from("batch_line_items")
@@ -662,7 +725,7 @@ export async function createBatchAction(formData: FormData) {
     })
     .select("id")
     .single();
-  if (lineItem.error || !lineItem.data) redirectWithStatus("/admin", "line-item-error");
+  if (lineItem.error || !lineItem.data) redirectWithStatus("/admin/batches", "line-item-error");
 
   const allocation = await supabase.from("funding_allocations").insert({
     initiative_id: parsed.data.initiativeId,
@@ -676,7 +739,7 @@ export async function createBatchAction(formData: FormData) {
     notes: "Created from admin one-line batch form.",
     created_by_profile_id: session.context.profile.id,
   });
-  if (allocation.error) redirectWithStatus("/admin", "allocation-error");
+  if (allocation.error) redirectWithStatus("/admin/batches", "allocation-error");
 
   const receiptFile = optionalFile(formData, "receiptFile");
   let privateReceiptPath: string | null = null;
@@ -688,7 +751,7 @@ export async function createBatchAction(formData: FormData) {
       `receipts/${data.id}/${Date.now()}-${name}`,
       receiptFile,
     );
-    if (!privateReceiptPath) redirectWithStatus("/admin", "receipt-error");
+    if (!privateReceiptPath) redirectWithStatus("/admin/batches", "receipt-error");
   }
 
   const reconciliation = await supabase.from("reconciliation_items").insert({
@@ -701,7 +764,7 @@ export async function createBatchAction(formData: FormData) {
       : "Awaiting private receipt.",
     created_by_profile_id: session.context.profile.id,
   });
-  if (reconciliation.error) redirectWithStatus("/admin", "reconciliation-error");
+  if (reconciliation.error) redirectWithStatus("/admin/batches", "reconciliation-error");
 
   await insertAudit(supabase, session, {
     action: "batch.created",
@@ -710,17 +773,18 @@ export async function createBatchAction(formData: FormData) {
     after: { status: "ready" },
   });
   revalidatePath("/admin");
-  redirectWithStatus("/admin", "batch-created");
+  revalidatePath("/admin/batches");
+  redirectWithStatus("/admin/batches", "batch-created");
 }
 
 export async function submitBatchAction(formData: FormData) {
   const parsed = idActionSchema.safeParse({
     entityId: text(formData, "batchId"),
   });
-  if (!parsed.success) redirectWithStatus("/admin", "invalid");
+  if (!parsed.success) redirectWithStatus("/admin/batches", "invalid");
 
-  const session = await requireAdminSession("/admin");
-  if (session.isDemo) demoRedirect("/admin", "batch-submitted");
+  const session = await requireAdminSession("/admin/batches");
+  if (session.isDemo) demoRedirect("/admin/batches", "batch-submitted");
 
   const supabase = session.supabase!;
   const { data: batch, error: batchError } = await supabase
@@ -729,24 +793,24 @@ export async function submitBatchAction(formData: FormData) {
     .eq("id", parsed.data.entityId)
     .eq("status", "ready")
     .single();
-  if (batchError || !batch) redirectWithStatus("/admin", "error");
+  if (batchError || !batch) redirectWithStatus("/admin/batches", "error");
 
   const hasVerifiedAddress = await initiativeHasVerifiedAddress(
     supabase,
     batch.initiative_id,
   );
-  if (!hasVerifiedAddress) redirectWithStatus("/admin", "payout-required");
+  if (!hasVerifiedAddress) redirectWithStatus("/admin/batches", "payout-required");
 
   const { data: lineItems, error: lineItemReadError } = await supabase
     .from("batch_line_items")
     .select("id,category,amount_usdc")
     .eq("batch_id", parsed.data.entityId);
   if (lineItemReadError || !lineItems || lineItems.length === 0) {
-    redirectWithStatus("/admin", "line-item-error");
+    redirectWithStatus("/admin/batches", "line-item-error");
   }
 
   const destination = await loadSdpDestination(supabase, batch.initiative_id);
-  if (!destination) redirectWithStatus("/admin", "payout-required");
+  if (!destination) redirectWithStatus("/admin/batches", "payout-required");
 
   const gateway = createSdpGateway();
   let sdp;
@@ -764,7 +828,7 @@ export async function submitBatchAction(formData: FormData) {
     );
   } catch (error) {
     await insertSdpEvents(supabase, parsed.data.entityId, sdpEventsFromError(error));
-    redirectWithStatus("/admin", "sdp-error");
+    redirectWithStatus("/admin/batches", "sdp-error");
   }
 
   const { error } = await supabase
@@ -776,7 +840,7 @@ export async function submitBatchAction(formData: FormData) {
     })
     .eq("id", parsed.data.entityId)
     .eq("status", "ready");
-  if (error) redirectWithStatus("/admin", "error");
+  if (error) redirectWithStatus("/admin/batches", "error");
 
   const lineItemUpdates = await Promise.all(
     lineItems.map((lineItem) => {
@@ -791,7 +855,7 @@ export async function submitBatchAction(formData: FormData) {
     }),
   );
   if (lineItemUpdates.some((result) => result.error)) {
-    redirectWithStatus("/admin", "line-item-error");
+    redirectWithStatus("/admin/batches", "line-item-error");
   }
 
   await supabase
@@ -808,17 +872,18 @@ export async function submitBatchAction(formData: FormData) {
   });
   revalidatePath("/");
   revalidatePath("/admin");
-  redirectWithStatus("/admin", "batch-submitted");
+  revalidatePath("/admin/batches");
+  redirectWithStatus("/admin/batches", "batch-submitted");
 }
 
 export async function syncBatchStatusAction(formData: FormData) {
   const parsed = idActionSchema.safeParse({
     entityId: text(formData, "batchId"),
   });
-  if (!parsed.success) redirectWithStatus("/admin", "invalid");
+  if (!parsed.success) redirectWithStatus("/admin/batches", "invalid");
 
-  const session = await requireAdminSession("/admin");
-  if (session.isDemo) demoRedirect("/admin", "batch-synced");
+  const session = await requireAdminSession("/admin/batches");
+  if (session.isDemo) demoRedirect("/admin/batches", "batch-synced");
 
   const supabase = session.supabase!;
   const { data: batch, error: batchError } = await supabase
@@ -827,18 +892,18 @@ export async function syncBatchStatusAction(formData: FormData) {
     .eq("id", parsed.data.entityId)
     .eq("status", "submitted")
     .single();
-  if (batchError || !batch) redirectWithStatus("/admin", "error");
+  if (batchError || !batch) redirectWithStatus("/admin/batches", "error");
 
   const { data: lineItems, error: lineItemError } = await supabase
     .from("batch_line_items")
     .select("id,category,amount_usdc")
     .eq("batch_id", parsed.data.entityId);
   if (lineItemError || !lineItems || lineItems.length === 0) {
-    redirectWithStatus("/admin", "line-item-error");
+    redirectWithStatus("/admin/batches", "line-item-error");
   }
 
   const destination = await loadSdpDestination(supabase, batch.initiative_id);
-  if (!destination) redirectWithStatus("/admin", "payout-required");
+  if (!destination) redirectWithStatus("/admin/batches", "payout-required");
 
   const gateway = createSdpGateway();
   let sdp;
@@ -856,7 +921,7 @@ export async function syncBatchStatusAction(formData: FormData) {
     );
   } catch (error) {
     await insertSdpEvents(supabase, parsed.data.entityId, sdpEventsFromError(error));
-    redirectWithStatus("/admin", "sdp-error");
+    redirectWithStatus("/admin/batches", "sdp-error");
   }
 
   const expectedUsdcIssuer = process.env.STELLAR_USDC_ISSUER?.trim();
@@ -936,7 +1001,7 @@ export async function syncBatchStatusAction(formData: FormData) {
     }),
   );
   if (updates.some((result) => result.error)) {
-    redirectWithStatus("/admin", "line-item-error");
+    redirectWithStatus("/admin/batches", "line-item-error");
   }
 
   const allSettled = lineItems.every((lineItem) => verifiedPayments.has(lineItem.id));
@@ -948,7 +1013,7 @@ export async function syncBatchStatusAction(formData: FormData) {
     })
     .eq("id", parsed.data.entityId)
     .eq("status", "submitted");
-  if (error) redirectWithStatus("/admin", "error");
+  if (error) redirectWithStatus("/admin/batches", "error");
 
   if (allSettled) {
     await supabase
@@ -974,7 +1039,8 @@ export async function syncBatchStatusAction(formData: FormData) {
   });
   revalidatePath("/");
   revalidatePath("/admin");
-  redirectWithStatus("/admin", "batch-synced");
+  revalidatePath("/admin/batches");
+  redirectWithStatus("/admin/batches", "batch-synced");
 }
 
 async function promoteApplication(
@@ -1082,19 +1148,25 @@ async function promoteApplication(
       },
     ]),
     supabase.from("milestones").upsert(
-      {
+      applicationMilestones(application).map((title, index) => ({
         initiative_id: initiative.id,
-        code: "M01",
-        title: "Setup and address verification",
+        code: `M${String(index + 1).padStart(2, "0")}`,
+        title,
         percent_complete: 0,
-        status: "active",
-      },
+        status: index === 0 ? "active" : "planned",
+      })),
       { onConflict: "initiative_id,code" },
     ),
   ]);
 
   if (inserts.some((result) => result.error)) return null;
   return { initiativeId: initiative.id as string, profileId: profile.id as string };
+}
+
+function applicationMilestones(application: ApplicationRow) {
+  return application.milestone_plan?.length
+    ? application.milestone_plan
+    : [...DEFAULT_APPLICATION_MILESTONES];
 }
 
 async function initiativeHasVerifiedAddress(

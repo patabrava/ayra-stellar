@@ -67,6 +67,12 @@ test("seeded MVP journey from application intake to public disbursement proof", 
     .fill(
       "Monthly updates, one grantee contact, verified Stellar payout address, and admin-led batches.",
     );
+  await expect(page.getByLabel("Milestones")).toHaveValue(
+    /Setup and address verification/,
+  );
+  await page
+    .getByLabel("Milestones")
+    .fill("Nursery setup\nSeedling germination count\nFirst public proof review");
   await page.getByLabel("Signal / phone").fill("+57 300 111 2222");
   await page.getByRole("button", { name: /Submit for review/ }).click();
   await expect(page).toHaveURL(/status=demo-submitted/, { timeout: 30_000 });
@@ -76,10 +82,42 @@ test("seeded MVP journey from application intake to public disbursement proof", 
 
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Operator console" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Applications" })).not.toBeVisible();
+  await expect(page.getByRole("link", { name: /Applications/ })).toHaveAttribute(
+    "href",
+    "/admin/applications",
+  );
+  await page.getByRole("link", { name: /Applications/ }).click();
+  await page.waitForURL(/\/admin\/applications$/);
   await expect(page.getByRole("heading", { name: "Applications" })).toBeVisible();
+
+  await page.getByRole("link", { name: /Updates/ }).click();
+  await page.waitForURL(/\/admin\/updates$/);
   await expect(page.getByRole("heading", { name: "Updates publisher" })).toBeVisible();
+
+  await page.getByRole("link", { name: /Batches/ }).click();
+  await page.waitForURL(/\/admin\/batches$/);
   await expect(page.getByRole("heading", { name: "Batches" })).toBeVisible();
+  await expect(page.getByLabel("Target initiative")).toBeVisible();
+  await expect(page.getByLabel("Target initiative")).toContainText("Reforestation");
+  const stellarLinks = page.getByRole("link", {
+    name: /Open Stellar testnet transaction/,
+  });
+  await expect(stellarLinks.first()).toHaveAttribute(
+    "href",
+    /https:\/\/stellar\.expert\/explorer\/testnet\/tx\/[a-f0-9]{64}/,
+  );
+  await expect(page.locator("body")).not.toContainText("mock-payment-");
+
+  await page.getByRole("link", { name: /Proof packs/ }).click();
+  await page.waitForURL(/\/admin\/proof$/);
   await expect(page.getByRole("heading", { name: "Proof packs" })).toBeVisible();
+
+  await page.getByRole("link", { name: /Registry/ }).click();
+  await page.waitForURL(/\/admin\/registry$/);
+  await expect(page.getByRole("heading", { name: "Registry" })).toBeVisible();
+
+  await page.goto("/admin");
   await expect(page.getByText("Payment rail").first()).toBeVisible();
   await expect(page.getByText("Provider setup pending").first()).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Mock");
@@ -89,19 +127,24 @@ test("seeded MVP journey from application intake to public disbursement proof", 
     "receipts/batch-reforest-apr26/crew.pdf",
   );
 
+  await page.goto("/admin/applications");
   await page.getByRole("button", { name: /Approve/ }).first().click();
-  await expect(page).toHaveURL(/status=demo-application-approved/, {
+  await expect(page).toHaveURL(/\/admin\/applications\?status=demo-application-approved/, {
     timeout: 30_000,
   });
   await expect(page.getByRole("status")).toContainText("Application approved.");
 
-  await page.goto("/admin#batches");
+  await page.goto("/admin/batches");
   await page.getByRole("button", { name: "Sync status" }).first().click();
-  await expect(page).toHaveURL(/status=demo-batch-synced/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/admin\/batches\?status=demo-batch-synced/, {
+    timeout: 30_000,
+  });
   await expect(page.getByRole("status")).toContainText("Batch status synced.");
-  await page.goto("/admin#batches");
+  await page.goto("/admin/batches");
   await page.getByRole("button", { name: "Create ready batch" }).click();
-  await expect(page).toHaveURL(/status=demo-batch-created/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/admin\/batches\?status=demo-batch-created/, {
+    timeout: 30_000,
+  });
   await expect(page.getByRole("status")).toContainText("Batch draft created.");
 
   await page.goto("/steward");

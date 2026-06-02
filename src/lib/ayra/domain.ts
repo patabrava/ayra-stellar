@@ -866,7 +866,13 @@ export function createDemoState(): AyraState {
     batches,
     batchLineItems: [
       ...makeLineItems("batch-reforest-apr26", [
-        ["Crew wages", 4820, 18_798_000, "settled", "mock-tx-apr-crew"],
+        [
+          "Crew wages",
+          4820,
+          18_798_000,
+          "settled",
+          "9b02f2db43af6a56907b92c1e74d95db1b243524b57430a5d1a579285d6c6ac6",
+        ],
         ["Seedlings", 3160, 12_324_000, "settled", "mock-tx-apr-seedlings"],
         ["Tools and transport", 2540, 9_906_000, "processing"],
         ["Training", 1860, 7_254_000, "submitted"],
@@ -946,18 +952,30 @@ function makeLineItems(
   batchId: string,
   rows: Array<[string, number, number, BatchLineItem["status"], string?]>,
 ): BatchLineItem[] {
-  return rows.map(([category, amountUsdc, localAmount, status, transactionHash], index) => ({
-    id: `${batchId}-line-${index + 1}`,
-    batchId,
-    category,
-    amountUsdc,
-    localAmount,
-    localCurrency: "COP",
-    status,
-    sdpPaymentId:
-      status === "draft" ? undefined : `mock-payment-${batchId}-${index + 1}`,
-    transactionHash,
-  }));
+  return rows.map(([category, amountUsdc, localAmount, status, transactionHash], index) => {
+    const verifiedHash = isPublicTransactionHash(transactionHash);
+    return {
+      id: `${batchId}-line-${index + 1}`,
+      batchId,
+      category,
+      amountUsdc,
+      localAmount,
+      localCurrency: "COP",
+      status,
+      sdpPaymentId:
+        status === "draft"
+          ? undefined
+          : verifiedHash
+            ? `sdp-payment-${batchId}-${index + 1}`
+            : `mock-payment-${batchId}-${index + 1}`,
+      transactionHash,
+      paymentAssetCode: verifiedHash ? "USDC" : undefined,
+      paymentAssetIssuer: verifiedHash
+        ? "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+        : undefined,
+      paymentAssetAmount: verifiedHash ? amountUsdc : undefined,
+    };
+  });
 }
 
 export function submitApplication(
@@ -1136,6 +1154,40 @@ export function approveApplication(
     granteeContact,
     payoutAddress,
     milestones,
+  };
+}
+
+export function rejectApplication(
+  state: AyraState,
+  input: {
+    applicationId: string;
+    actorProfileId: string;
+  },
+) {
+  requireAdmin(state, input.actorProfileId);
+  const next = cloneState(state);
+  const application = next.applications.find(
+    (item) => item.id === input.applicationId,
+  );
+  if (!application) throw new Error("Application not found.");
+  if (application.status !== "pending") {
+    throw new Error("Only pending applications can be rejected.");
+  }
+
+  application.status = "rejected";
+  application.decidedAt = stamp(next.auditLogs.length);
+  application.decidedByProfileId = input.actorProfileId;
+
+  return {
+    state: appendAudit(next, {
+      actorProfileId: input.actorProfileId,
+      action: "application.rejected",
+      entityType: "application",
+      entityId: application.id,
+      before: { status: "pending" },
+      after: { status: "rejected" },
+    }),
+    application,
   };
 }
 

@@ -979,10 +979,23 @@ select {
   border-color: var(--ink-muted);
 }
 
+.btn:disabled {
+  background: var(--ops-surface);
+  border-color: var(--rule);
+  color: var(--ink-muted);
+  opacity: 0.64;
+}
+
 .btn.primary {
   background: var(--accent-admin);
   border-color: var(--accent-admin);
   color: var(--ops-surface);
+}
+
+.btn.primary:disabled {
+  background: var(--ops-surface);
+  border-color: var(--rule);
+  color: var(--ink-muted);
 }
 
 .btn.danger {

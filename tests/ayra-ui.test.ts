@@ -5,6 +5,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { Hash, StatusBannerForSurface } from "../src/components/ayra/ui";
+import {
+  BatchInitiativeTarget,
+  type BatchInitiativeTargetOption,
+} from "../src/components/ayra/batch-initiative-target";
 
 describe("AYRA UI hash renderer", () => {
   it("links real Stellar transaction hashes to Stellar Expert testnet", () => {
@@ -21,6 +25,18 @@ describe("AYRA UI hash renderer", () => {
     );
     assert.match(markup, /target="_blank"/);
     assert.match(markup, /rel="noopener noreferrer"/);
+  });
+
+  it("names real Stellar transaction links for admin verification", () => {
+    const txHash =
+      "ef65b3c14e9bed2a6e1d4fc433755566d6d0753332bbdad028b45fdbfd48048d";
+    const markup = renderToStaticMarkup(createElement(Hash, { value: txHash }));
+
+    assert.match(
+      markup,
+      new RegExp(`aria-label="Open Stellar testnet transaction ${txHash}"`),
+    );
+    assert.match(markup, /title="Open on Stellar Expert"/);
   });
 
   it("hides placeholder provider references from the UI", () => {
@@ -48,6 +64,48 @@ describe("AYRA journey status banner", () => {
     assert.match(markup, /Steward access is active/);
     assert.match(markup, /Next step: the steward submits the first Stellar payout address/);
     assert.match(markup, /No funding batch can be created until that address is verified/);
+  });
+});
+
+describe("AYRA admin batch initiative target", () => {
+  const targets: BatchInitiativeTargetOption[] = [
+    {
+      id: "initiative-reforest",
+      name: "Reforestation",
+      trackName: "Providencia",
+      code: "AYRA-PVD-REFOREST",
+      stewardName: "Leidy Mendoza",
+      payoutAddress: "GBLEIDYECOPARQUEIRONWOODPROVIDENCIASTELLAR3RS9KQ4MWL2VTYGB7",
+      payoutStatus: "locked",
+    },
+    {
+      id: "initiative-sterilization",
+      name: "Dog Sterilization",
+      trackName: "Providencia",
+      code: "AYRA-PVD-STERIL",
+      stewardName: "Dr. M. Gomez",
+      payoutAddress: null,
+      payoutStatus: null,
+    },
+  ];
+
+  it("renders the selected initiative and active payout destination in the batch composer", () => {
+    const markup = renderToStaticMarkup(
+      createElement(BatchInitiativeTarget, {
+        defaultInitiativeId: "initiative-reforest",
+        targets,
+      }),
+    );
+
+    assert.match(markup, /name="initiativeId"/);
+    assert.match(markup, /Reforestation/);
+    assert.match(markup, /Providencia/);
+    assert.match(markup, /AYRA-PVD-REFOREST/);
+    assert.match(markup, /Leidy Mendoza/);
+    assert.match(markup, /Active verified payout destination/);
+    assert.match(markup, /GBLEIDYECOPARQUEIRONWOODPROVIDENCIASTELLAR3RS9KQ4MWL2VTYGB7/);
+    assert.match(markup, /Dog Sterilization/);
+    assert.match(markup, /No verified payout address/);
   });
 });
 

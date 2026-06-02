@@ -8,6 +8,17 @@ test("login status feedback opens in the modal surface", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("signed-out redirects return to login without opening a modal", async ({
+  page,
+}) => {
+  await page.goto("/login?status=signed-out");
+
+  await expect(
+    page.getByRole("heading", { name: "Sign in to AYRA Stellar." }),
+  ).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
 test("unknown login feedback tells visitors to apply first or use admin", async ({
   page,
 }) => {

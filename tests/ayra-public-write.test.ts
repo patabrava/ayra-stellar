@@ -18,6 +18,11 @@ describe("AYRA public Supabase writes", () => {
         proposedInitiativeName: "UI nursery",
         scopeSummary: "Browser-managed public intake.",
         operationalNotes: "Operator review and payout setup.",
+        milestonePlan: [
+          "Nursery setup",
+          "Germination count",
+          "Public proof review",
+        ],
         contactSignal: "+57 300 555 0199",
       },
       async (url, init) => {
@@ -40,6 +45,11 @@ describe("AYRA public Supabase writes", () => {
       proposed_initiative_name: "UI nursery",
       scope_summary: "Browser-managed public intake.",
       operational_notes: "Operator review and payout setup.",
+      milestone_plan: [
+        "Nursery setup",
+        "Germination count",
+        "Public proof review",
+      ],
       contact_signal: "+57 300 555 0199",
       status: "pending",
     });

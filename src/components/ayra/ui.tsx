@@ -122,11 +122,13 @@ export function OpsNav({
   role,
   user,
   tabs,
+  activeHref,
 }: {
   scope: string;
   role: string;
   user: string;
   tabs: Array<{ href: string; label: string; count?: string }>;
+  activeHref?: string;
 }) {
   return (
     <>
@@ -147,12 +149,20 @@ export function OpsNav({
         </span>
       </nav>
       <nav className="tabs" aria-label={`${role} sections`}>
-        {tabs.map((tab, index) => (
-          <a className={index === 0 ? "tab active" : "tab"} href={tab.href} key={tab.href}>
-            {tab.label}
-            {tab.count ? <span className="chip ml-2">{tab.count}</span> : null}
-          </a>
-        ))}
+        {tabs.map((tab, index) => {
+          const isActive = activeHref ? tab.href === activeHref : index === 0;
+          return (
+            <Link
+              aria-current={isActive ? "page" : undefined}
+              className={isActive ? "tab active" : "tab"}
+              href={tab.href}
+              key={tab.href}
+            >
+              {tab.label}
+              {tab.count ? <span className="chip ml-2">{tab.count}</span> : null}
+            </Link>
+          );
+        })}
       </nav>
     </>
   );

@@ -3,7 +3,9 @@ import { describe, it } from "node:test";
 
 import {
   APPLICATION_FIELD_LIMITS,
+  DEFAULT_APPLICATION_MILESTONES,
   applicationSchema,
+  normalizeMilestonePlan,
 } from "../src/lib/ayra/application-intake";
 
 const validApplication = {
@@ -15,6 +17,11 @@ const validApplication = {
     "A public mangrove nursery with local operator ownership and monthly reporting.",
   operationalNotes:
     "Monthly updates, one contact, payout readiness, and admin-led review.",
+  milestonePlan: [
+    "Nursery setup",
+    "Seedling germination count",
+    "First public proof review",
+  ],
   contactSignal: "+57 300 555 0199",
 };
 
@@ -23,6 +30,7 @@ describe("AYRA application intake validation", () => {
     const parsed = applicationSchema.parse(validApplication);
 
     assert.equal(parsed.applicantEmail, validApplication.applicantEmail);
+    assert.deepEqual(parsed.milestonePlan, validApplication.milestonePlan);
   });
 
   it("keeps field limits available for browser validation", () => {
@@ -32,6 +40,7 @@ describe("AYRA application intake validation", () => {
       proposedInitiativeName: 2,
       scopeSummary: 20,
       operationalNotes: 10,
+      milestonePlan: 4,
       contactSignal: 5,
     });
   });
@@ -41,9 +50,18 @@ describe("AYRA application intake validation", () => {
       ...validApplication,
       scopeSummary: "short",
       operationalNotes: "short",
+      milestonePlan: ["bad"],
       contactSignal: "n/a",
     });
 
     assert.equal(parsed.success, false);
+  });
+
+  it("normalizes multiline milestone proposals for storage", () => {
+    assert.deepEqual(
+      normalizeMilestonePlan(" Nursery setup \n\n Germination count \n Public proof review "),
+      ["Nursery setup", "Germination count", "Public proof review"],
+    );
+    assert.equal(DEFAULT_APPLICATION_MILESTONES.length, 3);
   });
 });
