@@ -462,10 +462,19 @@ export default async function AdminPage({ searchParams }: PageProps) {
                 <Chip>Manual v1</Chip>
               </div>
               <div className="panel-body grid gap-4">
-                <input name="initiativeId" type="hidden" value={reforest.id} />
                 {defaultSponsor ? (
                   <input name="sponsorId" type="hidden" value={defaultSponsor.id} />
                 ) : null}
+                <div className="field">
+                  <label htmlFor="initiativeId">Batch initiative</label>
+                  <select id="initiativeId" name="initiativeId" defaultValue={reforest.id}>
+                    {state.initiatives.map((initiative) => (
+                      <option key={initiative.id} value={initiative.id}>
+                        {initiative.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="grid-2">
                   <div className="field">
                     <label htmlFor="code">Batch reference</label>

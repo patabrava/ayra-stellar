@@ -246,3 +246,4 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Action and status typography must use the landing display/body fonts; reserve monospace for hashes, addresses, timestamps, emails, and other literal technical references.
 - Application intake browser constraints must mirror `applicationSchema`; otherwise short fields reach `/apply?status=invalid` with no field-level correction path.
 - Admin one-line batch amounts must derive the non-edited USDC/COP side from the daily USD/COP rate in both UI and server action; never persist stale manual mismatches.
+- Admin one-line batch creation must submit an explicit operator-selected initiative id; never hard-code Reforestation as the batch target.
