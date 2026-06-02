@@ -231,6 +231,14 @@ export async function requestMagicLinkAction(formData: FormData) {
   if (!hasPublicSupabaseEnv()) redirectWithStatus("/login", "supabase-not-configured");
 
   const next = safeNextPath(parsed.data.next, "/login");
+  const eligibility = await loginEligibilityForEmail(parsed.data.email);
+  if (eligibility === "application-required") {
+    redirect(loginPath(next, "application-required"));
+  }
+  if (eligibility === "scope-required") {
+    redirect(loginPath(next, "scope-required"));
+  }
+
   const headerStore = await headers();
   const origin = headerStore.get("origin") ?? "http://localhost:3000";
   const supabase = await createSupabaseServerClient();
@@ -243,6 +251,44 @@ export async function requestMagicLinkAction(formData: FormData) {
   });
 
   redirect(loginPath(next, error ? loginStatusForAuthError(error) : "link-sent"));
+}
+
+async function loginEligibilityForEmail(
+  email: string,
+): Promise<"eligible" | "application-required" | "scope-required"> {
+  let supabase: SupabaseClient;
+  try {
+    supabase = createSupabaseAdminClient();
+  } catch {
+    return "eligible";
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const profile = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+  if (profile.error) return "eligible";
+
+  if (!profile.data?.id) {
+    const application = await supabase
+      .from("applications")
+      .select("id")
+      .eq("applicant_email", normalizedEmail)
+      .limit(1);
+    if (application.error) return "eligible";
+    return application.data?.length ? "scope-required" : "application-required";
+  }
+
+  const roles = await supabase
+    .from("user_roles")
+    .select("id")
+    .eq("profile_id", profile.data.id)
+    .in("role", ["admin", "steward", "grantee_contact"])
+    .limit(1);
+  if (roles.error) return "eligible";
+  return roles.data?.length ? "eligible" : "scope-required";
 }
 
 export async function requestGoogleLoginAction(formData: FormData) {

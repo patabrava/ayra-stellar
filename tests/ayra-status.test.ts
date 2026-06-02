@@ -108,6 +108,17 @@ describe("AYRA login status copy", () => {
     });
   });
 
+  it("tells unknown login emails to apply first or use an admin account", () => {
+    const status = getLoginStatus("application-required");
+
+    assert.deepEqual(status, {
+      tone: "err",
+      title: "Apply first, or use an admin account.",
+      body:
+        "This email is not connected to an approved AYRA application or operator role. Submit an application first, or sign in with the approved admin email.",
+    });
+  });
+
   it("maps Google OAuth setup failures to provider-specific guidance", () => {
     assert.deepEqual(getLoginStatus("google-provider-unavailable"), {
       tone: "err",

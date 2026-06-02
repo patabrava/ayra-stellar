@@ -309,6 +309,13 @@ export function getLoginStatus(status?: string): LoginStatus | null {
         body:
           "The email matched, but the role records do not include steward or grantee access for this portal.",
       };
+    case "application-required":
+      return {
+        tone: "err",
+        title: "Apply first, or use an admin account.",
+        body:
+          "This email is not connected to an approved AYRA application or operator role. Submit an application first, or sign in with the approved admin email.",
+      };
     case "admin-required":
       return {
         tone: "err",

@@ -242,6 +242,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Admin approval status banners must state what changed, what access or records were created, and the next steward/operator step; cover the rendered banner with UI and browser regression tests.
 - Status-driven modal components must SSR the dialog on first paint and only portal after client mount; returning `null` until hydration hides server-action feedback.
 - Server-action redirects for login/apply/steward/admin submissions must map every success/error `status` to visible modal feedback and browser regressions.
+- Magic-link login actions must preflight role/application eligibility with service-role reads when configured; unknown emails get `application-required` feedback before Supabase OTP/user creation.
 - Action and status typography must use the landing display/body fonts; reserve monospace for hashes, addresses, timestamps, emails, and other literal technical references.
 - Application intake browser constraints must mirror `applicationSchema`; otherwise short fields reach `/apply?status=invalid` with no field-level correction path.
 - Admin one-line batch amounts must derive the non-edited USDC/COP side from the daily USD/COP rate in both UI and server action; never persist stale manual mismatches.
