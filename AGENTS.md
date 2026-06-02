@@ -237,6 +237,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Live steward-access repairs must include the scoped `user_roles` row plus adjacent `steward_profiles`/grantee-contact records; an auth-linked profile with only `applicant` will keep redirecting to `/login?status=scope-required`.
 - Steward portal pages must render an empty payout state for scoped initiatives with no submitted/settled batches; never dereference `currentBatch` before a batch exists.
 - AYRA public advisor must have exactly one mounted launcher per public page; keep `AdvisorPanel` as the single shell component and avoid re-adding legacy advisor widgets.
+- AYRA public advisor answers render from the response shell only; history may feed API context but must not render a second visible assistant answer or routine `Answered` chip.
 - Steward payout-address feedback must distinguish first-time setup from replacements, name pending AYRA verification, and cover success/invalid/error redirects in both modal UX and browser regressions.
 - Steward update media submissions must attach `update_media` through a scoped server-side privileged write after steward authorization and keep Next Server Action body limits above accepted file sizes; user RLS can create pending updates but not media rows.
 - Admin approval status banners must state what changed, what access or records were created, and the next steward/operator step; cover the rendered banner with UI and browser regression tests.

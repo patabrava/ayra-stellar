@@ -11,7 +11,6 @@ import {
 import { createPortal } from "react-dom";
 import { ArrowRight, Bot, X } from "lucide-react";
 
-import { Chip } from "@/components/ayra/ui";
 import type {
   AdvisorAnswer,
   AdvisorConversationTurn,
@@ -113,6 +112,8 @@ export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPa
     },
     [history, pendingQuestion, route],
   );
+
+  const visibleTurns = history.filter((turn) => turn.role === "user");
 
   useEffect(() => {
     if (!open) return;
@@ -242,18 +243,18 @@ export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPa
                 </p>
 
                 <div className="advisor-transcript" aria-live="polite">
-                  {history.length === 0 ? (
+                  {visibleTurns.length === 0 ? (
                     <div className="advisor-empty">
                       Ask a question or choose one of the public prompts above.
                     </div>
                   ) : (
-                    history.map((turn, index) => (
+                    visibleTurns.map((turn, index) => (
                       <div
-                        className={`advisor-turn ${turn.role === "advisor" ? "advisor-turn-response" : "advisor-turn-question"}`}
+                        className="advisor-turn advisor-turn-question"
                         key={`${turn.role}-${index}-${turn.text.slice(0, 20)}`}
                       >
                         <div className="mono advisor-turn-role">
-                          {turn.role === "advisor" ? "AYRA" : "You"}
+                          You
                         </div>
                         <p>{turn.text}</p>
                       </div>
@@ -264,11 +265,6 @@ export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPa
                 {response ? (
                   <div className="advisor-answer-shell">
                     <div className="advisor-answer-header">
-                      <Chip tone={response.status === "answered" ? "ok" : "warn"}>
-                        {response.status === "answered"
-                          ? "Answered"
-                          : "Grounded decline"}
-                      </Chip>
                       <span className="advisor-mode">
                         {advisorModeLabel(response.mode)}
                       </span>
