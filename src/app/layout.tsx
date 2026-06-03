@@ -24,6 +24,11 @@ export const metadata: Metadata = {
   title: "AYRA Providencia",
   description:
     "Transparency dashboard, steward portal, and operator console for AYRA disbursements on Stellar.",
+  icons: {
+    icon: [{ url: "/ayra-logo.svg", type: "image/svg+xml" }],
+    shortcut: ["/ayra-logo.svg"],
+    apple: [{ url: "/ayra-logo.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({
