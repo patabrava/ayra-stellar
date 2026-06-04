@@ -311,7 +311,11 @@ describe("AYRA advisor public source contract", () => {
     assert.match(prompt, /SOURCE ID: funding:providencia:reforestation/);
     assert.match(prompt, /SOURCE ID: stellar:providencia:reforestation/);
     assert.match(prompt, /Do not reveal private contacts/i);
-    assert.match(prompt, /Warm, conversational tone/i);
+    assert.match(prompt, /founder-operator voice/i);
+    assert.match(prompt, /visionary and movement-building/i);
+    assert.match(prompt, /warm, charismatic, and community-first/i);
+    assert.match(prompt, /principled and lightly ideological/i);
+    assert.match(prompt, /Do not use crypto hype/i);
     assert.match(prompt, /approved-projects source/i);
     assert.match(prompt, /live and funding are the public approval statuses/i);
     assert.match(prompt, /Conversation history:/i);
