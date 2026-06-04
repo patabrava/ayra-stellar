@@ -321,6 +321,27 @@ export function buildAdvisorSources(
         "AYRA public surfaces show approved updates, project summaries, category-level spend, submitted or settled public batches, and proof links. AYRA public surfaces exclude contact data, file storage paths, wallet destinations, unsuccessful payment details, and operator-only reconciliation records.",
     }),
     publicSource({
+      id: "ayra:apply-flow",
+      title: "AYRA application flow",
+      href: "/apply",
+      content:
+        "People apply to manage an AYRA track initiative from /apply. The application form asks for applicant name, email, track, initiative, scope, operational details, milestones, and Signal or phone. The applicant submits with Submit for review. AYRA then reviews the proposed track, initiative scope, and operational contact model before granting portal access. If approved, the steward portal asks for the first Stellar payout address before any funding batch can be created. Funding approval and payout execution remain separate admin-controlled steps.",
+    }),
+    publicSource({
+      id: "ayra:login-flow",
+      title: "AYRA login flow",
+      href: "/login",
+      content:
+        "People sign in to AYRA Stellar from /login. They can continue with Google or request a magic link by email. Login uses AYRA's role-aware callback before opening admin or steward access. Access is granted by live profile and role records, not by the sign-in method alone. Users should use the email connected to their application or operator role. Unknown emails are asked to submit an application first or use the approved admin email.",
+    }),
+    publicSource({
+      id: "ayra:portal-access",
+      title: "AYRA admin and steward access",
+      href: "/login",
+      content:
+        "AYRA admin and steward portals are scoped access surfaces. Admin review covers applications, proposal approval or rejection, role promotion, payout-address verification, update moderation, and batch actions. Approved applicants can receive steward portal access for their scoped initiative. In the steward portal, a steward can submit public updates and submit the first Stellar payout address for AYRA verification. No funding batch can be created until the payout address is verified and locked.",
+    }),
+    publicSource({
       id: "ayra:payment-language",
       title: "AYRA payment language",
       content:
@@ -534,6 +555,7 @@ export function buildAdvisorPrompt(
     "If the user writes AIRA, treat it as AYRA unless they clearly mean something else.",
     "Do not reveal private contacts, emails, phone numbers, payout addresses, raw receipt paths, failed payment details, or internal reconciliation notes.",
     "For general AYRA, Season, Studio, sponsorship, vertical, timeline, traction, or Providencia questions, use the AYRA North Star and Studio sources before project-proof sources.",
+    "For application, login, admin, steward, portal, access, or how-to-use questions, use the AYRA application flow, login flow, and portal access sources. Give direct public paths such as /apply and /login when the source pack provides them.",
     "For funding questions, answer exact public totals when the source pack provides them. Use the terms Cleared and In flight.",
     "For approved, active, live, or funded project questions, use the approved-projects source. In AYRA public state, live and funding are the public approval statuses; draft is not public yet.",
     "Explain transaction hashes in plain public language: how to watch them, what they do, where they resolve, and which proof pack or explorer page to open.",
@@ -593,6 +615,9 @@ export function fallbackAdvisorAnswer(
   const asksSeason = isSeasonQuestion(loweredQuestion);
   const asksVerticals = isVerticalQuestion(loweredQuestion);
   const asksTraction = isTractionQuestion(loweredQuestion);
+  const asksApplication = isApplicationQuestion(loweredQuestion);
+  const asksLogin = isLoginQuestion(loweredQuestion);
+  const asksPortalAccess = isPortalAccessQuestion(loweredQuestion);
   const asksApprovedProjects = isApprovedProjectsQuestion(question);
   const asksFunding =
     /\b(paid|settled|cleared|funded|funding|money|amount|batch|sponsor)\b/.test(
@@ -616,6 +641,11 @@ export function fallbackAdvisorAnswer(
   const seasonSource = sources.find((item) => item.id === "ayra:season-timeline");
   const verticalsSource = sources.find((item) => item.id === "ayra:verticals");
   const tractionSource = sources.find((item) => item.id === "ayra:traction");
+  const applicationSource = sources.find((item) => item.id === "ayra:apply-flow");
+  const loginSource = sources.find((item) => item.id === "ayra:login-flow");
+  const portalAccessSource = sources.find(
+    (item) => item.id === "ayra:portal-access",
+  );
 
   if (asksAyraOverview && northStarSource) {
     return {
@@ -682,6 +712,48 @@ export function fallbackAdvisorAnswer(
         "Who is VIIO?",
         "What has happened in Providencia already?",
         "How does this connect to Stellar proof?",
+      ],
+      status: "answered",
+    };
+  }
+
+  if (asksApplication && applicationSource) {
+    return {
+      answer:
+        "To make an application, go to /apply and fill out the initiative intake: applicant name, email, track, initiative, scope, operational details, milestones, and Signal or phone. Submit it with Submit for review. AYRA then runs admin review on the track, initiative scope, and contact model before granting scoped portal access. If the application is approved, the steward portal asks for the first Stellar payout address before any batch can be created.",
+      citations: [advisorCitation(applicationSource)],
+      followups: [
+        "What happens after I apply?",
+        "How do I log in after approval?",
+        "What does the steward portal do?",
+      ],
+      status: "answered",
+    };
+  }
+
+  if (asksLogin && loginSource) {
+    return {
+      answer:
+        "To log in, go to /login. You can continue with Google or request a magic link by email. Use the email connected to your application or operator role, because AYRA opens access from live profile and role records, not from the sign-in method alone. If the email is not connected to an approved application or operator role, the login flow will ask you to submit an application first or use the approved admin email.",
+      citations: [advisorCitation(loginSource)],
+      followups: [
+        "How do I submit an application?",
+        "Why is my login blocked?",
+        "What portal opens after sign-in?",
+      ],
+      status: "answered",
+    };
+  }
+
+  if (asksPortalAccess && portalAccessSource) {
+    return {
+      answer:
+        "Portal access is scoped. Admins review applications, approve or reject proposals, promote roles, verify payout addresses, moderate updates, and manage batch actions. An approved applicant can receive steward portal access for their initiative. In the steward portal, the steward can submit public updates and submit the first Stellar payout address for AYRA verification; no funding batch can be created until that address is verified and locked.",
+      citations: [advisorCitation(portalAccessSource)],
+      followups: [
+        "How do I apply for steward access?",
+        "How do I log in?",
+        "What happens after payout address verification?",
       ],
       status: "answered",
     };
@@ -773,6 +845,9 @@ function scoreSource(sourceItem: AdvisorSource, route: AdvisorRouteContext) {
   if (sourceItem.id.startsWith("stellar:")) score += 2;
   if (sourceItem.id.startsWith("ayra:")) score += 2;
   if (sourceItem.id === "ayra:north-star") score += 2;
+  if (sourceItem.id === "ayra:apply-flow") score += 4;
+  if (sourceItem.id === "ayra:login-flow") score += 4;
+  if (sourceItem.id === "ayra:portal-access") score += 4;
   if (sourceItem.id === "ayra:public-boundary") score += 1;
   return score;
 }
@@ -851,6 +926,34 @@ function isVerticalQuestion(loweredQuestion: string) {
 function isTractionQuestion(loweredQuestion: string) {
   return /\b(traction|proof|viio|partner|partners|climate future|trees|children|dogs|cats|why this works)\b/.test(
     loweredQuestion,
+  );
+}
+
+function isApplicationQuestion(loweredQuestion: string) {
+  return (
+    /\b(apply|application|applicant|proposal|propose|intake|submit|submission)\b/.test(
+      loweredQuestion,
+    ) ||
+    /\bhow do i (make|send|submit|start|create).*\b(application|proposal)\b/.test(
+      loweredQuestion,
+    )
+  );
+}
+
+function isLoginQuestion(loweredQuestion: string) {
+  return /\b(log in|login|sign in|signin|magic link|google|email link|auth|account)\b/.test(
+    loweredQuestion,
+  );
+}
+
+function isPortalAccessQuestion(loweredQuestion: string) {
+  return (
+    /\b(admin|steward|portal|access|role|roles|operator|grantee|payout address|approved applicant)\b/.test(
+      loweredQuestion,
+    ) &&
+    /\b(how|what|where|who|why|get|open|enter|use|allowed|access)\b/.test(
+      loweredQuestion,
+    )
   );
 }
 

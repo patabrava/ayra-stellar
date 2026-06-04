@@ -213,6 +213,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Public transparency projections are track-scoped feeds: keep the hero default on Reforestation, but include approved public records from all initiatives in the selected track.
 - AYRA advisor approval-list questions must short-circuit to the approved-projects source and treat `live`/`funding` as the public approved set; do not rely on Gemini to infer it.
 - AYRA advisor brand, Season, Studio, sponsor, vertical, and traction questions must use public AYRA website sources with conversational fallback; do not let the advisor become proof-only.
+- AYRA advisor application, login, admin, steward, and portal-access questions must use explicit public app-journey sources plus deterministic fallback; do not leave how-to-use questions to proof-only retrieval.
 - Canonical track display names are normalized at ingest; do not let live row casing change `Providencia` in public or operator shells.
 - Browser smoke selectors for public track controls must scope or exact-match nav links because the wordmark repeats the active track name.
 - Browser smoke privacy assertions must be route-specific: public/proof pages must exclude private contact and receipt data, while steward/admin pages may show scoped private contacts but still must hide raw receipt paths.
@@ -251,4 +252,5 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Application intake browser constraints must mirror `applicationSchema`; otherwise short fields reach `/apply?status=invalid` with no field-level correction path.
 - Admin one-line batch amounts must derive the non-edited USDC/COP side from the daily USD/COP rate in both UI and server action; never persist stale manual mismatches.
 - Admin one-line batch creation must submit an explicit operator-selected initiative id; never hard-code Reforestation as the batch target.
+- Live batch/allocation status must stay `submitted` unless every settled line has Horizon-verified USDC proof for the expected current payout destination; successful SDP transactions to a different destination are not public proof.
 - Playwright admin/steward smokes must set `AYRA_DEMO_MODE=1`; blanking Supabase env vars is not enough because Next can still load `.env`.

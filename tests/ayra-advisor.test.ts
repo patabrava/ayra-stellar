@@ -155,6 +155,25 @@ describe("AYRA advisor public source contract", () => {
     assert.match(verticals.content, /Compute and Agents/i);
   });
 
+  it("builds public app journey facts for application and login questions", () => {
+    const sources = buildAdvisorSources(createDemoState(), {});
+    const application = sources.find((source) => source.id === "ayra:apply-flow");
+    const login = sources.find((source) => source.id === "ayra:login-flow");
+    const portals = sources.find((source) => source.id === "ayra:portal-access");
+
+    assert.ok(application);
+    assert.match(application.content, /\/apply/i);
+    assert.match(application.content, /Applicant name/i);
+    assert.match(application.content, /Submit for review/i);
+    assert.ok(login);
+    assert.match(login.content, /\/login/i);
+    assert.match(login.content, /Google/i);
+    assert.match(login.content, /magic link/i);
+    assert.ok(portals);
+    assert.match(portals.content, /admin review/i);
+    assert.match(portals.content, /steward portal/i);
+  });
+
   it("falls back conversationally for general AYRA questions", () => {
     const sources = buildAdvisorSources(createDemoState(), {});
     const response = fallbackAdvisorAnswer("What is AYRA?", sources);
@@ -175,6 +194,39 @@ describe("AYRA advisor public source contract", () => {
     assert.match(response.answer, /37,500/i);
     assert.match(response.answer, /three teams/i);
     assert.equal(response.citations[0]?.sourceId, "ayra:studio-model");
+  });
+
+  it("falls back deterministically for public application questions", () => {
+    const sources = buildAdvisorSources(createDemoState(), {});
+    const response = fallbackAdvisorAnswer("How do I make an application?", sources);
+
+    assert.equal(response.status, "answered");
+    assert.match(response.answer, /\/apply/);
+    assert.match(response.answer, /Submit for review/i);
+    assert.match(response.answer, /admin review/i);
+    assert.equal(response.citations[0]?.sourceId, "ayra:apply-flow");
+  });
+
+  it("falls back deterministically for login questions", () => {
+    const sources = buildAdvisorSources(createDemoState(), {});
+    const response = fallbackAdvisorAnswer("How do I log in?", sources);
+
+    assert.equal(response.status, "answered");
+    assert.match(response.answer, /\/login/);
+    assert.match(response.answer, /Google/i);
+    assert.match(response.answer, /magic link/i);
+    assert.equal(response.citations[0]?.sourceId, "ayra:login-flow");
+  });
+
+  it("falls back deterministically for portal access questions", () => {
+    const sources = buildAdvisorSources(createDemoState(), {});
+    const response = fallbackAdvisorAnswer("How do I get steward access?", sources);
+
+    assert.equal(response.status, "answered");
+    assert.match(response.answer, /approved applicant/i);
+    assert.match(response.answer, /steward portal/i);
+    assert.match(response.answer, /payout address/i);
+    assert.equal(response.citations[0]?.sourceId, "ayra:portal-access");
   });
 
   it("falls back deterministically for approved-project questions", () => {
@@ -316,6 +368,9 @@ describe("AYRA advisor public source contract", () => {
     assert.match(prompt, /warm, charismatic, and community-first/i);
     assert.match(prompt, /principled and lightly ideological/i);
     assert.match(prompt, /Do not use crypto hype/i);
+    assert.match(prompt, /application, login, admin, steward/i);
+    assert.match(prompt, /SOURCE ID: ayra:apply-flow/);
+    assert.match(prompt, /SOURCE ID: ayra:login-flow/);
     assert.match(prompt, /approved-projects source/i);
     assert.match(prompt, /live and funding are the public approval statuses/i);
     assert.match(prompt, /Conversation history:/i);
@@ -411,6 +466,27 @@ describe("AYRA advisor API route", () => {
       assert.match(body.answer, /AYRA is/i);
       assert.match(body.answer, /Providencia/i);
       assert.equal(body.citations[0]?.sourceId, "ayra:north-star");
+    });
+  });
+
+  it("returns deterministic fallback application answers without GEMINI_API_KEY", async () => {
+    await withAdvisorFallbackEnv(async () => {
+      const response = await postAdvisor(
+        advisorRequest({
+          question: "how do i make an application",
+          route: {
+            trackSlug: "providencia",
+            initiativeSlug: "reforestation",
+          },
+        }),
+      );
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(body.mode, "deterministic-fallback");
+      assert.match(body.answer, /\/apply/);
+      assert.match(body.answer, /Submit for review/i);
+      assert.equal(body.citations[0]?.sourceId, "ayra:apply-flow");
     });
   });
 
