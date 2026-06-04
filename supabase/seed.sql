@@ -3,7 +3,7 @@ insert into public.profiles (id, email, display_name) values
   ('00000000-0000-0000-0000-00000000cfe1', 'cfeix@web.de', 'Cfeix'),
   ('00000000-0000-0000-0000-000000000002', 'leidy@ecoparque.co', 'Leidy Mendoza'),
   ('00000000-0000-0000-0000-000000000003', 'applicant@example.org', 'Prospective steward'),
-  ('00000000-0000-0000-0000-000000000004', 'nicolas.weber@nos.studio', 'Nicolas Weber')
+  ('00000000-0000-0000-0000-000000000004', 'nicolas.weber@ayra.haus', 'Nicolas Weber')
 on conflict (email) do nothing;
 
 insert into public.tracks (id, slug, name, local_currency, theme) values
