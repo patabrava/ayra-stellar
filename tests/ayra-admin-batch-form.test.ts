@@ -90,4 +90,11 @@ describe("AYRA admin batch form", () => {
     assert.match(actionSource, /milestone_submission_id/);
     assert.match(actionSource, /milestone-required/);
   });
+
+  it("does not block the payments page render on live SDP polling", () => {
+    const pageSource = readFileSync("src/app/admin/batches/page.tsx", "utf8");
+
+    assert.doesNotMatch(pageSource, /syncSubmittedBatches/);
+    assert.doesNotMatch(pageSource, /loadAuthenticatedAyraState/);
+  });
 });

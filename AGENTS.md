@@ -216,3 +216,4 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Steward payout-address submission must check Horizon immediately and surface USDC trustline readiness in `/steward`; saving an address alone is never equivalent to payout readiness.
 - Hosted SDP `PATCH /payments/retry` currently rejects API-key auth because the handler still requires a JWT token in context; recover failed payments with a dashboard JWT or a verified manual settlement path, not with the verifier API key alone.
 - Status-feedback modals must close by removing `?status=` with client-local History API state, not `router.replace()` or immediate `router.refresh()`; App Router RSC refetches during modal dismissal cause admin/login lag.
+- Admin Payments must not block initial render on live SDP/Horizon sync; keep settlement polling in explicit sync actions or cron, otherwise `/admin/batches` tab navigation becomes multi-second.
