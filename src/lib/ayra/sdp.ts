@@ -8,6 +8,7 @@ export type SdpLineItemRef = {
   id: string;
   category: string;
   amountUsdc: number;
+  sdpPaymentId?: string | null;
   receiverEmail: string;
   walletAddress: string;
   walletAddressMemo?: string | null;
@@ -465,22 +466,41 @@ class TestnetSdpClient {
     const results: Array<{ lineItem: SdpLineItemRef; payment: SdpPaymentResponse }> = [];
     for (const lineItem of lineItems) {
       const expectedPaymentId = paymentExternalId(batch, lineItem);
-      const json = await this.requestJson<unknown>(
-        `/payments?q=${encodeURIComponent(expectedPaymentId)}&type=DISBURSEMENT`,
-        {
-          method: "GET",
-          authorization: this.config.createAuthorization,
-        },
-        "sync_status",
-      );
-      const payment = extractPayments(json).find(
-        (item) =>
-          item.external_payment_id === expectedPaymentId ||
-          item.id === expectedPaymentId,
-      );
-      if (payment) results.push({ lineItem, payment });
+      const payment = lineItem.sdpPaymentId
+        ? await this.retrievePayment(lineItem.sdpPaymentId).catch(() => null)
+        : null;
+      const resolvedPayment =
+        payment && paymentBelongsToLineItem(payment, expectedPaymentId)
+          ? payment
+          : await this.searchPayment(expectedPaymentId);
+      if (resolvedPayment) results.push({ lineItem, payment: resolvedPayment });
     }
     return results;
+  }
+
+  private async retrievePayment(paymentId: string) {
+    return this.requestJson<SdpPaymentResponse>(
+      `/payments/${encodeURIComponent(paymentId)}`,
+      {
+        method: "GET",
+        authorization: this.config.createAuthorization,
+      },
+      "sync_status",
+    );
+  }
+
+  private async searchPayment(expectedPaymentId: string) {
+    const json = await this.requestJson<unknown>(
+      `/payments?q=${encodeURIComponent(expectedPaymentId)}&type=DISBURSEMENT`,
+      {
+        method: "GET",
+        authorization: this.config.createAuthorization,
+      },
+      "sync_status",
+    );
+    return extractPayments(json).find((item) =>
+      paymentBelongsToLineItem(item, expectedPaymentId),
+    );
   }
 
   private headers(authorization: string, json: boolean) {
@@ -597,6 +617,16 @@ function extractPayments(json: unknown): SdpPaymentResponse[] {
     if (isPayment(json)) return [json];
   }
   return [];
+}
+
+function paymentBelongsToLineItem(
+  payment: SdpPaymentResponse,
+  expectedPaymentId: string,
+) {
+  return (
+    payment.external_payment_id === expectedPaymentId ||
+    payment.id === expectedPaymentId
+  );
 }
 
 function extractReceivers(json: unknown): SdpReceiverResponse[] {

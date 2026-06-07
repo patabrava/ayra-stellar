@@ -1093,7 +1093,7 @@ export async function syncBatchStatusAction(formData: FormData) {
 
   const { data: lineItems, error: lineItemError } = await supabase
     .from("batch_line_items")
-    .select("id,category,amount_usdc")
+    .select("id,category,amount_usdc,sdp_payment_id")
     .eq("batch_id", parsed.data.entityId);
   if (lineItemError || !lineItems || lineItems.length === 0) {
     redirectWithStatus("/admin/batches", "line-item-error");
@@ -1111,6 +1111,7 @@ export async function syncBatchStatusAction(formData: FormData) {
         id: item.id,
         category: item.category,
         amountUsdc: Number(item.amount_usdc),
+        sdpPaymentId: item.sdp_payment_id,
         receiverEmail: destination.receiverEmail,
         walletAddress: destination.walletAddress,
         walletAddressMemo: destination.walletAddressMemo,

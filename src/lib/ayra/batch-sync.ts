@@ -25,6 +25,7 @@ type LineItemRow = {
   id: string;
   category?: string | null;
   amount_usdc: string | number;
+  sdp_payment_id?: string | null;
 };
 
 type SdpDestination = {
@@ -155,7 +156,7 @@ export async function syncSubmittedBatch(
 ) {
   const { data: lineItems, error: lineItemError } = await supabase
     .from("batch_line_items")
-    .select("id,category,amount_usdc")
+    .select("id,category,amount_usdc,sdp_payment_id")
     .eq("batch_id", batch.id);
   if (lineItemError || !lineItems || lineItems.length === 0) {
     return { batchId: batch.id, status: "line-item-error" as const };
@@ -172,6 +173,7 @@ export async function syncSubmittedBatch(
         id: item.id,
         category: item.category ?? "Payment",
         amountUsdc: Number(item.amount_usdc),
+        sdpPaymentId: item.sdp_payment_id ?? null,
         receiverEmail: destination.receiverEmail,
         walletAddress: destination.walletAddress,
         walletAddressMemo: destination.walletAddressMemo,

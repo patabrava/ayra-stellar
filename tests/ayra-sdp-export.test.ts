@@ -359,6 +359,56 @@ describe("AYRA SDP gateway and CSV exports", () => {
     assert.deepEqual(synced.payments, []);
   });
 
+  it("prefers retrieving the stored SDP payment id before falling back to search", async () => {
+    const calls: string[] = [];
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const url = String(input);
+      calls.push(`${init?.method} ${new URL(url).pathname}${new URL(url).search}`);
+
+      if (url.endsWith("/disbursements")) {
+        return Response.json({ id: "sdp-disbursement-1", status: "DRAFT" }, { status: 201 });
+      }
+      if (url.endsWith("/disbursements/sdp-disbursement-1/instructions")) {
+        return Response.json({ message: "File uploaded successfully" }, { status: 201 });
+      }
+      if (url.endsWith("/disbursements/sdp-disbursement-1/status")) {
+        return Response.json({ message: "Disbursement started" }, { status: 200 });
+      }
+      if (url.endsWith("/payments/sdp-pv-test-may26-line-1")) {
+        return Response.json({
+          id: "sdp-pv-test-may26-line-1",
+          external_payment_id: "pv-test-may26-line-1",
+          status: "SUCCESS",
+          stellar_transaction_id: "tx-direct-line-1",
+        });
+      }
+      if (url.includes("/payments?")) {
+        return Response.json({ data: [], pagination: { pages: 1, total: 0 } });
+      }
+
+      return new Response("unexpected", { status: 500 });
+    };
+
+    const gateway = createTestnetSdpGateway(testnetConfig, fetchImpl);
+    const synced = await gateway.syncStatus(
+      {
+        id: "batch-1",
+        code: "PV-TEST-MAY26",
+        sdpBatchId: "sdp-disbursement-1",
+      },
+      [
+        {
+          ...sdpLineItems[0]!,
+          sdpPaymentId: "sdp-pv-test-may26-line-1",
+        },
+      ],
+    );
+
+    assert.equal(synced.payments[0]?.transactionHash, "tx-direct-line-1");
+    assert.ok(calls.includes("GET /payments/sdp-pv-test-may26-line-1"));
+    assert.ok(!calls.some((call) => call.includes("/payments?q=pv-test-may26-line-1")));
+  });
+
   it("fails fast on missing testnet env and sanitizes non-2xx SDP errors", async () => {
     assert.throws(
       () =>
