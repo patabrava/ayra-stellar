@@ -210,3 +210,4 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - In zsh harness snippets, never assign scalar variables named `path`; it mutates command lookup and can make standard binaries unavailable.
 
 3) Specific repo rules
+- Apply and verify production Supabase migrations before deploying code that selects new tables or columns; `/admin` fails closed when authenticated operator reads hit missing schema.
