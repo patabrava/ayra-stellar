@@ -205,53 +205,7 @@ LLM_FRIENDLY_PLAN_CODE_DEBUG
 END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 
 2) Specific harness rules (Codex)
-- Vercel deploys must preserve existing domain ownership: keep `ayra.haus`/`www.ayra.haus` on `AYRA LANDING/ayra-epoch-vision`, and deploy this transparency app only to `ayra-transparency`/`transparency.ayra.haus` unless explicitly replacing the landing.
-- Before Vercel production deploys, keep `.vercelignore` excluding `.env*`, build outputs, and browser artifacts; Vercel CLI can otherwise upload local env files despite `.gitignore`.
+- 
 
 3) Specific repo rules
-- Public landing stays overview-only: hero plus project entry points belong on `/`, while initiative updates, receipts, and proof context belong on `/projects/[trackSlug]/[initiativeSlug]` or `/proof/[batchId]`.
-- Public transparency projections are track-scoped feeds: keep the hero default on Reforestation, but include approved public records from all initiatives in the selected track.
-- AYRA advisor approval-list questions must short-circuit to the approved-projects source and treat `live`/`funding` as the public approved set; do not rely on Gemini to infer it.
-- AYRA advisor brand, Season, Studio, sponsor, vertical, and traction questions must use public AYRA website sources with conversational fallback; do not let the advisor become proof-only.
-- AYRA advisor application, login, admin, steward, and portal-access questions must use explicit public app-journey sources plus deterministic fallback; do not leave how-to-use questions to proof-only retrieval.
-- Canonical track display names are normalized at ingest; do not let live row casing change `Providencia` in public or operator shells.
-- Browser smoke selectors for public track controls must scope or exact-match nav links because the wordmark repeats the active track name.
-- Browser smoke privacy assertions must be route-specific: public/proof pages must exclude private contact and receipt data, while steward/admin pages may show scoped private contacts but still must hide raw receipt paths.
-- Public receipt/proof projections must require settled line items with Horizon-verified USDC metadata and real 64-char Stellar transaction hashes, render those hashes as Stellar Expert testnet links, and never expose native XLM, `mock-*`, or SDP payment ids as on-chain references.
-- Public Supabase reads must fail closed in production; never fall back to `createDemoState()`/mock proof data on Vercel production when env or live reads are broken.
-- Anonymous application inserts must use return-minimal writes unless a privileged client can also read `applications`; selecting inserted ids will fail RLS.
-- When changing `public_batch_receipts` column order or adding leading columns, drop and recreate the view instead of `create or replace view`.
-- Authenticated admin server actions need explicit admin RLS policies for every registry table they write; service-role-era assumptions surface as promotion or batch mutation errors.
-- Supabase email-link callbacks must normalize legacy `magiclink`/`signup` types to `email`; login hashes in this project verify as `confirmation_token` rows.
-- Supabase hosted magic-link/signup email templates must link to `/auth/callback` with `token_hash` query params; `ConfirmationURL` returns fragment sessions that server routes cannot read.
-- Supabase hosted auth config must keep `site_url=https://transparency.ayra.haus` and allow `https://transparency.ayra.haus/auth/callback`; localhost site URLs send live login links back to local dev.
-- Supabase SSR logout must post to a route handler that owns the redirect response and cookie clearing; server-action sign-out can leave the live admin session sticky.
-- Supabase `link-error` on `/login` can be built-in mailer throttling, not role denial; check auth logs for `over_email_send_rate_limit`, and configure custom SMTP before raising `rate_limit_email_sent`.
-- Standalone `tsx` scripts must call `loadEnvConfig(process.cwd())`, avoid top-level await under this CommonJS build, and reuse the Node WebSocket transport for Supabase clients.
-- Keep SDP env examples, `src/lib/ayra/sdp.ts`, and `docs/ayra-stellar-sdp-testnet-runbook.md` aligned on `AYRA_SDP_MODE` plus `STELLAR_SDP_*`; stale `SDP_*` placeholders send setup down the wrong path.
-- USDC proof sync must fail closed when `STELLAR_USDC_ISSUER` is missing; never let Horizon verification publish an arbitrary USDC issuer.
-- Stellar SDP retries must be idempotent: reuse existing DRAFT/READY disbursements on duplicate-name create conflicts, and reuse the existing receiver email when a wallet is already registered; otherwise retries fail with 409 before payments are created.
-- Playwright fallback advisor smokes must blank `GEMINI_API_KEY` in `webServer.command`; Next loads `.env`, so local keys otherwise bypass deterministic fallback.
-- Playwright advisor smokes must assert public UI labels such as `Public records`, not internal mode strings like `deterministic-fallback`.
-- Gemini Developer API REST structured output must use `generationConfig.responseMimeType` plus `responseSchema`; `responseFormat.text.mimeType` can 400 even when SDK examples show it.
-- Gemini Developer API `responseSchema` rejects unsupported JSON Schema fields such as `additionalProperties`; keep schemas to the accepted subset and validate extra fields locally with Zod.
-- Seeded operator email changes must be applied to live `profiles` plus `user_roles`; a successful magic-link session still redirects with `admin-required` when the authenticated profile only has `applicant`.
-- Live steward-access repairs must include the scoped `user_roles` row plus adjacent `steward_profiles`/grantee-contact records; an auth-linked profile with only `applicant` will keep redirecting to `/login?status=scope-required`.
-- Steward portal pages must render an empty payout state for scoped initiatives with no submitted/settled batches; never dereference `currentBatch` before a batch exists.
-- AYRA public advisor must have exactly one mounted launcher per public page; keep `AdvisorPanel` as the single shell component and avoid re-adding legacy advisor widgets.
-- AYRA public advisor answers render from the response shell only; history may feed API context but must not render a second visible assistant answer or routine `Answered` chip.
-- Steward payout-address feedback must distinguish first-time setup from replacements, name pending AYRA verification, and cover success/invalid/error redirects in both modal UX and browser regressions.
-- Steward update media submissions must attach `update_media` through a scoped server-side privileged write after steward authorization and keep Next Server Action body limits above accepted file sizes; user RLS can create pending updates but not media rows.
-- Steward public-media file inputs must render through `UpdateMediaField` with the custom upload-card UI; keep a styled native file-input fallback and a regression check so the browser default button never returns.
-- Admin approval status banners must state what changed, what access or records were created, and the next steward/operator step; cover the rendered banner with UI and browser regression tests.
-- Status-driven modal components must SSR the dialog on first paint and only portal after client mount; returning `null` until hydration hides server-action feedback.
-- Server-action redirects for login/apply/steward/admin submissions must map every success/error `status` to visible modal feedback and browser regressions.
-- Logout redirects may keep `status=signed-out` in the URL, but login status mapping must ignore it so signout never opens a confirmation modal.
-- Magic-link login actions must preflight role/application eligibility with service-role reads when configured; unknown emails get `application-required` feedback before Supabase OTP/user creation.
-- Google/auth callbacks and protected portal guards must resolve profile/role scope with minimal RLS-safe reads before loading operator state, and must not overwrite login blocker statuses with `signed-in`.
-- Action and status typography must use the landing display/body fonts; reserve monospace for hashes, addresses, timestamps, emails, and other literal technical references.
-- Application intake browser constraints must mirror `applicationSchema`; otherwise short fields reach `/apply?status=invalid` with no field-level correction path.
-- Admin one-line batch amounts must derive the non-edited USDC/COP side from the daily USD/COP rate in both UI and server action; never persist stale manual mismatches.
-- Admin one-line batch creation must submit an explicit operator-selected initiative id; never hard-code Reforestation as the batch target.
-- Live batch/allocation status must stay `submitted` unless every settled line has Horizon-verified USDC proof for the expected current payout destination; successful SDP transactions to a different destination are not public proof.
-- Playwright admin/steward smokes must set `AYRA_DEMO_MODE=1`; blanking Supabase env vars is not enough because Next can still load `.env`.
+- 

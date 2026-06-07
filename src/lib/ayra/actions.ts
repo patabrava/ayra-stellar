@@ -17,6 +17,7 @@ import {
   normalizeMilestonePlan,
 } from "@/lib/ayra/application-intake";
 import { hasPublicSupabaseEnv } from "@/lib/ayra/data";
+import { MAX_UPDATE_MEDIA_BYTES } from "@/lib/ayra/upload";
 import {
   loginPath,
   requireAdminSession,
@@ -45,7 +46,6 @@ const updateSchema = z.object({
   mediaUrl: z.string().trim().optional(),
   mediaAlt: z.string().trim().optional(),
 });
-const maxUpdateMediaBytes = 4 * 1024 * 1024;
 
 const idActionSchema = z.object({
   entityId: z.string().trim().min(1),
@@ -214,6 +214,16 @@ function sdpEventsFromError(error: unknown) {
   return error instanceof SdpGatewayError ? error.events : [];
 }
 
+function isUniqueConstraintError(
+  error: { code?: string; details?: string | null; message?: string } | null,
+  constraint: string,
+) {
+  return (
+    error?.code === "23505" &&
+    [error.details, error.message].some((value) => value?.includes(constraint))
+  );
+}
+
 async function isGoogleProviderEnabled() {
   try {
     const response = await fetch(
@@ -380,7 +390,7 @@ export async function submitUpdateAction(formData: FormData) {
 
   const supabase = session.supabase!;
   const mediaFile = optionalFile(formData, "mediaFile");
-  if (mediaFile && mediaFile.size > maxUpdateMediaBytes) {
+  if (mediaFile && mediaFile.size > MAX_UPDATE_MEDIA_BYTES) {
     redirectWithStatus("/steward", "media-too-large");
   }
   let mediaUrl = parsed.data.mediaUrl;
@@ -711,7 +721,12 @@ export async function createBatchAction(formData: FormData) {
     })
     .select("id")
     .single();
-  if (error) redirectWithStatus("/admin/batches", "error");
+  if (error) {
+    if (isUniqueConstraintError(error, "funding_batches_code_key")) {
+      redirectWithStatus("/admin/batches", "duplicate-batch-code");
+    }
+    redirectWithStatus("/admin/batches", "error");
+  }
 
   const lineItem = await supabase
     .from("batch_line_items")

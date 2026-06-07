@@ -32,6 +32,18 @@ const quickQuestions = [
   "What is the public approval list?",
 ] as const;
 
+const thinkingVerbs = [
+  "Tracing...",
+  "Grounding...",
+  "Verifying...",
+  "Unfolding...",
+  "Listening...",
+  "Cross-checking...",
+  "Clarifying...",
+  "Following the rail...",
+  "Reading the proof...",
+] as const;
+
 function advisorModeLabel(mode: AdvisorApiResponse["mode"]) {
   return mode === "gemini" ? "Conversational" : "Public records";
 }
@@ -41,6 +53,7 @@ export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPa
   const [question, setQuestion] = useState("");
   const [history, setHistory] = useState<AdvisorConversationTurn[]>([]);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const [thinkingIndex, setThinkingIndex] = useState(0);
   const [response, setResponse] = useState<AdvisorApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -69,6 +82,7 @@ export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPa
 
       setOpen(true);
       setPendingQuestion(trimmed);
+      setThinkingIndex(0);
       setError(null);
 
       const nextHistory: AdvisorConversationTurn[] = [
@@ -113,7 +127,22 @@ export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPa
     [history, pendingQuestion, route],
   );
 
-  const visibleTurns = history.filter((turn) => turn.role === "user");
+  const visibleTurns = [
+    ...history.filter((turn) => turn.role === "user"),
+    ...(pendingQuestion ? [{ role: "user" as const, text: pendingQuestion }] : []),
+  ];
+
+  useEffect(() => {
+    if (!pendingQuestion) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setThinkingIndex((current) => (current + 1) % thinkingVerbs.length);
+    }, 1_200);
+
+    return () => window.clearInterval(timer);
+  }, [pendingQuestion]);
 
   useEffect(() => {
     if (!open) return;
@@ -262,6 +291,28 @@ export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPa
                   )}
                 </div>
 
+                {pendingQuestion ? (
+                  <div
+                    aria-label="AYRA is thinking"
+                    className="advisor-thinking"
+                    role="status"
+                  >
+                    <div className="advisor-thinking-core" aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                    <div>
+                      <div className="advisor-thinking-label">AYRA signal path</div>
+                      <div className="advisor-thinking-line">
+                        <span className="advisor-thinking-phrase" key={thinkingIndex}>
+                          {thinkingVerbs[thinkingIndex]}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
                 {response ? (
                   <div className="advisor-answer-shell">
                     <div className="advisor-answer-header">
@@ -333,9 +384,7 @@ export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPa
                     type="submit"
                   >
                     {pendingQuestion ? (
-                      <span className="mono text-xs uppercase tracking-[0.18em]">
-                        ...
-                      </span>
+                      <span className="advisor-submit-spinner" aria-hidden="true" />
                     ) : (
                       <ArrowRight className="h-4 w-4" />
                     )}

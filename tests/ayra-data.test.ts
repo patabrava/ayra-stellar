@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  loadOperatorAyraState,
+  loadPublicAyraState,
   stateFromOperatorRows,
   stateFromPublicRows,
 } from "../src/lib/ayra/data";
@@ -155,6 +157,59 @@ const publicRows = {
 };
 
 describe("AYRA Supabase row mapping", () => {
+  it("fails closed instead of serving demo proof data when public Supabase env is missing in production", async () => {
+    const previous = {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      vercelEnv: process.env.VERCEL_ENV,
+    };
+
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    process.env.VERCEL_ENV = "production";
+
+    try {
+      await assert.rejects(
+        () => loadPublicAyraState(),
+        /Public Supabase environment is not configured/,
+      );
+    } finally {
+      restoreEnv("NEXT_PUBLIC_SUPABASE_URL", previous.url);
+      restoreEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", previous.anonKey);
+      restoreEnv("VERCEL_ENV", previous.vercelEnv);
+    }
+  });
+
+  it("does not serve demo operator state unless demo mode is explicit", async () => {
+    const previous = {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      demoMode: process.env.AYRA_DEMO_MODE,
+    };
+
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.AYRA_DEMO_MODE;
+
+    try {
+      await assert.rejects(
+        () => loadOperatorAyraState(),
+        /Operator Supabase environment is not configured/,
+      );
+
+      process.env.AYRA_DEMO_MODE = "1";
+      const state = await loadOperatorAyraState();
+      assert.ok(state.profiles.some((profile) => profile.id === "profile-admin"));
+    } finally {
+      restoreEnv("NEXT_PUBLIC_SUPABASE_URL", previous.url);
+      restoreEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", previous.anonKey);
+      restoreEnv("SUPABASE_SERVICE_ROLE_KEY", previous.serviceRoleKey);
+      restoreEnv("AYRA_DEMO_MODE", previous.demoMode);
+    }
+  });
+
   it("maps public rows into a privacy-safe wall and proof state", () => {
     const state = stateFromPublicRows(publicRows);
     const wall = getPublicWallProjection(state, "providencia");
@@ -255,4 +310,68 @@ describe("AYRA Supabase row mapping", () => {
     assert.equal(state.userRoles[0]?.role, "grantee_contact");
     assert.equal(state.granteeContacts[0]?.granteeId, "grantee-1");
   });
+
+  it("drops operator line items whose parent batch is no longer present", () => {
+    const state = stateFromOperatorRows({
+      ...publicRows,
+      profiles: [],
+      userRoles: [],
+      applications: [],
+      stewardProfiles: [],
+      grantees: [],
+      granteeContacts: [],
+      payoutAddresses: [],
+      lineItems: [
+        {
+          id: "line-valid",
+          batch_id: "batch-1",
+          category: "Verified payout",
+          amount_usdc: 1,
+          local_amount: 3900,
+          local_currency: "COP",
+          status: "settled",
+          sdp_payment_id: null,
+          transaction_hash:
+            "9b02f2db43af6a56907b92c1e74d95db1b243524b57430a5d1a579285d6c6ac6",
+          payment_asset_code: "USDC",
+          payment_asset_issuer:
+            "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+          payment_asset_amount: 1,
+          private_recipient_name: null,
+        },
+        {
+          id: "line-orphan-seed",
+          batch_id: "deleted-seed-batch",
+          category: "Seed fixture",
+          amount_usdc: 9999,
+          local_amount: 38996100,
+          local_currency: "COP",
+          status: "submitted",
+          sdp_payment_id: null,
+          transaction_hash: null,
+          payment_asset_code: null,
+          payment_asset_issuer: null,
+          payment_asset_amount: null,
+          private_recipient_name: null,
+        },
+      ],
+      fundingAllocations: [],
+      reconciliationItems: [],
+      sdpSyncEvents: [],
+      auditLogs: [],
+    });
+
+    assert.deepEqual(
+      state.batchLineItems.map((item) => item.id),
+      ["line-valid"],
+    );
+  });
 });
+
+function restoreEnv(key: string, value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[key];
+    return;
+  }
+  process.env[key] = value;
+}

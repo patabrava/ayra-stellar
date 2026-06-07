@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   buildAuthCallbackUrl,
+  buildAuthCallbackRedirectPath,
   canSubmitForMilestone,
   googleProviderEnabledFromSettings,
   requireAdminRole,
@@ -100,6 +101,21 @@ describe("AYRA auth role resolution", () => {
     assert.equal(resolveRoleHomePath(stewardContext), "/steward");
     assert.equal(resolveRoleHomePath(stewardContext, "/admin"), "/steward");
     assert.equal(resolveRoleHomePath(adminContext, "/steward"), "/admin");
+  });
+
+  it("keeps login blocker statuses from role-aware auth callbacks", () => {
+    assert.equal(
+      buildAuthCallbackRedirectPath("/login?status=scope-required", false),
+      "/login?status=scope-required",
+    );
+    assert.equal(
+      buildAuthCallbackRedirectPath("/steward", false),
+      "/steward?status=signed-in",
+    );
+    assert.equal(
+      buildAuthCallbackRedirectPath("/login?status=scope-required", true),
+      "/login?status=auth-error",
+    );
   });
 
   it("builds one safe callback URL for magic links and Google OAuth", () => {

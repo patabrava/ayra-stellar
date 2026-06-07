@@ -922,6 +922,83 @@ select {
   padding: 16px;
 }
 
+.admin-payments-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.payment-composer {
+  overflow: clip;
+}
+
+.payment-registry {
+  overflow: clip;
+}
+
+.payment-registry-list {
+  display: grid;
+}
+
+.payment-registry-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, auto);
+  padding: 14px 16px;
+}
+
+.payment-registry-row + .payment-registry-row {
+  border-top: 1px solid var(--rule);
+}
+
+.payment-registry-main {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(220px, 1fr) minmax(88px, auto) minmax(92px, auto);
+  min-width: 0;
+}
+
+.payment-registry-identity,
+.payment-registry-amount,
+.payment-registry-status,
+.payment-registry-proof,
+.payment-registry-action {
+  min-width: 0;
+}
+
+.payment-registry-amount,
+.payment-registry-status {
+  display: grid;
+  gap: 5px;
+}
+
+.payment-registry-action {
+  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: end;
+}
+
+.payment-registry-action .btn {
+  white-space: nowrap;
+}
+
+.payment-registry-proof {
+  display: grid;
+  gap: 5px;
+  grid-column: 1 / -1;
+}
+
+.payment-registry-label {
+  color: var(--ink-muted);
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 .stat-grid {
   display: grid;
   gap: 12px;
@@ -1971,6 +2048,85 @@ a.hashish:hover {
   padding: 14px;
 }
 
+.advisor-thinking {
+  align-items: start;
+  background:
+    linear-gradient(135deg, color-mix(in oklab, var(--public-leaf) 13%, transparent), transparent 44%),
+    color-mix(in oklab, var(--public-bg) 84%, var(--public-chip));
+  border: 1px solid color-mix(in oklab, var(--public-leaf) 48%, var(--public-rule));
+  color: var(--public-muted);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  margin-top: 14px;
+  overflow: hidden;
+  padding: 14px;
+  position: relative;
+}
+
+.advisor-thinking::before {
+  animation: advisor-scan 2.8s linear infinite;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--public-leaf) 42%, transparent), transparent);
+  content: "";
+  height: 1px;
+  inset: 0 auto auto 0;
+  position: absolute;
+  width: 100%;
+}
+
+.advisor-thinking-core {
+  display: grid;
+  gap: 5px;
+  padding-top: 3px;
+}
+
+.advisor-thinking-core span {
+  animation: advisor-pulse 1.35s ease-in-out infinite;
+  background: var(--public-leaf);
+  border-radius: 999px;
+  box-shadow: 0 0 18px color-mix(in oklab, var(--public-leaf) 65%, transparent);
+  display: block;
+  height: 7px;
+  opacity: 0.42;
+  width: 7px;
+}
+
+.advisor-thinking-core span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.advisor-thinking-core span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.advisor-thinking-label {
+  color: var(--public-dim);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.advisor-thinking-line {
+  align-items: center;
+  border: 1px solid color-mix(in oklab, var(--public-leaf) 36%, var(--public-rule));
+  display: inline-flex;
+  min-height: 34px;
+  min-width: min(220px, 100%);
+  overflow: hidden;
+  padding: 0 10px;
+}
+
+.advisor-thinking-phrase {
+  animation: advisor-phrase 1.2s ease-in-out both;
+  color: var(--foreground);
+  display: inline-block;
+  font-size: 13px;
+  line-height: 1;
+  text-shadow: 0 0 16px color-mix(in oklab, var(--public-leaf) 38%, transparent);
+  white-space: nowrap;
+}
+
 .advisor-answer-header {
   align-items: center;
   display: flex;
@@ -2045,6 +2201,16 @@ a.hashish:hover {
   width: 44px;
 }
 
+.advisor-submit-spinner {
+  animation: advisor-spin 0.95s linear infinite;
+  border: 2px solid color-mix(in oklab, oklch(13% 0.015 100) 28%, transparent);
+  border-top-color: oklch(13% 0.015 100);
+  border-radius: 999px;
+  display: block;
+  height: 17px;
+  width: 17px;
+}
+
 .advisor-submit:hover:not(:disabled) {
   background: color-mix(in oklab, var(--public-leaf) 86%, white);
 }
@@ -2056,6 +2222,63 @@ a.hashish:hover {
   opacity: 0.6;
 }
 
+@keyframes advisor-scan {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes advisor-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.16);
+  }
+}
+
+@keyframes advisor-phrase {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  18%,
+  78% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes advisor-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .advisor-thinking::before,
+  .advisor-thinking-core span,
+  .advisor-thinking-phrase,
+  .advisor-submit-spinner {
+    animation: none;
+  }
+
+  .advisor-thinking-core span,
+  .advisor-thinking-phrase {
+    opacity: 1;
+  }
+}
+
 @media (max-width: 900px) {
   .grid-2,
   .grid-3 {
@@ -2065,6 +2288,22 @@ a.hashish:hover {
   .section-head {
     align-items: start;
     flex-direction: column;
+  }
+
+  .payment-registry-row {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-registry-main {
+    grid-template-columns: minmax(0, 1fr) minmax(82px, auto);
+  }
+
+  .payment-registry-status {
+    justify-items: end;
+  }
+
+  .payment-registry-action {
+    justify-content: start;
   }
 
   .public-nav {
@@ -2221,6 +2460,33 @@ a.hashish:hover {
 
   .login-email-form .btn {
     justify-self: stretch;
+  }
+}
+
+@media (max-width: 520px) {
+  .payment-registry-row {
+    padding: 13px 12px;
+  }
+
+  .payment-registry-main {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-registry-status {
+    justify-items: start;
+  }
+
+  .payment-registry-action .btn,
+  .payment-registry-action form {
+    width: 100%;
+  }
+
+  .payment-registry-action {
+    flex-direction: column;
+  }
+
+  .payment-registry-action .hashish {
+    width: 100%;
   }
 }
 

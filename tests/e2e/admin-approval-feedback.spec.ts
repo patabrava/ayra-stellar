@@ -24,7 +24,7 @@ test("admin approval shows confirmation and next steps", async ({ page }) => {
     "Next step: the steward submits the first Stellar payout address",
   );
   await expect(status).toContainText(
-    "No funding batch can be created until that address is verified",
+    "No funding payment can be created until that address is verified",
   );
 });
 
@@ -59,14 +59,14 @@ test("admin submit actions always open success or error feedback modals", async 
   await expect(page).toHaveURL(/\/admin\/batches\?status=demo-batch-synced/, {
     timeout: 30_000,
   });
-  await expect(page.getByRole("dialog", { name: "Batch status synced." })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Payment status synced." })).toBeVisible();
 
   await page.goto("/admin/batches");
-  await page.getByRole("button", { name: "Create ready batch" }).click();
+  await page.getByRole("button", { name: "Create ready payment" }).click();
   await expect(page).toHaveURL(/\/admin\/batches\?status=demo-batch-created/, {
     timeout: 30_000,
   });
-  await expect(page.getByRole("dialog", { name: "Batch draft created." })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Payment draft created." })).toBeVisible();
 
   await page.goto("/admin/registry");
   await page.getByRole("button", { name: "Verify" }).first().click();
@@ -93,6 +93,74 @@ test("admin one-line batch converts USDC and COP both ways", async ({ page }) =>
   await expect(usdc).toHaveValue("5");
 });
 
+test("admin payments keeps batch status and actions visible without horizontal scrolling", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto("/admin/batches");
+
+  const composer = page.locator('[data-admin-payments-section="composer"]');
+  const registry = page.locator('[data-admin-payments-section="registry"]');
+
+  await expect(composer).toBeVisible();
+  await expect(registry).toBeVisible();
+
+  const composerTop = await composer.evaluate((element) => element.getBoundingClientRect().top);
+  const registryTop = await registry.evaluate((element) => element.getBoundingClientRect().top);
+  expect(composerTop).toBeLessThan(registryTop);
+
+  const pageOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(pageOverflow).toBe(false);
+
+  const registryOverflow = await registry.evaluate(
+    (element) => element.scrollWidth > element.clientWidth,
+  );
+  expect(registryOverflow).toBe(false);
+
+  const firstBatchRow = registry.locator("[data-payment-registry-row]").first();
+  await expect(firstBatchRow.getByText(/PV-REFOR|PV-REFOREST/)).toBeVisible();
+  await expect(firstBatchRow.getByText(/settled|submitted|ready/i).first()).toBeVisible();
+  await expect(
+    firstBatchRow.getByRole("button", { name: /Submit|Sync status/ }).or(
+      firstBatchRow.getByRole("link", { name: /Verify on Stellar Expert/ }),
+    ),
+  ).toBeVisible();
+});
+
+test("admin payments registry adapts on mobile width without hiding actions", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/admin/batches");
+
+  const registry = page.locator('[data-admin-payments-section="registry"]');
+  await expect(registry).toBeVisible();
+
+  const pageOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(pageOverflow).toBe(false);
+
+  const registryOverflow = await registry.evaluate(
+    (element) => element.scrollWidth > element.clientWidth,
+  );
+  expect(registryOverflow).toBe(false);
+
+  const rowOverflow = await registry.evaluate((element) =>
+    Array.from(element.querySelectorAll("[data-payment-registry-row]")).some(
+      (row) => row.scrollWidth > row.clientWidth,
+    ),
+  );
+  expect(rowOverflow).toBe(false);
+
+  const firstBatchRow = registry.locator("[data-payment-registry-row]").first();
+  await expect(firstBatchRow).toBeVisible();
+  await expect(firstBatchRow.getByText(/settled|submitted|ready/i).first()).toBeVisible();
+  await expect(
+    firstBatchRow.getByRole("button", { name: /Submit|Sync status/ }).or(
+      firstBatchRow.getByRole("link", { name: /Verify on Stellar Expert/ }),
+    ),
+  ).toBeVisible();
+});
+
 test("admin sign-in callback opens success feedback", async ({ page }) => {
   await page.goto("/admin?status=signed-in");
 
@@ -105,10 +173,10 @@ test("admin one-line batch selector updates selected initiative preview", async 
 }) => {
   await page.goto("/admin/batches");
 
-  await expect(page.getByText("Create one-line batch")).toBeVisible();
+  await expect(page.getByText("Create one-line payment")).toBeVisible();
   const composer = page
     .locator("form")
-    .filter({ hasText: "Create one-line batch" });
+    .filter({ hasText: "Create one-line payment" });
   const selector = composer.getByLabel("Target initiative");
   await expect(selector).toHaveValue("initiative-reforest");
   let preview = composer.locator('[data-active-target="initiative-reforest"]');
@@ -126,6 +194,6 @@ test("admin one-line batch selector updates selected initiative preview", async 
   await expect(preview.getByText("Dr. M. Gomez")).toBeVisible();
   await expect(preview.getByText("No verified payout address")).toBeVisible();
   await expect(
-    composer.getByRole("button", { name: "Create ready batch" }),
+    composer.getByRole("button", { name: "Create ready payment" }),
   ).toBeDisabled();
 });

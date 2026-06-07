@@ -29,6 +29,27 @@ test("black AYRA advisor answers public funding questions", async ({ page }) => 
   await expect(page.locator("body")).not.toContainText("GBLEIDYECOPARQUE");
 });
 
+test("AYRA advisor shows a live thinking state while answering", async ({ page }) => {
+  await page.route("**/api/advisor", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await route.continue();
+  });
+
+  await page.goto("/projects/providencia/reforestation");
+  await page.getByRole("button", { name: "Ask AYRA" }).click();
+
+  const advisor = page.getByRole("dialog", { name: "Ask AYRA" });
+  await page.getByRole("button", { name: "How much has been paid?" }).click();
+
+  await expect(advisor.getByRole("status", { name: "AYRA is thinking" })).toBeVisible();
+  const thinkingPhrase = advisor.locator(".advisor-thinking-phrase");
+  await expect(thinkingPhrase).toContainText("Tracing...");
+  await expect(advisor.locator(".advisor-thinking-phrase")).toHaveCount(1);
+  await expect(advisor.getByText("Following the rail...")).toBeHidden();
+  await expect(thinkingPhrase).toContainText("Grounding...", { timeout: 2_000 });
+  await expect(advisor.getByRole("button", { name: "Send question" })).toBeDisabled();
+});
+
 test("AYRA advisor panel stays inside a mobile viewport", async ({ page }) => {
   await page.setViewportSize({ height: 844, width: 390 });
   await page.goto("/projects/providencia/reforestation");

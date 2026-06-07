@@ -1,12 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import {
+  buildAuthCallbackRedirectPath,
   resolveEmailOtpType,
-  resolveRoleContext,
   resolveRoleHomePath,
 } from "@/lib/ayra/auth";
-import { loadAuthenticatedAyraState } from "@/lib/ayra/data";
-import { safeNextPath } from "@/lib/ayra/session";
+import { getCurrentRoleContext, safeNextPath } from "@/lib/ayra/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -33,18 +32,11 @@ export async function GET(request: NextRequest) {
 
     if (!claimed.error && claimed.data) {
       try {
-        const state = await loadAuthenticatedAyraState(supabase);
-        const profile =
-          state.profiles.find((item) => item.id === claimed.data.id) ?? {
-            id: claimed.data.id,
-            email: claimed.data.email,
-            displayName: claimed.data.display_name,
-            createdAt: claimed.data.created_at,
-          };
-        const context = resolveRoleContext({
-          profile,
-          roles: state.userRoles,
-          grantees: state.grantees,
+        const context = await getCurrentRoleContext(supabase, {
+          id: claimed.data.id,
+          email: claimed.data.email,
+          displayName: claimed.data.display_name,
+          createdAt: claimed.data.created_at,
         });
         redirectPath = resolveRoleHomePath(context, next);
       } catch (error) {
@@ -53,7 +45,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const redirectUrl = new URL(redirectPath, url.origin);
-  redirectUrl.searchParams.set("status", result.error ? "auth-error" : "signed-in");
+  const redirectUrl = new URL(
+    buildAuthCallbackRedirectPath(redirectPath, Boolean(result.error)),
+    url.origin,
+  );
   return NextResponse.redirect(redirectUrl);
 }

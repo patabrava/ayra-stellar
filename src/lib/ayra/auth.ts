@@ -101,6 +101,21 @@ export function buildAuthCallbackUrl(origin: string, next?: string) {
   return callbackUrl.toString();
 }
 
+export function buildAuthCallbackRedirectPath(
+  redirectPath: string,
+  hasAuthError: boolean,
+) {
+  const redirectUrl = new URL(redirectPath, "https://ayra.local");
+
+  if (hasAuthError) {
+    redirectUrl.searchParams.set("status", "auth-error");
+  } else if (!redirectUrl.searchParams.has("status")) {
+    redirectUrl.searchParams.set("status", "signed-in");
+  }
+
+  return `${redirectUrl.pathname}${redirectUrl.search}${redirectUrl.hash}`;
+}
+
 export function googleProviderEnabledFromSettings(settings: unknown) {
   if (!settings || typeof settings !== "object") return false;
   const external = (settings as { external?: unknown }).external;

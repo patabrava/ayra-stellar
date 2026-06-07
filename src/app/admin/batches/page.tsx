@@ -90,93 +90,12 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
           </div>
         </div>
 
-        <div className="grid-2">
-          <div className="panel overflow-x-auto">
-            <div className="panel-head">
-              <span className="panel-title">Batch registry</span>
-            </div>
-            <table className="t min-w-[760px]">
-              <thead>
-                <tr>
-                  <th>Payment</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>SDP</th>
-                </tr>
-              </thead>
-              <tbody>
-                {session.state.batches.map((batch) => {
-                  const settledTransactionHashes = session.state.batchLineItems
-                    .filter(
-                      (line) =>
-                        line.batchId === batch.id &&
-                        line.status === "settled" &&
-                        line.transactionHash,
-                    )
-                    .map((line) => line.transactionHash!);
-
-                  return (
-                    <tr key={batch.id}>
-                      <td>
-                        <div className="row-name">{batch.code}</div>
-                        <div className="row-meta">
-                          {batch.periodLabel} · {batch.initiativeId}
-                        </div>
-                      </td>
-                      <td>
-                        <Money amount={batchTotal(session.state, batch.id)} />
-                      </td>
-                      <td>
-                        <Chip tone={batch.status === "settled" ? "ok" : "info"}>
-                          {batch.status}
-                        </Chip>
-                      </td>
-                      <td>
-                        {batch.status === "ready" ? (
-                          <form action={submitBatchAction}>
-                            <input name="batchId" type="hidden" value={batch.id} />
-                            <button className="btn primary" type="submit">
-                              Submit <Send className="h-4 w-4" />
-                            </button>
-                          </form>
-                        ) : batch.status === "submitted" ? (
-                          <form action={syncBatchStatusAction}>
-                            <input name="batchId" type="hidden" value={batch.id} />
-                            <button className="btn" type="submit">
-                              Sync status
-                            </button>
-                          </form>
-                        ) : (
-                          <div className="grid gap-1">
-                            <span className="text-xs uppercase text-ink-muted">SDP payment</span>
-                            <Hash
-                              pendingLabel="Provider payment reference recorded"
-                              value={batch.sdpBatchId}
-                            />
-                            <span className="mt-2 text-xs uppercase text-ink-muted">
-                              Explorer verification
-                            </span>
-                            {settledTransactionHashes.length > 0 ? (
-                              settledTransactionHashes.map((transactionHash) => (
-                                <StellarTransactionVerificationLink
-                                  key={transactionHash}
-                                  transactionHash={transactionHash}
-                                />
-                              ))
-                            ) : (
-                              <StellarTransactionVerificationLink />
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <form action={createBatchAction} className="panel">
+        <div className="admin-payments-stack">
+          <form
+            action={createBatchAction}
+            className="panel payment-composer"
+            data-admin-payments-section="composer"
+          >
             <div className="panel-head">
               <span className="panel-title">Create one-line payment</span>
               <Chip>Manual v1</Chip>
@@ -226,6 +145,92 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
               </BatchInitiativeTarget>
             </div>
           </form>
+
+          <div
+            className="panel payment-registry"
+            data-admin-payments-section="registry"
+          >
+            <div className="panel-head">
+              <span className="panel-title">Batch registry</span>
+            </div>
+            <div className="payment-registry-list">
+              {session.state.batches.map((batch) => {
+                const settledTransactionHashes = session.state.batchLineItems
+                  .filter(
+                    (line) =>
+                      line.batchId === batch.id &&
+                      line.status === "settled" &&
+                      line.transactionHash,
+                  )
+                  .map((line) => line.transactionHash!);
+                const isSettled = batch.status === "settled";
+                const isSubmitted = batch.status === "submitted";
+                const isReady = batch.status === "ready";
+
+                return (
+                  <article
+                    className="payment-registry-row"
+                    data-payment-registry-row
+                    key={batch.id}
+                  >
+                    <div className="payment-registry-main">
+                      <div className="payment-registry-identity">
+                        <div className="row-name break-words">{batch.code}</div>
+                        <div className="row-meta">
+                          {batch.periodLabel} · {batch.initiativeId}
+                        </div>
+                      </div>
+                      <div className="payment-registry-amount">
+                        <span className="payment-registry-label">Amount</span>
+                        <Money amount={batchTotal(session.state, batch.id)} />
+                      </div>
+                      <div className="payment-registry-status">
+                        <span className="payment-registry-label">Status</span>
+                        <Chip tone={isSettled ? "ok" : "info"}>{batch.status}</Chip>
+                      </div>
+                    </div>
+
+                    <div className="payment-registry-action">
+                      {isReady ? (
+                        <form action={submitBatchAction}>
+                          <input name="batchId" type="hidden" value={batch.id} />
+                          <button className="btn primary" type="submit">
+                            Submit <Send className="h-4 w-4" />
+                          </button>
+                        </form>
+                      ) : isSubmitted ? (
+                        <form action={syncBatchStatusAction}>
+                          <input name="batchId" type="hidden" value={batch.id} />
+                          <button className="btn" type="submit">
+                            Sync status
+                          </button>
+                        </form>
+                      ) : settledTransactionHashes.length > 0 ? (
+                        settledTransactionHashes.map((transactionHash) => (
+                          <StellarTransactionVerificationLink
+                            key={transactionHash}
+                            transactionHash={transactionHash}
+                          />
+                        ))
+                      ) : (
+                        <StellarTransactionVerificationLink />
+                      )}
+                    </div>
+
+                    <div className="payment-registry-proof">
+                      <span className="payment-registry-label">
+                        Payment provider reference
+                      </span>
+                      <Hash
+                        pendingLabel="Provider payment reference recorded"
+                        value={batch.sdpBatchId}
+                      />
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="panel mt-4 overflow-x-auto">

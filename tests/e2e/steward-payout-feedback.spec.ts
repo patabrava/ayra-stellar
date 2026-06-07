@@ -52,6 +52,7 @@ test("steward update submission opens moderation feedback and error modals", asy
       "base64",
     ),
   });
+  await expect(page.getByText("seedlings.png")).toBeVisible();
   await page.getByRole("button", { name: /Submit for review/ }).click();
 
   await expect(page).toHaveURL(/status=demo-update-submitted/, {
@@ -83,6 +84,8 @@ test("steward update upload handles a 1.5 MB PNG through app validation", async 
     mimeType: "image/png",
     buffer: Buffer.alloc(1_581_383, 0),
   });
+  await expect(page.getByText("Download.png")).toBeVisible();
+  await expect(page.getByText("1.5 MB")).toBeVisible();
   await page.getByRole("button", { name: /Submit for review/ }).click();
 
   await expect(page).toHaveURL(/status=invalid/, { timeout: 30_000 });

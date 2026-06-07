@@ -320,10 +320,15 @@ export function createPublicSupabaseClient() {
 }
 
 export async function loadPublicAyraState() {
-  if (!hasPublicSupabaseEnv()) return createDemoState();
+  const fallbackToDemo = publicDemoFallbackEnabled();
+
+  if (!hasPublicSupabaseEnv()) {
+    if (fallbackToDemo) return createDemoState();
+    throw new Error("Public Supabase environment is not configured.");
+  }
 
   return loadPublicAyraStateFromClient(createPublicSupabaseClient(), {
-    fallbackToDemo: true,
+    fallbackToDemo,
   });
 }
 
@@ -338,11 +343,27 @@ export async function loadStrictPublicAyraState() {
 }
 
 export async function loadOperatorAyraState() {
-  if (!hasSupabaseAdminEnv()) return createDemoState();
+  if (!hasSupabaseAdminEnv()) {
+    if (operatorDemoModeEnabled()) return createDemoState();
+    throw new Error("Operator Supabase environment is not configured.");
+  }
 
   return loadOperatorAyraStateFromClient(createSupabaseAdminClient(), {
-    fallbackToDemo: true,
+    fallbackToDemo: operatorDemoModeEnabled(),
   });
+}
+
+function publicDemoFallbackEnabled() {
+  if (process.env.AYRA_ALLOW_PUBLIC_DEMO_FALLBACK === "1") return true;
+  return !isProductionRuntime();
+}
+
+function isProductionRuntime() {
+  return process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production";
+}
+
+export function operatorDemoModeEnabled() {
+  return process.env.AYRA_DEMO_MODE === "1";
 }
 
 async function loadPublicAyraStateFromClient(
@@ -612,6 +633,7 @@ export function stateFromPublicRows(rows: PublicRows): AyraState {
 
 export function stateFromOperatorRows(rows: OperatorRows): AyraState {
   const state = stateFromPublicRows(rows);
+  const batchIds = new Set(rows.batches.map((batch) => batch.id));
   return {
     ...state,
     profiles: rows.profiles.map(mapProfile),
@@ -621,10 +643,19 @@ export function stateFromOperatorRows(rows: OperatorRows): AyraState {
     grantees: rows.grantees.map(mapGrantee),
     granteeContacts: rows.granteeContacts.map(mapGranteeContact),
     payoutAddresses: rows.payoutAddresses.map(mapPayoutAddress),
-    batchLineItems: rows.lineItems?.map(mapLineItem) ?? state.batchLineItems,
-    fundingAllocations: rows.fundingAllocations.map(mapFundingAllocation),
-    reconciliationItems: rows.reconciliationItems.map(mapReconciliationItem),
-    sdpSyncEvents: rows.sdpSyncEvents.map(mapSdpSyncEvent),
+    batchLineItems:
+      rows.lineItems
+        ?.filter((item) => batchIds.has(item.batch_id))
+        .map(mapLineItem) ?? state.batchLineItems,
+    fundingAllocations: rows.fundingAllocations
+      .filter((item) => !item.batch_id || batchIds.has(item.batch_id))
+      .map(mapFundingAllocation),
+    reconciliationItems: rows.reconciliationItems
+      .filter((item) => batchIds.has(item.batch_id))
+      .map(mapReconciliationItem),
+    sdpSyncEvents: rows.sdpSyncEvents
+      .filter((item) => batchIds.has(item.batch_id))
+      .map(mapSdpSyncEvent),
     auditLogs: rows.auditLogs.map(mapAuditLog),
   };
 }
