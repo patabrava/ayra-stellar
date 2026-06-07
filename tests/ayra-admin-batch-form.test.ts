@@ -55,6 +55,21 @@ describe("AYRA admin batch form", () => {
     );
   });
 
+  it("sorts batch registry entries newest-first by submission time", () => {
+    const source = readFileSync("src/app/admin/batches/page.tsx", "utf8");
+
+    assert.match(
+      source,
+      /const registryBatches = \[\.\.\.session\.state\.batches\]\.sort\(\(a, b\) => \{/,
+    );
+    assert.match(
+      source,
+      /Date\.parse\(b\.submittedAt \?\? b\.createdAt\) -\s*Date\.parse\(a\.submittedAt \?\? a\.createdAt\)/,
+    );
+    assert.match(source, /return byNewest \|\| b\.code\.localeCompare\(a\.code\);/);
+    assert.match(source, /\{registryBatches\.map\(\(batch\) => \{/);
+  });
+
   it("keeps steward public updates separate from private milestone evidence", () => {
     const stewardSource = readFileSync("src/app/steward/page.tsx", "utf8");
     const actionSource = readFileSync("src/lib/ayra/actions.ts", "utf8");

@@ -95,6 +95,12 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
         },
       ),
     );
+  const registryBatches = [...session.state.batches].sort((a, b) => {
+    const byNewest =
+      Date.parse(b.submittedAt ?? b.createdAt) -
+      Date.parse(a.submittedAt ?? a.createdAt);
+    return byNewest || b.code.localeCompare(a.code);
+  });
 
   return (
     <AdminShell
@@ -180,7 +186,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
               <span className="panel-title">Batch registry</span>
             </div>
             <div className="payment-registry-list">
-              {session.state.batches.map((batch) => {
+              {registryBatches.map((batch) => {
                 const settledTransactionHashes = session.state.batchLineItems
                   .filter(
                     (line) =>
