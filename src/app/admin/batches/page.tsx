@@ -5,6 +5,7 @@ import {
   batchTotal,
   buildAdminViewModel,
 } from "@/app/admin/admin-view-model";
+import { BatchStatusAutoRefresh } from "@/components/ayra/batch-status-auto-refresh";
 import { BatchCurrencyFields } from "@/components/ayra/batch-currency-fields";
 import {
   BatchInitiativeTarget,
@@ -23,6 +24,8 @@ import {
   syncBatchStatusAction,
 } from "@/lib/ayra/actions";
 import { suggestBatchCode } from "@/lib/ayra/batch-code";
+import { syncSubmittedBatches } from "@/lib/ayra/batch-sync";
+import { loadAuthenticatedAyraState } from "@/lib/ayra/data";
 import { approvedUnusedMilestoneSubmissions, formatLocal } from "@/lib/ayra/domain";
 import { requireAdminSession } from "@/lib/ayra/session";
 
@@ -33,7 +36,17 @@ type PageProps = {
 export default async function AdminBatchesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const session = await requireAdminSession("/admin/batches");
+  const hasSubmittedBatches = session.state.batches.some(
+    (batch) => batch.status === "submitted",
+  );
+  if (session.supabase && hasSubmittedBatches) {
+    await syncSubmittedBatches(session.supabase, { limit: 10 });
+    session.state = await loadAuthenticatedAyraState(session.supabase);
+  }
   const view = await buildAdminViewModel(session.state);
+  const shouldAutoRefresh = session.state.batches.some(
+    (batch) => batch.status === "submitted",
+  );
   const suggestedBatchCode = suggestBatchCode({
     initiativeCode: view.reforest.code,
   });
@@ -98,6 +111,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
       status={params?.status}
       view={view}
     >
+      <BatchStatusAutoRefresh enabled={shouldAutoRefresh} />
       <section>
         <div className="section-head">
           <div>
