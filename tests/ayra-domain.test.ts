@@ -15,8 +15,11 @@ import {
   getPublicWallProjection,
   moderateUpdate,
   mockSdpGateway,
+  approvedUnusedMilestoneSubmissions,
   rejectApplication,
+  reviewMilestoneSubmission,
   settleBatchFromSdp,
+  submitMilestoneSubmission,
   submitPayoutAddress,
   submitApplication,
   submitBatchToSdp,
@@ -419,12 +422,28 @@ describe("AYRA Stellar domain smoke path", () => {
       ),
     );
 
+    const milestoneSubmission = submitMilestoneSubmission(state, {
+      actorProfileId: approvalResult.profile.id,
+      initiativeId: approvalResult.initiative.id,
+      milestoneId: approvalResult.milestones[0].id,
+      title: "Week-one nursery evidence",
+      summary: "Private receipts and tray count for the first nursery payment.",
+    });
+    state = milestoneSubmission.state;
+    state = reviewMilestoneSubmission(state, {
+      actorProfileId: "profile-admin",
+      submissionId: milestoneSubmission.submission.id,
+      status: "approved",
+    }).state;
+
     const batchResult = createFundingBatch(state, {
       actorProfileId: "profile-admin",
       initiativeId: approvalResult.initiative.id,
       code: "PV-MANGROVE-MAY26",
       periodLabel: "May 2026",
       sponsorId: "sponsor-audi",
+      paymentKind: "normal",
+      milestoneSubmissionId: milestoneSubmission.submission.id,
       lineItems: [
         {
           category: "Nursery materials",
@@ -552,5 +571,151 @@ describe("AYRA Stellar domain smoke path", () => {
     );
     assert.equal(active.length, 1);
     assert.equal(active[0]?.address, submitted.payoutAddress.address);
+  });
+
+  it("keeps private milestone submissions separate from public updates", () => {
+    const state = createDemoState();
+    const beforeUpdateCount = state.updates.length;
+    const beforeSubmissionCount = state.milestoneSubmissions.length;
+
+    const result = submitMilestoneSubmission(state, {
+      actorProfileId: "profile-leidy",
+      initiativeId: "initiative-reforest",
+      milestoneId: "milestone-reforest-03",
+      title: "May planting evidence",
+      summary: "Crew logs and supplier receipts for the May planting milestone.",
+      privateDocumentPath: "milestone-submissions/submission-1/may-evidence.pdf",
+    });
+
+    assert.equal(result.submission.status, "submitted");
+    assert.equal(result.submission.initiativeId, "initiative-reforest");
+    assert.equal(result.submission.milestoneId, "milestone-reforest-03");
+    assert.equal(result.submission.submittedByProfileId, "profile-leidy");
+    assert.equal(result.state.updates.length, beforeUpdateCount);
+    assert.equal(
+      result.state.milestoneSubmissions.length,
+      beforeSubmissionCount + 1,
+    );
+    assert.ok(
+      result.state.auditLogs.some(
+        (entry) =>
+          entry.action === "milestone_submission.submitted" &&
+          entry.entityId === result.submission.id,
+      ),
+    );
+  });
+
+  it("requires normal payments to link one approved unused milestone submission", () => {
+    let state = createDemoState();
+    const submitted = submitMilestoneSubmission(state, {
+      actorProfileId: "profile-leidy",
+      initiativeId: "initiative-reforest",
+      milestoneId: "milestone-reforest-03",
+      title: "May planting evidence",
+      summary: "Crew logs and supplier receipts for the May planting milestone.",
+    });
+    state = submitted.state;
+
+    assert.throws(
+      () =>
+        createFundingBatch(state, {
+          actorProfileId: "profile-admin",
+          initiativeId: "initiative-reforest",
+          code: "PV-REFOREST-MAY26",
+          periodLabel: "May 2026",
+          paymentKind: "normal",
+          lineItems: [
+            {
+              category: "Crew wages",
+              amountUsdc: 1200,
+              localAmount: 4_680_000,
+              localCurrency: "COP",
+            },
+          ],
+        }),
+      /approved milestone submission/i,
+    );
+
+    const reviewed = reviewMilestoneSubmission(state, {
+      actorProfileId: "profile-admin",
+      submissionId: submitted.submission.id,
+      status: "approved",
+    });
+    state = reviewed.state;
+
+    assert.deepEqual(
+      approvedUnusedMilestoneSubmissions(state, "initiative-reforest")
+        .filter((item) => item.id === submitted.submission.id)
+        .map((item) => item.id),
+      [submitted.submission.id],
+    );
+
+    const batch = createFundingBatch(state, {
+      actorProfileId: "profile-admin",
+      initiativeId: "initiative-reforest",
+      code: "PV-REFOREST-MAY26",
+      periodLabel: "May 2026",
+      paymentKind: "normal",
+      milestoneSubmissionId: submitted.submission.id,
+      lineItems: [
+        {
+          category: "Crew wages",
+          amountUsdc: 1200,
+          localAmount: 4_680_000,
+          localCurrency: "COP",
+        },
+      ],
+    });
+
+    assert.equal(batch.batch.paymentKind, "normal");
+    assert.equal(batch.batch.milestoneSubmissionId, submitted.submission.id);
+    assert.ok(
+      !approvedUnusedMilestoneSubmissions(batch.state, "initiative-reforest").some(
+        (item) => item.id === submitted.submission.id,
+      ),
+    );
+    assert.throws(
+      () =>
+        createFundingBatch(batch.state, {
+          actorProfileId: "profile-admin",
+          initiativeId: "initiative-reforest",
+          code: "PV-REFOREST-MAY26-B",
+          periodLabel: "May 2026",
+          paymentKind: "normal",
+          milestoneSubmissionId: submitted.submission.id,
+          lineItems: [
+            {
+              category: "Seedlings",
+              amountUsdc: 400,
+              localAmount: 1_560_000,
+              localCurrency: "COP",
+            },
+          ],
+        }),
+      /already linked/i,
+    );
+  });
+
+  it("allows advance payments without milestone evidence", () => {
+    const state = createDemoState();
+
+    const batch = createFundingBatch(state, {
+      actorProfileId: "profile-admin",
+      initiativeId: "initiative-reforest",
+      code: "PV-REFOREST-ADVANCE-MAY26",
+      periodLabel: "May 2026 advance",
+      paymentKind: "advance",
+      lineItems: [
+        {
+          category: "Advance",
+          amountUsdc: 500,
+          localAmount: 1_950_000,
+          localCurrency: "COP",
+        },
+      ],
+    });
+
+    assert.equal(batch.batch.paymentKind, "advance");
+    assert.equal(batch.batch.milestoneSubmissionId, undefined);
   });
 });

@@ -205,7 +205,8 @@ LLM_FRIENDLY_PLAN_CODE_DEBUG
 END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 
 2) Specific harness rules (Codex)
-- 
+- Vercel deploys must preserve existing domain ownership: keep `ayra.haus`/`www.ayra.haus` on `AYRA LANDING/ayra-epoch-vision`, and deploy this transparency app only to `ayra-transparency`/`transparency.ayra.haus` unless explicitly replacing the landing.
+- Before Vercel production deploys, keep `.vercelignore` excluding `.env*`, build outputs, and browser artifacts; Vercel CLI can otherwise upload local env files despite `.gitignore`.
+- In zsh harness snippets, never assign scalar variables named `path`; it mutates command lookup and can make standard binaries unavailable.
 
 3) Specific repo rules
-- 

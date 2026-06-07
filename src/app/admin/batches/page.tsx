@@ -8,6 +8,7 @@ import {
 import { BatchCurrencyFields } from "@/components/ayra/batch-currency-fields";
 import {
   BatchInitiativeTarget,
+  type ApprovedMilestoneSubmissionOption,
   type BatchInitiativeTargetOption,
 } from "@/components/ayra/batch-initiative-target";
 import {
@@ -22,7 +23,7 @@ import {
   syncBatchStatusAction,
 } from "@/lib/ayra/actions";
 import { suggestBatchCode } from "@/lib/ayra/batch-code";
-import { formatLocal } from "@/lib/ayra/domain";
+import { approvedUnusedMilestoneSubmissions, formatLocal } from "@/lib/ayra/domain";
 import { requireAdminSession } from "@/lib/ayra/session";
 
 type PageProps = {
@@ -71,6 +72,24 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
       };
     },
   );
+  const approvedMilestoneSubmissions: ApprovedMilestoneSubmissionOption[] =
+    session.state.initiatives.flatMap((initiative) =>
+      approvedUnusedMilestoneSubmissions(session.state, initiative.id).map(
+        (submission) => {
+          const milestone = session.state.milestones.find(
+            (item) => item.id === submission.milestoneId,
+          );
+          return {
+            id: submission.id,
+            initiativeId: submission.initiativeId,
+            milestoneCode: milestone?.code ?? "Milestone",
+            milestoneTitle: milestone?.title ?? "Untitled milestone",
+            title: submission.title,
+            submittedAt: submission.submittedAt,
+          };
+        },
+      ),
+    );
 
   return (
     <AdminShell
@@ -102,6 +121,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
             </div>
             <div className="panel-body grid gap-4">
               <BatchInitiativeTarget
+                approvedMilestoneSubmissions={approvedMilestoneSubmissions}
                 defaultInitiativeId={view.reforest.id}
                 rateAvailable={Boolean(view.usdCopRate)}
                 targets={batchTargets}

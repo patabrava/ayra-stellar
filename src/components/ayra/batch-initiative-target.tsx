@@ -24,7 +24,17 @@ export type BatchInitiativeTargetOption = {
   stewardName: string;
 } & (VerifiedPayoutTarget | MissingPayoutTarget);
 
+export type ApprovedMilestoneSubmissionOption = {
+  id: string;
+  initiativeId: string;
+  milestoneCode: string;
+  milestoneTitle: string;
+  title: string;
+  submittedAt: string;
+};
+
 type BatchInitiativeTargetProps = {
+  approvedMilestoneSubmissions?: ApprovedMilestoneSubmissionOption[];
   children?: ReactNode;
   defaultInitiativeId: string;
   rateAvailable?: boolean;
@@ -32,15 +42,24 @@ type BatchInitiativeTargetProps = {
 };
 
 export function BatchInitiativeTarget({
+  approvedMilestoneSubmissions = [],
   children,
   defaultInitiativeId,
   rateAvailable = true,
   targets,
 }: BatchInitiativeTargetProps) {
   const [initiativeId, setInitiativeId] = useState(defaultInitiativeId);
+  const [paymentKind, setPaymentKind] = useState<"normal" | "advance">("normal");
   const target = useMemo(
     () => targets.find((item) => item.id === initiativeId) ?? targets[0],
     [initiativeId, targets],
+  );
+  const availableSubmissions = useMemo(
+    () =>
+      approvedMilestoneSubmissions.filter(
+        (submission) => submission.initiativeId === target?.id,
+      ),
+    [approvedMilestoneSubmissions, target?.id],
   );
 
   if (!target) {
@@ -106,6 +125,66 @@ export function BatchInitiativeTarget({
           )}
         </div>
       </div>
+
+      <div className="field">
+        <label htmlFor="payment-kind">Payment type</label>
+        <select
+          id="payment-kind"
+          name="paymentKind"
+          onChange={(event) =>
+            setPaymentKind(
+              event.currentTarget.value === "advance" ? "advance" : "normal",
+            )
+          }
+          value={paymentKind}
+        >
+          <option value="normal">Normal · link approved milestone evidence</option>
+          <option value="advance">Advance · admin-approved exception</option>
+        </select>
+      </div>
+
+      {paymentKind === "normal" ? (
+        <div className="field">
+          <label htmlFor="milestone-submission-id">Approved milestone package</label>
+          <select
+            id="milestone-submission-id"
+            name="milestoneSubmissionId"
+            required={paymentKind === "normal"}
+          >
+            {availableSubmissions.length > 0 ? (
+              availableSubmissions.map((submission) => (
+                <option key={submission.id} value={submission.id}>
+                  {submission.milestoneCode} · {submission.title} ·{" "}
+                  {submission.submittedAt.slice(0, 10)}
+                </option>
+              ))
+            ) : (
+              <option value="">
+                No approved unused milestone packages for this initiative
+              </option>
+            )}
+          </select>
+          {availableSubmissions.length === 0 ? (
+            <p className="mt-2 text-sm text-ink-muted" role="status">
+              Normal payments are blocked until this initiative has an approved
+              private milestone package that has not backed another payment.
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-ink-muted">
+              Normal payments use exactly one approved private package. Public
+              updates do not satisfy this evidence requirement.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div
+          className="border border-rule bg-[var(--ops-surface)] px-4 py-3 text-sm text-ink-muted"
+          role="status"
+        >
+          Advance payments bypass milestone evidence and remain an admin-approved
+          exception.
+        </div>
+      )}
 
       {children}
 

@@ -131,6 +131,32 @@ describe("AYRA steward and admin journey status copy", () => {
         "Use an image or clip under 4 MB, then submit the update again. The rest of the draft is still safe to resend.",
     });
   });
+
+  it("maps private milestone submission and payment evidence statuses", () => {
+    assert.deepEqual(getJourneyStatus("steward", "milestone-submitted"), {
+      tone: "ok",
+      label: "Evidence sent",
+      title: "Your private milestone package is under review.",
+      body:
+        "AYRA can now review the evidence package for this milestone. It is not published on the public project page.",
+    });
+
+    assert.deepEqual(getJourneyStatus("admin", "milestone-required"), {
+      tone: "err",
+      label: "Evidence required",
+      title: "Select an approved milestone package.",
+      body:
+        "Normal payments need one approved private milestone submission from the same initiative before they can be created.",
+    });
+
+    assert.deepEqual(getJourneyStatus("admin", "advance-created"), {
+      tone: "info",
+      label: "Advance payment",
+      title: "Advance payment draft created.",
+      body:
+        "This payment is an admin-approved exception and is not linked to a steward milestone package.",
+    });
+  });
 });
 
 describe("AYRA login status copy", () => {

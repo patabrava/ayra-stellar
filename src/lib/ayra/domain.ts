@@ -1,7 +1,13 @@
 export type Role = "admin" | "steward" | "grantee_contact" | "applicant";
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 export type UpdateStatus = "draft" | "pending" | "approved" | "rejected";
+export type MilestoneSubmissionStatus =
+  | "draft"
+  | "submitted"
+  | "approved"
+  | "rejected";
 export type BatchStatus = "draft" | "ready" | "submitted" | "settled";
+export type PaymentKind = "normal" | "advance";
 export type PayoutAddressStatus = "pending" | "verified" | "locked" | "rejected";
 
 export type Profile = {
@@ -135,12 +141,29 @@ export type InitiativeUpdate = {
   sanitizedFeedback?: string;
 };
 
+export type MilestoneSubmission = {
+  id: string;
+  initiativeId: string;
+  milestoneId: string;
+  submittedByProfileId: string;
+  status: MilestoneSubmissionStatus;
+  title: string;
+  summary: string;
+  privateDocumentPath?: string;
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedByProfileId?: string;
+  reviewNote?: string;
+};
+
 export type Batch = {
   id: string;
   initiativeId: string;
   sponsorId?: string;
   code: string;
   periodLabel: string;
+  paymentKind: PaymentKind;
+  milestoneSubmissionId?: string;
   status: BatchStatus;
   createdByProfileId: string;
   createdAt: string;
@@ -227,6 +250,7 @@ export type AyraState = {
   sponsors: Sponsor[];
   milestones: Milestone[];
   updates: InitiativeUpdate[];
+  milestoneSubmissions: MilestoneSubmission[];
   batches: Batch[];
   batchLineItems: BatchLineItem[];
   fundingAllocations: FundingAllocation[];
@@ -331,6 +355,8 @@ export type FundingBatchInput = {
   code: string;
   periodLabel: string;
   sponsorId?: string;
+  paymentKind?: PaymentKind;
+  milestoneSubmissionId?: string;
   lineItems: Array<{
     category: string;
     amountUsdc: number;
@@ -378,6 +404,7 @@ function cloneState(state: AyraState): AyraState {
     sponsors: [...state.sponsors],
     milestones: [...state.milestones],
     updates: [...state.updates],
+    milestoneSubmissions: [...state.milestoneSubmissions],
     batches: [...state.batches],
     batchLineItems: [...state.batchLineItems],
     fundingAllocations: [...state.fundingAllocations],
@@ -633,6 +660,8 @@ export function createDemoState(): AyraState {
       sponsorId: "sponsor-climate-future",
       code: "PV-REFOREST-APR26",
       periodLabel: "April 2026",
+      paymentKind: "normal",
+      milestoneSubmissionId: "milestone-submission-reforest-apr26",
       status: "submitted",
       createdByProfileId: "profile-admin",
       createdAt: "2026-04-29T10:00:00.000Z",
@@ -645,6 +674,8 @@ export function createDemoState(): AyraState {
       sponsorId: "sponsor-audi",
       code: "PV-REFOREST-MAR26",
       periodLabel: "March 2026",
+      paymentKind: "normal",
+      milestoneSubmissionId: "milestone-submission-reforest-mar26",
       status: "settled",
       createdByProfileId: "profile-admin",
       createdAt: "2026-03-28T10:00:00.000Z",
@@ -657,6 +688,8 @@ export function createDemoState(): AyraState {
       initiativeId: "initiative-reforest",
       code: "PV-REFOREST-FEB26",
       periodLabel: "February 2026",
+      paymentKind: "normal",
+      milestoneSubmissionId: "milestone-submission-reforest-feb26",
       status: "settled",
       createdByProfileId: "profile-admin",
       createdAt: "2026-02-27T10:00:00.000Z",
@@ -669,6 +702,7 @@ export function createDemoState(): AyraState {
       initiativeId: "initiative-amazonas-corridor",
       code: "AMZ-CORRIDOR-APR26",
       periodLabel: "April 2026",
+      paymentKind: "advance",
       status: "submitted",
       createdByProfileId: "profile-admin",
       createdAt: "2026-04-26T10:00:00.000Z",
@@ -861,6 +895,64 @@ export function createDemoState(): AyraState {
         submittedAt: "2026-04-18T09:00:00.000Z",
         publishedAt: "2026-04-18T12:00:00.000Z",
         moderatedByProfileId: "profile-admin",
+      },
+    ],
+    milestoneSubmissions: [
+      {
+        id: "milestone-submission-reforest-apr26",
+        initiativeId: "initiative-reforest",
+        milestoneId: "milestone-reforest-03",
+        submittedByProfileId: "profile-leidy",
+        status: "approved",
+        title: "April planting evidence",
+        summary: "Crew logs and supplier receipts for the April planting cycle.",
+        privateDocumentPath:
+          "milestone-submissions/milestone-submission-reforest-apr26/evidence.pdf",
+        submittedAt: "2026-04-27T10:30:00.000Z",
+        reviewedAt: "2026-04-28T10:30:00.000Z",
+        reviewedByProfileId: "profile-admin",
+      },
+      {
+        id: "milestone-submission-reforest-mar26",
+        initiativeId: "initiative-reforest",
+        milestoneId: "milestone-reforest-02",
+        submittedByProfileId: "profile-leidy",
+        status: "approved",
+        title: "March nursery evidence",
+        summary: "Receipts and field notes for nursery setup completion.",
+        privateDocumentPath:
+          "milestone-submissions/milestone-submission-reforest-mar26/evidence.pdf",
+        submittedAt: "2026-03-27T10:30:00.000Z",
+        reviewedAt: "2026-03-28T10:30:00.000Z",
+        reviewedByProfileId: "profile-admin",
+      },
+      {
+        id: "milestone-submission-reforest-feb26",
+        initiativeId: "initiative-reforest",
+        milestoneId: "milestone-reforest-01",
+        submittedByProfileId: "profile-leidy",
+        status: "approved",
+        title: "February permit evidence",
+        summary: "Permit package and setup receipts for the February payment.",
+        privateDocumentPath:
+          "milestone-submissions/milestone-submission-reforest-feb26/evidence.pdf",
+        submittedAt: "2026-02-26T10:30:00.000Z",
+        reviewedAt: "2026-02-27T10:30:00.000Z",
+        reviewedByProfileId: "profile-admin",
+      },
+      {
+        id: "milestone-submission-reforest-may26",
+        initiativeId: "initiative-reforest",
+        milestoneId: "milestone-reforest-03",
+        submittedByProfileId: "profile-leidy",
+        status: "approved",
+        title: "May planting evidence",
+        summary: "Approved evidence package ready for the next normal payment.",
+        privateDocumentPath:
+          "milestone-submissions/milestone-submission-reforest-may26/evidence.pdf",
+        submittedAt: "2026-05-08T10:30:00.000Z",
+        reviewedAt: "2026-05-09T10:30:00.000Z",
+        reviewedByProfileId: "profile-admin",
       },
     ],
     batches,
@@ -1360,9 +1452,132 @@ export function moderateUpdate(
   };
 }
 
+export function submitMilestoneSubmission(
+  state: AyraState,
+  input: {
+    actorProfileId: string;
+    initiativeId: string;
+    milestoneId: string;
+    title: string;
+    summary: string;
+    privateDocumentPath?: string;
+  },
+) {
+  requireInitiativeAccess(state, input.actorProfileId, input.initiativeId);
+  const milestone = state.milestones.find(
+    (item) =>
+      item.id === input.milestoneId && item.initiativeId === input.initiativeId,
+  );
+  if (!milestone) throw new Error("Milestone not found for this initiative.");
+  const next = cloneState(state);
+  const submission: MilestoneSubmission = {
+    id: idFor(
+      "milestone-submission",
+      `${input.initiativeId}-${input.milestoneId}-${next.milestoneSubmissions.length + 1}`,
+    ),
+    initiativeId: input.initiativeId,
+    milestoneId: input.milestoneId,
+    submittedByProfileId: input.actorProfileId,
+    status: "submitted",
+    title: input.title,
+    summary: input.summary,
+    privateDocumentPath: input.privateDocumentPath,
+    submittedAt: stamp(next.milestoneSubmissions.length),
+  };
+  next.milestoneSubmissions.push(submission);
+
+  return {
+    state: appendAudit(next, {
+      actorProfileId: input.actorProfileId,
+      action: "milestone_submission.submitted",
+      entityType: "milestone_submission",
+      entityId: submission.id,
+      after: { status: submission.status },
+    }),
+    submission,
+  };
+}
+
+export function reviewMilestoneSubmission(
+  state: AyraState,
+  input: {
+    actorProfileId: string;
+    submissionId: string;
+    status: "approved" | "rejected";
+    reviewNote?: string;
+  },
+) {
+  requireAdmin(state, input.actorProfileId);
+  const next = cloneState(state);
+  const submission = next.milestoneSubmissions.find(
+    (item) => item.id === input.submissionId,
+  );
+  if (!submission) throw new Error("Milestone submission not found.");
+  if (submission.status !== "submitted" && submission.status !== "approved") {
+    throw new Error("Only submitted milestone submissions can be reviewed.");
+  }
+  const before = { status: submission.status };
+  submission.status = input.status;
+  submission.reviewedAt = stamp(next.auditLogs.length);
+  submission.reviewedByProfileId = input.actorProfileId;
+  submission.reviewNote = input.reviewNote;
+
+  return {
+    state: appendAudit(next, {
+      actorProfileId: input.actorProfileId,
+      action: `milestone_submission.${input.status}`,
+      entityType: "milestone_submission",
+      entityId: submission.id,
+      before,
+      after: { status: submission.status },
+    }),
+    submission,
+  };
+}
+
+export function approvedUnusedMilestoneSubmissions(
+  state: AyraState,
+  initiativeId: string,
+) {
+  const linkedSubmissionIds = new Set(
+    state.batches
+      .filter((batch) => batch.milestoneSubmissionId)
+      .map((batch) => batch.milestoneSubmissionId!),
+  );
+  return state.milestoneSubmissions.filter(
+    (submission) =>
+      submission.initiativeId === initiativeId &&
+      submission.status === "approved" &&
+      !linkedSubmissionIds.has(submission.id),
+  );
+}
+
 export function createFundingBatch(state: AyraState, input: FundingBatchInput) {
   requireAdmin(state, input.actorProfileId);
   requireVerifiedPayoutAddress(state, input.initiativeId);
+  const paymentKind = input.paymentKind ?? "normal";
+  let milestoneSubmissionId: string | undefined;
+  if (paymentKind === "normal") {
+    if (!input.milestoneSubmissionId) {
+      throw new Error("Normal payments require an approved milestone submission.");
+    }
+    const submission = state.milestoneSubmissions.find(
+      (item) => item.id === input.milestoneSubmissionId,
+    );
+    if (!submission || submission.status !== "approved") {
+      throw new Error("Normal payments require an approved milestone submission.");
+    }
+    if (submission.initiativeId !== input.initiativeId) {
+      throw new Error("Milestone submission must belong to the payment initiative.");
+    }
+    const alreadyLinked = state.batches.some(
+      (batch) => batch.milestoneSubmissionId === submission.id,
+    );
+    if (alreadyLinked) {
+      throw new Error("Milestone submission is already linked to a payment.");
+    }
+    milestoneSubmissionId = submission.id;
+  }
   const next = cloneState(state);
   const batch: Batch = {
     id: idFor("batch", input.code),
@@ -1370,6 +1585,8 @@ export function createFundingBatch(state: AyraState, input: FundingBatchInput) {
     sponsorId: input.sponsorId,
     code: input.code,
     periodLabel: input.periodLabel,
+    paymentKind,
+    milestoneSubmissionId,
     status: "ready",
     createdByProfileId: input.actorProfileId,
     createdAt: stamp(next.batches.length),
@@ -1393,7 +1610,12 @@ export function createFundingBatch(state: AyraState, input: FundingBatchInput) {
       action: "batch.created",
       entityType: "batch",
       entityId: batch.id,
-      after: { status: batch.status, lineItems: lineItems.length },
+      after: {
+        status: batch.status,
+        lineItems: lineItems.length,
+        paymentKind: batch.paymentKind,
+        milestoneSubmissionId: batch.milestoneSubmissionId,
+      },
     }),
     batch,
     lineItems,

@@ -19,6 +19,9 @@ import {
   type Initiative,
   type InitiativeUpdate,
   type Milestone,
+  type MilestoneSubmission,
+  type MilestoneSubmissionStatus,
+  type PaymentKind,
   type PayoutAddress,
   type PayoutAddressStatus,
   type Profile,
@@ -52,6 +55,7 @@ type OperatorRows = PublicRows & {
   grantees: GranteeRow[];
   granteeContacts: GranteeContactRow[];
   payoutAddresses: PayoutAddressRow[];
+  milestoneSubmissions?: MilestoneSubmissionRow[];
   lineItems?: LineItemRow[];
   fundingAllocations: FundingAllocationRow[];
   reconciliationItems: ReconciliationRow[];
@@ -137,6 +141,8 @@ type BatchRow = {
   sponsor_id: string | null;
   code: string;
   period_label: string;
+  payment_kind?: string | null;
+  milestone_submission_id?: string | null;
   status: string;
   created_by_profile_id: string;
   created_at: string;
@@ -228,6 +234,21 @@ type PayoutAddressRow = {
   verified_by_profile_id: string | null;
   locked_at: string | null;
   verification_note: string | null;
+};
+
+type MilestoneSubmissionRow = {
+  id: string;
+  initiative_id: string;
+  milestone_id: string;
+  submitted_by_profile_id: string;
+  status: string;
+  title: string;
+  summary: string;
+  private_document_path: string | null;
+  submitted_at: string;
+  reviewed_at: string | null;
+  reviewed_by_profile_id: string | null;
+  review_note: string | null;
 };
 
 type LineItemRow = {
@@ -478,6 +499,7 @@ async function loadOperatorAyraStateFromClient(
     updates,
     media,
     batches,
+    milestoneSubmissions,
     lineItems,
     fundingAllocations,
     reconciliationItems,
@@ -520,7 +542,12 @@ async function loadOperatorAyraStateFromClient(
     supabase
       .from("funding_batches")
       .select(
-        "id,initiative_id,sponsor_id,code,period_label,status,created_by_profile_id,created_at,submitted_at,settled_at,sdp_batch_id",
+        "id,initiative_id,sponsor_id,code,period_label,payment_kind,milestone_submission_id,status,created_by_profile_id,created_at,submitted_at,settled_at,sdp_batch_id",
+      ),
+    supabase
+      .from("milestone_submissions")
+      .select(
+        "id,initiative_id,milestone_id,submitted_by_profile_id,status,title,summary,private_document_path,submitted_at,reviewed_at,reviewed_by_profile_id,review_note",
       ),
     supabase
       .from("batch_line_items")
@@ -560,6 +587,7 @@ async function loadOperatorAyraStateFromClient(
     updates,
     media,
     batches,
+    milestoneSubmissions,
     lineItems,
     fundingAllocations,
     reconciliationItems,
@@ -583,6 +611,8 @@ async function loadOperatorAyraStateFromClient(
     grantees: (grantees.data ?? []) as GranteeRow[],
     granteeContacts: (granteeContacts.data ?? []) as GranteeContactRow[],
     payoutAddresses: (payoutAddresses.data ?? []) as PayoutAddressRow[],
+    milestoneSubmissions:
+      (milestoneSubmissions.data ?? []) as MilestoneSubmissionRow[],
     milestones: (milestones.data ?? []) as MilestoneRow[],
     updates: (updates.data ?? []) as UpdateRow[],
     media: (media.data ?? []) as MediaRow[],
@@ -622,6 +652,7 @@ export function stateFromPublicRows(rows: PublicRows): AyraState {
     sponsors: rows.sponsors.map(mapSponsor),
     milestones: rows.milestones.map(mapMilestone),
     updates: rows.updates.map((row) => mapUpdate(row, mediaByUpdate)),
+    milestoneSubmissions: [],
     batches: rows.batches.map(mapBatch),
     batchLineItems: rows.receipts.map(mapReceiptLineItem),
     fundingAllocations: [],
@@ -656,6 +687,8 @@ export function stateFromOperatorRows(rows: OperatorRows): AyraState {
     sdpSyncEvents: rows.sdpSyncEvents
       .filter((item) => batchIds.has(item.batch_id))
       .map(mapSdpSyncEvent),
+    milestoneSubmissions:
+      rows.milestoneSubmissions?.map(mapMilestoneSubmission) ?? [],
     auditLogs: rows.auditLogs.map(mapAuditLog),
   };
 }
@@ -740,12 +773,31 @@ function mapBatch(row: BatchRow): Batch {
     sponsorId: row.sponsor_id ?? undefined,
     code: row.code,
     periodLabel: row.period_label,
+    paymentKind: paymentKind(row.payment_kind),
+    milestoneSubmissionId: row.milestone_submission_id ?? undefined,
     status: batchStatus(row.status),
     createdByProfileId: row.created_by_profile_id,
     createdAt: row.created_at,
     submittedAt: row.submitted_at ?? undefined,
     settledAt: row.settled_at ?? undefined,
     sdpBatchId: row.sdp_batch_id ?? undefined,
+  };
+}
+
+function mapMilestoneSubmission(row: MilestoneSubmissionRow): MilestoneSubmission {
+  return {
+    id: row.id,
+    initiativeId: row.initiative_id,
+    milestoneId: row.milestone_id,
+    submittedByProfileId: row.submitted_by_profile_id,
+    status: milestoneSubmissionStatus(row.status),
+    title: row.title,
+    summary: row.summary,
+    privateDocumentPath: row.private_document_path ?? undefined,
+    submittedAt: row.submitted_at,
+    reviewedAt: row.reviewed_at ?? undefined,
+    reviewedByProfileId: row.reviewed_by_profile_id ?? undefined,
+    reviewNote: row.review_note ?? undefined,
   };
 }
 
@@ -970,6 +1022,18 @@ function batchStatus(value: string): BatchStatus {
     return value;
   }
   return "draft";
+}
+
+function paymentKind(value: string | null | undefined): PaymentKind {
+  return value === "advance" ? "advance" : "normal";
+}
+
+function milestoneSubmissionStatus(value: string): MilestoneSubmissionStatus {
+  return value === "draft" ||
+    value === "approved" ||
+    value === "rejected"
+    ? value
+    : "submitted";
 }
 
 function lineItemStatus(value: string): BatchLineItem["status"] {

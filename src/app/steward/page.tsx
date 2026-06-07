@@ -10,7 +10,11 @@ import {
 } from "@/components/ayra/ui";
 import { UpdateMediaField } from "@/components/ayra/update-media-field";
 import { StewardStatusModal } from "@/components/ayra/steward-status-modal";
-import { submitPayoutAddressAction, submitUpdateAction } from "@/lib/ayra/actions";
+import {
+  submitMilestoneSubmissionAction,
+  submitPayoutAddressAction,
+  submitUpdateAction,
+} from "@/lib/ayra/actions";
 import { requireStewardSession } from "@/lib/ayra/session";
 import {
   formatLocal,
@@ -80,6 +84,9 @@ export default async function StewardPage({ searchParams }: PageProps) {
   const updates = state.updates
     .filter((item) => item.initiativeId === initiative.id)
     .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt));
+  const milestoneSubmissions = state.milestoneSubmissions
+    .filter((item) => item.initiativeId === initiative.id)
+    .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt));
   const batches = state.batches.filter((item) => item.initiativeId === initiative.id);
   const currentBatch = getCurrentProofBatch(batches);
   const currentProof = currentBatch ? getProofPack(state, currentBatch.id) : null;
@@ -110,6 +117,11 @@ export default async function StewardPage({ searchParams }: PageProps) {
         tabs={[
           { href: "#profile", label: "Profile" },
           { href: "#updates", label: "Updates", count: String(updates.length) },
+          {
+            href: "#milestones",
+            label: "Milestones",
+            count: String(milestoneSubmissions.length),
+          },
           { href: "#payments", label: "Payments", count: `${totalReceived} USDC` },
         ]}
       />
@@ -223,8 +235,8 @@ export default async function StewardPage({ searchParams }: PageProps) {
             <div>
               <h2>Updates</h2>
               <p className="section-sub">
-                Photos, short clips, and captions. Nothing auto-publishes; every
-                submission enters the shared moderation queue.
+                Public progress notes for the project page. Keep private receipts
+                and payment evidence out of this composer.
               </p>
             </div>
           </div>
@@ -232,12 +244,12 @@ export default async function StewardPage({ searchParams }: PageProps) {
           <div className="grid-2">
             <form action={submitUpdateAction} className="panel">
               <div className="panel-head">
-                <span className="panel-title">New submission</span>
+                <span className="panel-title">Public update</span>
               </div>
               <div className="panel-body grid gap-4">
                 <div className="field">
-                  <label htmlFor="milestoneId">Milestone</label>
-                  <select id="milestoneId" name="milestoneId" defaultValue={defaultMilestone?.id}>
+                  <label htmlFor="updateMilestoneId">Milestone</label>
+                  <select id="updateMilestoneId" name="milestoneId" defaultValue={defaultMilestone?.id}>
                     {milestones.map((milestone) => (
                       <option key={milestone.id} value={milestone.id}>
                         {milestone.code} · {milestone.title}
@@ -317,6 +329,124 @@ export default async function StewardPage({ searchParams }: PageProps) {
                     ) : null}
                   </article>
                 ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="milestones" className="mb-10">
+          <div className="section-head">
+            <div>
+              <h2>Private milestone packages</h2>
+              <p className="section-sub">
+                Evidence packages for admin payment review. These documents stay
+                private and never become public project updates.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid-2">
+            <form action={submitMilestoneSubmissionAction} className="panel">
+              <div className="panel-head">
+                <span className="panel-title">Private milestone package</span>
+                <Chip tone="warn">Private evidence</Chip>
+              </div>
+              <div className="panel-body grid gap-4">
+                <div className="field">
+                  <label htmlFor="evidenceMilestoneId">Milestone</label>
+                  <select
+                    id="evidenceMilestoneId"
+                    name="milestoneId"
+                    defaultValue={defaultMilestone?.id}
+                  >
+                    {milestones.map((milestone) => (
+                      <option key={milestone.id} value={milestone.id}>
+                        {milestone.code} · {milestone.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="milestoneTitle">Package title</label>
+                  <input
+                    id="milestoneTitle"
+                    name="title"
+                    placeholder="May planting evidence"
+                    required
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="milestoneSummary">Private summary</label>
+                  <textarea
+                    id="milestoneSummary"
+                    name="summary"
+                    rows={4}
+                    placeholder="Briefly describe the receipts, crew logs, or other evidence in this package."
+                    required
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="privateDocumentFile">Private document</label>
+                  <input
+                    id="privateDocumentFile"
+                    name="privateDocumentFile"
+                    type="file"
+                  />
+                </div>
+                <div className="flex flex-wrap justify-between gap-3 border-t border-rule pt-4">
+                  <p className="max-w-md text-sm text-ink-muted">
+                    This supports payment review only. It is not shown on the
+                    public project page or proof page.
+                  </p>
+                  <button className="btn primary" type="submit">
+                    Submit evidence <Send className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title">Evidence history</span>
+              </div>
+              <div className="divide-y divide-rule">
+                {milestoneSubmissions.slice(0, 5).map((submission) => {
+                  const milestone = milestones.find(
+                    (item) => item.id === submission.milestoneId,
+                  );
+                  return (
+                    <article className="p-4" key={submission.id}>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <span className="mono text-xs text-ink-muted">
+                          {submission.submittedAt.slice(0, 16).replace("T", " ")} UTC
+                        </span>
+                        <Chip
+                          tone={
+                            submission.status === "approved"
+                              ? "ok"
+                              : submission.status === "rejected"
+                                ? "err"
+                                : "warn"
+                          }
+                        >
+                          {submission.status}
+                        </Chip>
+                      </div>
+                      <div className="mt-3 row-name">{submission.title}</div>
+                      <p className="mt-1 text-xs uppercase text-ink-muted">
+                        {milestone?.code ?? "Milestone"} · private package
+                      </p>
+                      <p className="mt-3 text-sm leading-6 text-ink-muted">
+                        {submission.summary}
+                      </p>
+                    </article>
+                  );
+                })}
+                {milestoneSubmissions.length === 0 ? (
+                  <p className="p-4 text-sm leading-6 text-ink-muted">
+                    No private milestone evidence has been submitted yet.
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>

@@ -47,8 +47,19 @@ const updateSchema = z.object({
   mediaAlt: z.string().trim().optional(),
 });
 
+const milestoneSubmissionSchema = z.object({
+  milestoneId: z.string().trim().min(1),
+  title: z.string().trim().min(4),
+  summary: z.string().trim().min(10),
+});
+
 const idActionSchema = z.object({
   entityId: z.string().trim().min(1),
+});
+
+const reviewMilestoneSubmissionSchema = idActionSchema.extend({
+  status: z.enum(["approved", "rejected"]),
+  reviewNote: z.string().trim().optional(),
 });
 
 const moderateSchema = idActionSchema.extend({
@@ -70,9 +81,18 @@ const batchSchema = z.object({
   localAmount: optionalPositiveNumber(),
   localCurrency: z.enum(["COP", "USD"]),
   amountSource: z.enum(["usdc", "local"]).optional(),
-}).refine((value) => value.amountUsdc !== undefined || value.localAmount !== undefined, {
-  message: "A USDC or local amount is required.",
-});
+  paymentKind: z.enum(["normal", "advance"]),
+  milestoneSubmissionId: z.string().trim().optional(),
+})
+  .refine((value) => value.amountUsdc !== undefined || value.localAmount !== undefined, {
+    message: "A USDC or local amount is required.",
+  })
+  .refine(
+    (value) => value.paymentKind === "advance" || Boolean(value.milestoneSubmissionId),
+    {
+      message: "Normal payments require a milestone submission.",
+    },
+  );
 
 const payoutAddressSchema = z.object({
   initiativeId: z.string().trim().min(1),
@@ -456,6 +476,69 @@ export async function submitUpdateAction(formData: FormData) {
   redirectWithStatus("/steward", "update-submitted");
 }
 
+export async function submitMilestoneSubmissionAction(formData: FormData) {
+  const parsed = milestoneSubmissionSchema.safeParse({
+    milestoneId: text(formData, "milestoneId"),
+    title: text(formData, "title"),
+    summary: text(formData, "summary"),
+  });
+  if (!parsed.success) redirectWithStatus("/steward", "invalid");
+
+  const session = await requireStewardSession("/steward");
+  if (session.isDemo) demoRedirect("/steward", "milestone-submitted");
+
+  const milestone = session.state.milestones.find(
+    (item) => item.id === parsed.data.milestoneId,
+  );
+  if (!milestone || !canSubmitForMilestone(session.context, milestone)) {
+    redirectWithStatus("/steward", "scope-denied");
+  }
+
+  const evidenceFile = optionalFile(formData, "privateDocumentFile");
+  const supabase = session.supabase!;
+  let privateDocumentPath: string | null = null;
+  const submissionId = crypto.randomUUID();
+  if (evidenceFile) {
+    let adminSupabase: SupabaseClient;
+    try {
+      adminSupabase = createSupabaseAdminClient();
+    } catch {
+      redirectWithStatus("/steward", "milestone-upload-error");
+    }
+    const name = safeStorageName(evidenceFile.name || "milestone-evidence");
+    privateDocumentPath = await uploadFile(
+      adminSupabase,
+      "ayra-private-receipts",
+      `milestone-submissions/${submissionId}/${Date.now()}-${name}`,
+      evidenceFile,
+    );
+    if (!privateDocumentPath) redirectWithStatus("/steward", "milestone-upload-error");
+  }
+
+  const { error } = await supabase.from("milestone_submissions").insert({
+    id: submissionId,
+    initiative_id: milestone.initiativeId,
+    milestone_id: milestone.id,
+    submitted_by_profile_id: session.context.profile.id,
+    status: "submitted",
+    title: parsed.data.title,
+    summary: parsed.data.summary,
+    private_document_path: privateDocumentPath,
+  });
+  if (error) redirectWithStatus("/steward", "error");
+
+  await insertAudit(supabase, session, {
+    action: "milestone_submission.submitted",
+    entityType: "milestone_submission",
+    entityId: submissionId,
+    after: { status: "submitted" },
+  });
+  revalidatePath("/admin");
+  revalidatePath("/admin/batches");
+  revalidatePath("/steward");
+  redirectWithStatus("/steward", "milestone-submitted");
+}
+
 export async function submitPayoutAddressAction(formData: FormData) {
   const parsed = payoutAddressSchema.safeParse({
     initiativeId: text(formData, "initiativeId"),
@@ -627,6 +710,40 @@ export async function verifyPayoutAddressAction(formData: FormData) {
   redirectWithStatus("/admin/registry", "payout-verified");
 }
 
+export async function reviewMilestoneSubmissionAction(formData: FormData) {
+  const parsed = reviewMilestoneSubmissionSchema.safeParse({
+    entityId: text(formData, "milestoneSubmissionId"),
+    status: text(formData, "status"),
+    reviewNote: optionalText(formData, "reviewNote"),
+  });
+  if (!parsed.success) redirectWithStatus("/admin/batches", "invalid");
+
+  const session = await requireAdminSession("/admin/batches");
+  if (session.isDemo) demoRedirect("/admin/batches", "milestone-reviewed");
+
+  const supabase = session.supabase!;
+  const { error } = await supabase
+    .from("milestone_submissions")
+    .update({
+      status: parsed.data.status,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by_profile_id: session.context.profile.id,
+      review_note: parsed.data.reviewNote,
+    })
+    .eq("id", parsed.data.entityId);
+  if (error) redirectWithStatus("/admin/batches", "error");
+
+  await insertAudit(supabase, session, {
+    action: `milestone_submission.${parsed.data.status}`,
+    entityType: "milestone_submission",
+    entityId: parsed.data.entityId,
+    after: { status: parsed.data.status },
+  });
+  revalidatePath("/admin");
+  revalidatePath("/admin/batches");
+  redirectWithStatus("/admin/batches", "milestone-reviewed");
+}
+
 export async function moderateUpdateAction(formData: FormData) {
   const parsed = moderateSchema.safeParse({
     entityId: text(formData, "updateId"),
@@ -688,8 +805,16 @@ export async function createBatchAction(formData: FormData) {
     localAmount: text(formData, "localAmount"),
     localCurrency: text(formData, "localCurrency"),
     amountSource: optionalText(formData, "amountSource"),
+    paymentKind: text(formData, "paymentKind"),
+    milestoneSubmissionId: optionalText(formData, "milestoneSubmissionId"),
   });
-  if (!parsed.success) redirectWithStatus("/admin/batches", "invalid");
+  if (!parsed.success) {
+    const paymentKind = text(formData, "paymentKind");
+    redirectWithStatus(
+      "/admin/batches",
+      paymentKind === "normal" ? "milestone-required" : "invalid",
+    );
+  }
 
   let normalizedAmounts;
   try {
@@ -700,7 +825,12 @@ export async function createBatchAction(formData: FormData) {
   }
 
   const session = await requireAdminSession("/admin/batches");
-  if (session.isDemo) demoRedirect("/admin/batches", "batch-created");
+  if (session.isDemo) {
+    demoRedirect(
+      "/admin/batches",
+      parsed.data.paymentKind === "advance" ? "advance-created" : "batch-created",
+    );
+  }
 
   const supabase = session.supabase!;
   const hasVerifiedAddress = await initiativeHasVerifiedAddress(
@@ -708,6 +838,16 @@ export async function createBatchAction(formData: FormData) {
     parsed.data.initiativeId,
   );
   if (!hasVerifiedAddress) redirectWithStatus("/admin/batches", "payout-required");
+  const milestoneSubmissionId =
+    parsed.data.paymentKind === "normal" ? parsed.data.milestoneSubmissionId : null;
+  if (parsed.data.paymentKind === "normal") {
+    const available = await approvedMilestoneSubmissionAvailable(
+      supabase,
+      parsed.data.initiativeId,
+      milestoneSubmissionId,
+    );
+    if (!available) redirectWithStatus("/admin/batches", "milestone-unavailable");
+  }
 
   const { data, error } = await supabase
     .from("funding_batches")
@@ -716,6 +856,8 @@ export async function createBatchAction(formData: FormData) {
       sponsor_id: parsed.data.sponsorId ?? null,
       code: parsed.data.code,
       period_label: parsed.data.periodLabel,
+      payment_kind: parsed.data.paymentKind,
+      milestone_submission_id: milestoneSubmissionId,
       status: "ready",
       created_by_profile_id: session.context.profile.id,
     })
@@ -785,11 +927,18 @@ export async function createBatchAction(formData: FormData) {
     action: "batch.created",
     entityType: "batch",
     entityId: data.id,
-    after: { status: "ready" },
+    after: {
+      status: "ready",
+      paymentKind: parsed.data.paymentKind,
+      milestoneSubmissionId,
+    },
   });
   revalidatePath("/admin");
   revalidatePath("/admin/batches");
-  redirectWithStatus("/admin/batches", "batch-created");
+  redirectWithStatus(
+    "/admin/batches",
+    parsed.data.paymentKind === "advance" ? "advance-created" : "batch-created",
+  );
 }
 
 export async function submitBatchAction(formData: FormData) {
@@ -1196,6 +1345,30 @@ async function initiativeHasVerifiedAddress(
     .limit(1)
     .maybeSingle();
   return !error && Boolean(data);
+}
+
+async function approvedMilestoneSubmissionAvailable(
+  supabase: SupabaseClient,
+  initiativeId: string,
+  milestoneSubmissionId: string | null | undefined,
+) {
+  if (!milestoneSubmissionId) return false;
+  const { data: submission, error: submissionError } = await supabase
+    .from("milestone_submissions")
+    .select("id")
+    .eq("id", milestoneSubmissionId)
+    .eq("initiative_id", initiativeId)
+    .eq("status", "approved")
+    .maybeSingle();
+  if (submissionError || !submission) return false;
+
+  const { data: linked, error: linkedError } = await supabase
+    .from("funding_batches")
+    .select("id")
+    .eq("milestone_submission_id", milestoneSubmissionId)
+    .limit(1)
+    .maybeSingle();
+  return !linkedError && !linked;
 }
 
 async function loadSdpDestination(

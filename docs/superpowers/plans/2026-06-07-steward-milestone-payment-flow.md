@@ -1,188 +1,66 @@
-# Steward Milestone Payment Flow Implementation Plan
+# Steward Milestone + Payment Flow Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+## Goal
+Implement `docs/superpowers/specs/2026-06-07-steward-milestone-payment-flow-design.md`: separate public steward updates from private milestone evidence, require approved unused private milestone submissions for normal payments, and allow admin-created advances without milestone evidence.
 
-**Goal:** Split public steward updates from private milestone evidence, then require normal admin payments to link to one unused approved milestone submission while allowing advance payments without that link.
+## Operating Route
+- Bridgecode: `EYE` for implementation/debugging, `LLM_FRIENDLY_PLAN_CODE_DEBUG` for plan/test/reporting.
+- Superpowers: worktree isolation, TDD, execution, verification-before-completion.
+- Scope: one coherent vertical slice across domain, persistence, actions, steward UI, admin UI, migration, and tests.
 
-**Architecture:** Model private evidence as `milestone_submissions`, keep public updates on `initiative_updates`, and attach `payment_kind` plus optional `milestone_submission_id` to `funding_batches`. Enforce the normal-payment link in domain helpers, server actions, and database constraints/triggers; render the steward and admin screens from the same mapped state.
+## Budget
+`{files: 13-15, LOC/file: target <=1000 except existing domain/action files may remain near repo size, deps: 0 new}`
 
-**Tech Stack:** Next.js App Router, TypeScript, Supabase SQL/RLS/storage, Node test runner, Playwright smoke checks. `{files: ~9 modified + 1 migration + this plan, LOC/file: <1000 target for touched files, deps: 0}`
+## Implementation Block
+1. Domain contract
+   - Add `MilestoneSubmission`, `MilestoneSubmissionStatus`, `PaymentKind`.
+   - Add `AyraState.milestoneSubmissions`.
+   - Add domain mutations for private submission submit/review.
+   - Enforce normal payment link to one approved unused same-initiative submission.
+   - Allow advance payment without milestone link.
 
----
+2. Persistence contract
+   - Add Supabase migration for `milestone_submissions`.
+   - Add `funding_batches.payment_kind` and `funding_batches.milestone_submission_id`.
+   - Enforce same-initiative, approved-only, one-payment-per-submission constraints at the database boundary.
+   - Map operator-only private evidence rows; keep public reads privacy-safe.
 
-### Task 1: Domain Contract
+3. Server actions
+   - Add steward private milestone submission action.
+   - Add admin milestone review action.
+   - Extend batch creation validation with `paymentKind` and `milestoneSubmissionId`.
+   - Audit submission, review, and batch creation events.
 
-**Files:**
-- Modify: `src/lib/ayra/domain.ts`
-- Test: `tests/ayra-domain.test.ts`
+4. Steward UI
+   - Keep existing public update composer public-only.
+   - Add a separate private milestone package form with private document upload.
+   - Show evidence history without making private docs public.
 
-- [ ] **Step 1: Write failing domain tests**
+5. Admin UI
+   - Add payment type selector.
+   - For normal payments, require an approved unused milestone package for the selected initiative.
+   - For advances, hide milestone package selection and show exception copy.
 
-Add tests that prove:
-- `submitMilestoneSubmission()` creates a private submitted package without adding a public update.
-- admins can approve/reject submissions.
-- normal `createFundingBatch()` requires one approved unused submission from the same initiative.
-- advance `createFundingBatch()` skips the submission link.
-- a submission cannot back two normal payments.
+6. Tests and validation
+   - Domain tests for public/private separation, normal payment link requirement, no reuse, and advance exception.
+   - Data tests for private operator rows and public privacy boundary.
+   - Source/UI tests for separate steward forms and admin controls.
+   - Status tests for new operator feedback states.
+   - Build, lint, and browser smoke on desktop/mobile.
 
-Run: `npm test -- tests/ayra-domain.test.ts`
-Expected: FAIL because the new types/functions/options do not exist.
+## Risks
+- Supabase generated types may not know about the new table before migration/type regeneration; keep casts local and narrow.
+- Existing live `funding_batches` rows may have no milestone link; migration must avoid invalidating historical rows during creation while enforcing future writes.
+- Browser smoke uses demo/operator fallback state locally unless live Supabase env is configured.
 
-- [ ] **Step 2: Implement minimal domain state**
+## Pass/Fail
+Pass when:
+- `npm test`, `npm run build`, and `npm run lint` exit 0.
+- Browser shows steward public updates and private milestone packages as separate surfaces.
+- Browser shows admin normal payment default with approved milestone package selector and advance exception state available.
+- Public data mapping excludes private evidence paths.
 
-Add:
-- `MilestoneSubmissionStatus = "draft" | "submitted" | "approved" | "rejected"`
-- `PaymentKind = "normal" | "advance"`
-- `MilestoneSubmission`
-- `Batch.paymentKind`
-- `Batch.milestoneSubmissionId?`
-- `AyraState.milestoneSubmissions`
-
-Add domain functions:
-- `submitMilestoneSubmission(state, input)`
-- `reviewMilestoneSubmission(state, input)`
-- `approvedUnusedMilestoneSubmissions(state, initiativeId)`
-
-Extend `FundingBatchInput` with:
-- `paymentKind?: PaymentKind`
-- `milestoneSubmissionId?: string`
-
-Validation:
-- default kind is `normal`
-- normal payments require an approved same-initiative submission
-- normal payments reject already-linked submissions
-- advance payments force no milestone link
-
-Run: `npm test -- tests/ayra-domain.test.ts`
-Expected: PASS.
-
-### Task 2: Supabase Mapping + Migration
-
-**Files:**
-- Modify: `src/lib/ayra/data.ts`
-- Create: `supabase/migrations/0013_milestone_submissions_payment_kind.sql`
-- Test: `tests/ayra-data.test.ts`
-
-- [ ] **Step 1: Write failing mapping tests**
-
-Add operator-row fixtures for one approved milestone submission and one normal linked batch. Assert `stateFromOperatorRows()` maps submissions and payment metadata; public rows stay privacy-safe and do not expose private document paths.
-
-Run: `npm test -- tests/ayra-data.test.ts`
-Expected: FAIL because row fields and state fields are missing.
-
-- [ ] **Step 2: Implement mapping and SQL**
-
-SQL:
-- create `milestone_submission_status` enum.
-- create `milestone_submissions` with initiative, milestone, submitter, status, title, summary, `private_document_path`, timestamps, reviewer fields.
-- enable RLS.
-- allow admins all access.
-- allow scoped stewards/grantee contacts to insert/read their own initiative submissions.
-- add `payment_kind text not null default 'normal'` to `funding_batches`.
-- add `milestone_submission_id uuid unique references milestone_submissions(id)`.
-- add trigger/check function enforcing: normal requires approved submission, advance requires no submission, submission initiative matches batch initiative.
-
-Mapping:
-- include `milestoneSubmissions` in public/operator row types and state.
-- select submissions only in authenticated/operator load.
-- select `payment_kind,milestone_submission_id` on batches.
-
-Run: `npm test -- tests/ayra-data.test.ts`
-Expected: PASS.
-
-### Task 3: Server Actions
-
-**Files:**
-- Modify: `src/lib/ayra/actions.ts`
-- Test: `tests/ayra-admin-batch-form.test.ts`
-
-- [ ] **Step 1: Write failing source-contract tests**
-
-Assert:
-- `submitMilestoneSubmissionAction` inserts into `milestone_submissions`, not `initiative_updates`.
-- `reviewMilestoneSubmissionAction` updates submission status.
-- `createBatchAction` reads `paymentKind` and `milestoneSubmissionId`.
-- normal payment validation rejects missing milestone submission.
-- advance payment inserts null `milestone_submission_id`.
-
-Run: `npm test -- tests/ayra-admin-batch-form.test.ts`
-Expected: FAIL because actions are missing.
-
-- [ ] **Step 2: Implement actions**
-
-Add schemas and actions:
-- `milestoneSubmissionSchema`
-- `reviewMilestoneSubmissionAction`
-- `submitMilestoneSubmissionAction`
-
-Storage:
-- use existing `optionalFile`, `safeStorageName`, `uploadFile`.
-- upload private evidence to `ayra-private-receipts` under `milestone-submissions/<submissionId>/...`.
-
-Batch action:
-- accept `paymentKind`.
-- require `milestoneSubmissionId` for normal.
-- insert `payment_kind` and `milestone_submission_id`.
-- redirect statuses: `milestone-required`, `milestone-unavailable`, `advance-created` as needed.
-
-Run: `npm test -- tests/ayra-admin-batch-form.test.ts`
-Expected: PASS.
-
-### Task 4: Steward + Admin UI
-
-**Files:**
-- Modify: `src/app/steward/page.tsx`
-- Modify: `src/app/admin/batches/page.tsx`
-- Modify: `src/lib/ayra/status.ts`
-- Test: `tests/e2e/steward-payout-feedback.spec.ts`, `tests/ayra-status.test.ts`
-
-- [ ] **Step 1: Write failing UI/status tests**
-
-Assert steward page has separate public update and private milestone package forms. Assert admin page has `Payment type`, shows normal milestone dropdown context, includes an empty-state explanation, and includes an advance branch. Assert status copy exists for milestone submission and payment milestone errors.
-
-Run: `npm test -- tests/ayra-status.test.ts tests/ayra-admin-batch-form.test.ts`
-Expected: FAIL.
-
-- [ ] **Step 2: Implement UI**
-
-Steward:
-- rename public composer to public update language.
-- add separate private milestone package form with milestone, title, summary, private evidence file.
-- list recent private submissions with status chips.
-
-Admin:
-- add payment type radio/select.
-- add approved unused submission dropdown scoped to selected/default initiative.
-- include data attributes or option metadata for client-side filtering if needed; server validation remains authoritative.
-- show advance payment explanation and no milestone dropdown requirement for advance.
-
-Status:
-- add steward `milestone-submitted`.
-- add admin `milestone-required`, `milestone-unavailable`, `advance-created`.
-
-Run: `npm test -- tests/ayra-status.test.ts tests/ayra-admin-batch-form.test.ts`
-Expected: PASS.
-
-### Task 5: Full Verification
-
-**Files:**
-- No new implementation files unless a focused helper is needed.
-
-- [ ] **Step 1: Run unit/integration tests**
-
-Run: `npm test`
-Expected: PASS.
-
-- [ ] **Step 2: Build**
-
-Run: `npm run build`
-Expected: PASS.
-
-- [ ] **Step 3: Browser smoke**
-
-Run local app and verify:
-- `/steward` shows separate public update and private milestone package panels.
-- `/admin/batches` shows payment type and approved milestone submission context.
-- public proof pages still omit private document paths.
-
-Expected: no visual overlap, no private evidence shown publicly.
+Fail when:
+- Normal payments can be created without an approved unused private milestone submission.
+- Private evidence appears in public projections/proof pages.
+- Advance payments require milestone evidence.

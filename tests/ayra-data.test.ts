@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import {
@@ -88,6 +89,8 @@ const publicRows = {
       sponsor_id: "sponsor-1",
       code: "PV-REFOREST-APR26",
       period_label: "April 2026",
+      payment_kind: "normal",
+      milestone_submission_id: "milestone-submission-1",
       status: "submitted",
       created_by_profile_id: "profile-admin",
       created_at: "2026-04-29T10:00:00Z",
@@ -300,6 +303,22 @@ describe("AYRA Supabase row mapping", () => {
         },
       ],
       payoutAddresses: [],
+      milestoneSubmissions: [
+        {
+          id: "milestone-submission-1",
+          initiative_id: "initiative-1",
+          milestone_id: "milestone-1",
+          submitted_by_profile_id: "profile-leidy",
+          status: "approved",
+          title: "April planting evidence",
+          summary: "Private receipt and crew-log package.",
+          private_document_path: "milestone-submissions/1/evidence.pdf",
+          submitted_at: "2026-04-27T10:06:00Z",
+          reviewed_at: "2026-04-28T10:06:00Z",
+          reviewed_by_profile_id: "profile-admin",
+          review_note: "Approved for April normal payment.",
+        },
+      ],
       fundingAllocations: [],
       reconciliationItems: [],
       sdpSyncEvents: [],
@@ -309,6 +328,26 @@ describe("AYRA Supabase row mapping", () => {
     assert.equal(state.profiles[0]?.displayName, "Leidy Mendoza");
     assert.equal(state.userRoles[0]?.role, "grantee_contact");
     assert.equal(state.granteeContacts[0]?.granteeId, "grantee-1");
+    assert.equal(state.milestoneSubmissions[0]?.status, "approved");
+    assert.equal(
+      state.milestoneSubmissions[0]?.privateDocumentPath,
+      "milestone-submissions/1/evidence.pdf",
+    );
+    assert.equal(state.batches[0]?.paymentKind, "normal");
+    assert.equal(
+      state.batches[0]?.milestoneSubmissionId,
+      "milestone-submission-1",
+    );
+    assert.ok(!JSON.stringify(stateFromPublicRows(publicRows)).includes("evidence.pdf"));
+  });
+
+  it("keeps the operator Supabase loader row order aligned with the destructured result order", () => {
+    const source = readFileSync("src/lib/ayra/data.ts", "utf8");
+
+    const alignedOrder =
+      /payoutAddresses,\s+milestones,\s+updates,\s+media,\s+batches,\s+milestoneSubmissions,\s+lineItems,/g;
+
+    assert.equal(source.match(alignedOrder)?.length, 2);
   });
 
   it("drops operator line items whose parent batch is no longer present", () => {

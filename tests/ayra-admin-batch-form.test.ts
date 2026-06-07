@@ -54,4 +54,40 @@ describe("AYRA admin batch form", () => {
       /<table className="t min-w-\[760px\]">\s*<thead>\s*<tr>\s*<th>Payment<\/th>\s*<th>Amount<\/th>\s*<th>Status<\/th>\s*<th>SDP<\/th>/s,
     );
   });
+
+  it("keeps steward public updates separate from private milestone evidence", () => {
+    const stewardSource = readFileSync("src/app/steward/page.tsx", "utf8");
+    const actionSource = readFileSync("src/lib/ayra/actions.ts", "utf8");
+
+    assert.match(stewardSource, /submitUpdateAction/);
+    assert.match(stewardSource, /submitMilestoneSubmissionAction/);
+    assert.match(stewardSource, /name="privateDocumentFile"/);
+    assert.match(stewardSource, /Private milestone package/);
+    assert.match(actionSource, /export async function submitMilestoneSubmissionAction/);
+    assert.match(actionSource, /from\("milestone_submissions"\)/);
+    assert.ok(
+      stewardSource.indexOf('name="privateDocumentFile"') >
+        stewardSource.indexOf("submitMilestoneSubmissionAction"),
+    );
+  });
+
+  it("requires payment type and approved milestone submission controls", () => {
+    const pageSource = readFileSync("src/app/admin/batches/page.tsx", "utf8");
+    const selectorSource = readFileSync(
+      "src/components/ayra/batch-initiative-target.tsx",
+      "utf8",
+    );
+    const actionSource = readFileSync("src/lib/ayra/actions.ts", "utf8");
+    const formSource = `${pageSource}\n${selectorSource}`;
+
+    assert.match(formSource, /name="paymentKind"/);
+    assert.match(formSource, /value="normal"/);
+    assert.match(formSource, /value="advance"/);
+    assert.match(formSource, /name="milestoneSubmissionId"/);
+    assert.match(pageSource, /approvedMilestoneSubmissions/);
+    assert.match(selectorSource, /submission\.initiativeId === target\?\.id/);
+    assert.match(actionSource, /paymentKind: text\(formData, "paymentKind"\)/);
+    assert.match(actionSource, /milestone_submission_id/);
+    assert.match(actionSource, /milestone-required/);
+  });
 });

@@ -93,6 +93,22 @@ export function getJourneyStatus(
           body:
             "AYRA will review the caption and media before anything reaches the public wall.",
         };
+      case "milestone-submitted":
+        return {
+          tone: "ok",
+          label: "Evidence sent",
+          title: "Your private milestone package is under review.",
+          body:
+            "AYRA can now review the evidence package for this milestone. It is not published on the public project page.",
+        };
+      case "milestone-upload-error":
+        return {
+          tone: "err",
+          label: "Upload failed",
+          title: "AYRA could not attach the private evidence.",
+          body:
+            "Check the file, then submit the private milestone package again.",
+        };
       case "media-error":
         return {
           tone: "err",
@@ -191,6 +207,38 @@ export function getJourneyStatus(
         title: "Payment draft created.",
         body:
           "Add the line items you want to pay, then submit once the verified payout address is in place.",
+      };
+    case "advance-created":
+      return {
+        tone: "info",
+        label: "Advance payment",
+        title: "Advance payment draft created.",
+        body:
+          "This payment is an admin-approved exception and is not linked to a steward milestone package.",
+      };
+    case "milestone-required":
+      return {
+        tone: "err",
+        label: "Evidence required",
+        title: "Select an approved milestone package.",
+        body:
+          "Normal payments need one approved private milestone submission from the same initiative before they can be created.",
+      };
+    case "milestone-unavailable":
+      return {
+        tone: "err",
+        label: "Evidence unavailable",
+        title: "That milestone package cannot back this payment.",
+        body:
+          "Choose an approved, unused milestone submission from the same initiative, or mark the payment as an advance.",
+      };
+    case "milestone-reviewed":
+      return {
+        tone: "ok",
+        label: "Evidence reviewed",
+        title: "Milestone package review saved.",
+        body:
+          "The payment form now reflects the latest approved or rejected milestone evidence.",
       };
     case "batch-submitted":
       return {
