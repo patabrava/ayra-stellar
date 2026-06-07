@@ -12,6 +12,7 @@ import {
   type ApprovedMilestoneSubmissionOption,
   type BatchInitiativeTargetOption,
 } from "@/components/ayra/batch-initiative-target";
+import { FormSubmitButton } from "@/components/ayra/form-submit-button";
 import {
   Chip,
   Hash,
@@ -219,16 +220,19 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                       {isReady ? (
                         <form action={submitBatchAction}>
                           <input name="batchId" type="hidden" value={batch.id} />
-                          <button className="btn primary" type="submit">
+                          <FormSubmitButton
+                            className="btn primary"
+                            pendingLabel="Submitting payment..."
+                          >
                             Submit <Send className="h-4 w-4" />
-                          </button>
+                          </FormSubmitButton>
                         </form>
                       ) : isSubmitted ? (
                         <form action={syncBatchStatusAction}>
                           <input name="batchId" type="hidden" value={batch.id} />
-                          <button className="btn" type="submit">
+                          <FormSubmitButton className="btn" pendingLabel="Syncing status...">
                             Sync status
-                          </button>
+                          </FormSubmitButton>
                         </form>
                       ) : settledTransactionHashes.length > 0 ? (
                         settledTransactionHashes.map((transactionHash) => (

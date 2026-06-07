@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
+import { FormSubmitButton } from "@/components/ayra/form-submit-button";
 import { Chip, Hash } from "@/components/ayra/ui";
 import type { PayoutAddressStatus } from "@/lib/ayra/domain";
 
@@ -188,13 +189,14 @@ export function BatchInitiativeTarget({
 
       {children}
 
-      <button
+      <FormSubmitButton
         className="btn primary justify-self-start"
         disabled={!rateAvailable || !target.payoutAddress}
+        pendingLabel="Creating ready payment..."
         type="submit"
       >
         Create ready payment
-      </button>
+      </FormSubmitButton>
     </div>
   );
 }

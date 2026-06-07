@@ -97,4 +97,22 @@ describe("AYRA admin batch form", () => {
     assert.doesNotMatch(pageSource, /syncSubmittedBatches/);
     assert.doesNotMatch(pageSource, /loadAuthenticatedAyraState/);
   });
+
+  it("shows pending labels on payment create and submit actions", () => {
+    const pageSource = readFileSync("src/app/admin/batches/page.tsx", "utf8");
+    const selectorSource = readFileSync(
+      "src/components/ayra/batch-initiative-target.tsx",
+      "utf8",
+    );
+    const buttonSource = readFileSync(
+      "src/components/ayra/form-submit-button.tsx",
+      "utf8",
+    );
+
+    assert.match(buttonSource, /useFormStatus/);
+    assert.match(buttonSource, /aria-busy=\{pending\}/);
+    assert.match(selectorSource, /pendingLabel="Creating ready payment\.\.\."/);
+    assert.match(pageSource, /pendingLabel="Submitting payment\.\.\."/);
+    assert.match(pageSource, /pendingLabel="Syncing status\.\.\."/);
+  });
 });
