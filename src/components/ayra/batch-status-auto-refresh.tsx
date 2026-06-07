@@ -25,7 +25,6 @@ export function BatchStatusAutoRefresh({
       }
     };
 
-    refresh();
     const interval = window.setInterval(refresh, intervalMs);
     document.addEventListener("visibilitychange", refresh);
 

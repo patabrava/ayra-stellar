@@ -102,6 +102,8 @@ test("admin payment confirmation can be dismissed without background refresh con
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/batches$/);
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.waitForTimeout(1_000);
+  expect(refreshRequests).toHaveLength(0);
 });
 
 test("admin one-line batch converts USDC and COP both ways", async ({ page }) => {

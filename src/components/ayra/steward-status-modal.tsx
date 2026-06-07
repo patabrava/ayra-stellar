@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { createPortal } from "react-dom";
 import { CircleAlert, CircleCheckBig, Info, X } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { Chip } from "@/components/ayra/ui";
 import { getJourneyStatus, type JourneySurface } from "@/lib/ayra/status";
@@ -32,28 +38,26 @@ export function JourneyStatusModal({
   status?: string;
   surface: JourneySurface;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const journeyStatus = useMemo(
-    () => getJourneyStatus(surface, status),
-    [surface, status],
-  );
   const dialogRef = useRef<HTMLDivElement>(null);
   const mounted = useSyncExternalStore(
     subscribeToClientMount,
     getClientMountSnapshot,
     getServerMountSnapshot,
   );
+  const visibleStatus = mounted ? (searchParams.get("status") ?? undefined) : status;
+  const journeyStatus = useMemo(
+    () => getJourneyStatus(surface, visibleStatus),
+    [surface, visibleStatus],
+  );
 
   const dismiss = useCallback(() => {
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.delete("status");
     const nextQuery = nextParams.toString();
-    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
-      scroll: false,
-    });
-  }, [pathname, router, searchParams]);
+    window.history.replaceState(null, "", nextQuery ? `${pathname}?${nextQuery}` : pathname);
+  }, [pathname, searchParams]);
 
   useEffect(() => {
     if (!journeyStatus || !mounted) return;

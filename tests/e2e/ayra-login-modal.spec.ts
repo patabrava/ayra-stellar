@@ -8,6 +8,30 @@ test("login status feedback opens in the modal surface", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("login status feedback closes without requesting a server payload", async ({
+  page,
+}) => {
+  const rscRequests: string[] = [];
+  page.on("request", (request) => {
+    const url = request.url();
+    if (url.includes("/login") && url.includes("_rsc=")) {
+      rscRequests.push(url);
+    }
+  });
+
+  await page.goto("/login?status=link-sent");
+  await expect(
+    page.getByRole("dialog", { name: "Magic link sent." }),
+  ).toBeVisible();
+
+  rscRequests.length = 0;
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.waitForTimeout(1_000);
+  expect(rscRequests).toHaveLength(0);
+});
+
 test("signed-out redirects return to login without opening a modal", async ({
   page,
 }) => {
