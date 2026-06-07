@@ -158,6 +158,9 @@ describe("AYRA steward media upload field", () => {
 
     assert.match(page, /<UpdateMediaField \/>/);
     assert.doesNotMatch(page, /<input\s+[^>]*name="mediaFile"[^>]*type="file"/s);
+    assert.match(page, /USDC payout readiness/);
+    assert.match(page, /Enable USDC/);
+    assert.match(page, /Saving the address does not grant that permission\./);
   });
 
   it("keeps a formatted fallback for any raw file inputs that are added later", () => {

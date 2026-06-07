@@ -12,10 +12,28 @@ export type StellarUsdcProof = {
   assetAmount: number;
 };
 
+export type StellarUsdcTrustlineInput = {
+  accountId: string;
+  expectedIssuer: string;
+  horizonUrl?: string;
+};
+
+export type StellarUsdcTrustlineStatus = "ready" | "missing" | "unknown";
+
 type HorizonOperationsResponse = {
   _embedded?: {
     records?: HorizonOperation[];
   };
+};
+
+type HorizonAccountResponse = {
+  balances?: HorizonBalance[];
+};
+
+type HorizonBalance = {
+  asset_type?: string;
+  asset_code?: string;
+  asset_issuer?: string;
 };
 
 type HorizonOperation = {
@@ -104,6 +122,60 @@ export async function verifyStellarUsdcPayment(
   }
 
   throw new StellarProofError("USDC amount mismatch.");
+}
+
+export async function verifyStellarUsdcTrustline(
+  input: StellarUsdcTrustlineInput,
+  fetchImpl: typeof fetch = fetch,
+) {
+  if (!/^G[A-Z0-9]{55}$/.test(input.accountId)) {
+    throw new StellarProofError("Invalid Stellar account ID.");
+  }
+
+  const horizonUrl = (input.horizonUrl ?? DEFAULT_HORIZON_URL).replace(/\/+$/, "");
+  const response = await fetchImpl(
+    `${horizonUrl}/accounts/${input.accountId}`,
+    { method: "GET" },
+  );
+  if (!response.ok) {
+    throw new StellarProofError(
+      `Horizon account lookup failed with status ${response.status}.`,
+    );
+  }
+
+  const json = (await response.json()) as HorizonAccountResponse;
+  const hasTrustline = (json.balances ?? []).some(
+    (balance) =>
+      (balance.asset_type === "credit_alphanum4" ||
+        balance.asset_type === "credit_alphanum12") &&
+      balance.asset_code === "USDC" &&
+      balance.asset_issuer === input.expectedIssuer,
+  );
+  if (!hasTrustline) {
+    throw new StellarProofError(
+      "Receiver account is missing the expected USDC trustline.",
+    );
+  }
+}
+
+export async function getStellarUsdcTrustlineStatus(
+  input: StellarUsdcTrustlineInput,
+  fetchImpl: typeof fetch = fetch,
+): Promise<StellarUsdcTrustlineStatus> {
+  try {
+    await verifyStellarUsdcTrustline(input, fetchImpl);
+    return "ready";
+  } catch (error) {
+    if (
+      error instanceof StellarProofError &&
+      (error.message === "Receiver account is missing the expected USDC trustline." ||
+        error.message === "Invalid Stellar account ID." ||
+        /Horizon account lookup failed with status 404\./.test(error.message))
+    ) {
+      return "missing";
+    }
+    return "unknown";
+  }
 }
 
 function requireIssuer(value: string | undefined) {

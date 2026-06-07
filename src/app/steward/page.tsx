@@ -21,6 +21,7 @@ import {
   getCurrentProofBatch,
   getProofPack,
 } from "@/lib/ayra/domain";
+import { getStellarUsdcTrustlineStatus } from "@/lib/ayra/stellar-proof";
 
 type PageProps = {
   searchParams?: Promise<{ status?: string }>;
@@ -54,6 +55,15 @@ export default async function StewardPage({ searchParams }: PageProps) {
   const pendingAddress = addresses.find((item) => item.status === "pending");
   const activeAddress = verifiedAddress ?? pendingAddress ?? null;
   const hasAddressOnFile = Boolean(activeAddress);
+  const expectedUsdcIssuer = process.env.STELLAR_USDC_ISSUER?.trim();
+  const usdcTrustlineStatus =
+    activeAddress && expectedUsdcIssuer
+      ? await getStellarUsdcTrustlineStatus({
+          accountId: activeAddress.address,
+          expectedIssuer: expectedUsdcIssuer,
+          horizonUrl: process.env.STELLAR_HORIZON_URL?.trim(),
+        })
+      : null;
   const addressChipTone = verifiedAddress ? "ok" : "warn";
   const addressChipLabel = verifiedAddress
     ? "Verified · locked"
@@ -76,6 +86,30 @@ export default async function StewardPage({ searchParams }: PageProps) {
   const addressButtonLabel = hasAddressOnFile
     ? "Replace address"
     : "Submit first address";
+  const trustlineTone =
+    usdcTrustlineStatus === "ready"
+      ? "ok"
+      : usdcTrustlineStatus === "missing"
+        ? "warn"
+        : "info";
+  const trustlineLabel =
+    usdcTrustlineStatus === "ready"
+      ? "USDC ready"
+      : usdcTrustlineStatus === "missing"
+        ? "Needs trustline"
+        : "Live check pending";
+  const trustlineTitle =
+    usdcTrustlineStatus === "ready"
+      ? "This account can receive AYRA's USDC rail."
+      : usdcTrustlineStatus === "missing"
+        ? "This account still needs the USDC permission step."
+        : "AYRA could not confirm the live USDC status right now.";
+  const trustlineBody =
+    usdcTrustlineStatus === "ready"
+      ? "Horizon shows the expected USDC trustline already. After operator review, this address is ready to be locked for payout."
+      : usdcTrustlineStatus === "missing"
+        ? "The wallet owner still needs to fund the account if needed and sign the testnet USDC trustline from the wallet that controls this address. Saving the address does not grant that permission."
+        : "The address is saved, but this page could not confirm its trustline state from Horizon. AYRA can still review the address, or you can retry after the network check succeeds.";
   const milestones = state.milestones.filter(
     (item) => item.initiativeId === initiative.id,
   );
@@ -184,14 +218,14 @@ export default async function StewardPage({ searchParams }: PageProps) {
                     "Submit the Stellar address you control. This is the first payout address if the initiative has not set one up yet.",
                   ],
                   [
-                    "Step 2 · You + Horizon",
-                    "Prove ownership",
-                    "Send 0.01 XLM from this address to the AYRA verification account.",
+                    "Step 2 · Your wallet",
+                    "Enable USDC",
+                    "Use the wallet that controls this address to fund the account if needed and add the AYRA testnet USDC trustline.",
                   ],
                   [
                     "Step 3 · Operator",
-                    "Out-of-band confirm",
-                    "AYRA manually verifies and locks the address before the first disbursement.",
+                    "Review and lock",
+                    "AYRA checks the live address state, then verifies and locks it before the first disbursement.",
                   ],
                 ].map(([step, title, body]) => (
                   <div className="border border-rule bg-[var(--ops-surface)] p-4" key={step}>
@@ -210,6 +244,18 @@ export default async function StewardPage({ searchParams }: PageProps) {
                   {addressStatNote}
                 </p>
               </div>
+              {activeAddress && expectedUsdcIssuer ? (
+                <div className="mt-4 border border-rule bg-[var(--ops-surface)] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="stat-k">USDC payout readiness</div>
+                    <Chip tone={trustlineTone}>{trustlineLabel}</Chip>
+                  </div>
+                  <div className="mt-2 text-base font-medium">{trustlineTitle}</div>
+                  <p className="mt-2 text-sm leading-6 text-ink-muted">
+                    {trustlineBody}
+                  </p>
+                </div>
+              ) : null}
               <form action={submitPayoutAddressAction} className="mt-5 grid gap-3 border border-rule bg-[var(--ops-surface)] p-4">
                 <input name="initiativeId" type="hidden" value={initiative.id} />
                 <div className="field">

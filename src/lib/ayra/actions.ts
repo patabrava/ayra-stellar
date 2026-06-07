@@ -30,7 +30,12 @@ import {
   SdpGatewayError,
   type SdpGatewayEvent,
 } from "@/lib/ayra/sdp";
-import { verifyStellarUsdcPayment, StellarProofError } from "@/lib/ayra/stellar-proof";
+import {
+  getStellarUsdcTrustlineStatus,
+  verifyStellarUsdcPayment,
+  verifyStellarUsdcTrustline,
+  StellarProofError,
+} from "@/lib/ayra/stellar-proof";
 import { insertPublicApplication } from "@/lib/ayra/public-write";
 import {
   getUsdCopRate,
@@ -579,6 +584,23 @@ export async function submitPayoutAddressAction(formData: FormData) {
   });
   revalidatePath("/admin");
   revalidatePath("/steward");
+
+  const expectedUsdcIssuer = process.env.STELLAR_USDC_ISSUER?.trim();
+  if (!expectedUsdcIssuer) {
+    redirectWithStatus("/steward", "payout-submitted");
+  }
+
+  const trustlineStatus = await getStellarUsdcTrustlineStatus({
+    accountId: parsed.data.address,
+    expectedIssuer: expectedUsdcIssuer,
+    horizonUrl: process.env.STELLAR_HORIZON_URL?.trim(),
+  });
+  if (trustlineStatus === "ready") {
+    redirectWithStatus("/steward", "payout-submitted-ready");
+  }
+  if (trustlineStatus === "missing") {
+    redirectWithStatus("/steward", "payout-submitted-trustline-missing");
+  }
   redirectWithStatus("/steward", "payout-submitted");
 }
 
@@ -975,6 +997,17 @@ export async function submitBatchAction(formData: FormData) {
 
   const destination = await loadSdpDestination(supabase, batch.initiative_id);
   if (!destination) redirectWithStatus("/admin/batches", "payout-required");
+  if (process.env.STELLAR_USDC_ISSUER?.trim()) {
+    try {
+      await verifyStellarUsdcTrustline({
+        accountId: destination.walletAddress,
+        expectedIssuer: process.env.STELLAR_USDC_ISSUER.trim(),
+        horizonUrl: process.env.STELLAR_HORIZON_URL?.trim(),
+      });
+    } catch {
+      redirectWithStatus("/admin/batches", "payout-trustline-required");
+    }
+  }
 
   const gateway = createSdpGateway();
   let sdp;

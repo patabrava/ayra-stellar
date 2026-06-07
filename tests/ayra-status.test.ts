@@ -59,6 +59,29 @@ describe("AYRA steward and admin journey status copy", () => {
     });
   });
 
+  it("maps a saved payout address with a live USDC trustline to a ready state", () => {
+    assert.deepEqual(getJourneyStatus("steward", "payout-submitted-ready"), {
+      tone: "ok",
+      label: "USDC ready",
+      title: "Your payout address is saved and ready for USDC review.",
+      body:
+        "AYRA saved the address and Horizon already shows the expected USDC trustline. The remaining step is AYRA verification and lock for the first disbursement.",
+    });
+  });
+
+  it("maps a saved payout address without a live USDC trustline to a correction state", () => {
+    assert.deepEqual(
+      getJourneyStatus("steward", "payout-submitted-trustline-missing"),
+      {
+        tone: "warn",
+        label: "Trustline missing",
+        title: "Your payout address is saved, but it cannot receive USDC yet.",
+        body:
+          "AYRA saved the address, but Horizon does not show the expected USDC trustline on that account yet. Open the wallet that controls this address, add the testnet USDC trustline, and then resubmit the address or ask AYRA to recheck it.",
+      },
+    );
+  });
+
   it("maps the admin approval step to the next user action", () => {
     assert.deepEqual(getJourneyStatus("admin", "application-approved"), {
       tone: "ok",

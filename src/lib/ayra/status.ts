@@ -85,6 +85,22 @@ export function getJourneyStatus(
           body:
             "AYRA now has the address you submitted. You can keep working on updates while the address is verified and locked for the first disbursement.",
         };
+      case "payout-submitted-ready":
+        return {
+          tone: "ok",
+          label: "USDC ready",
+          title: "Your payout address is saved and ready for USDC review.",
+          body:
+            "AYRA saved the address and Horizon already shows the expected USDC trustline. The remaining step is AYRA verification and lock for the first disbursement.",
+        };
+      case "payout-submitted-trustline-missing":
+        return {
+          tone: "warn",
+          label: "Trustline missing",
+          title: "Your payout address is saved, but it cannot receive USDC yet.",
+          body:
+            "AYRA saved the address, but Horizon does not show the expected USDC trustline on that account yet. Open the wallet that controls this address, add the testnet USDC trustline, and then resubmit the address or ask AYRA to recheck it.",
+        };
       case "update-submitted":
         return {
           tone: "ok",
@@ -263,6 +279,14 @@ export function getJourneyStatus(
         title: "Verify a payout address first.",
         body:
           "This initiative needs one verified Stellar address before a payment can be created or submitted.",
+      };
+    case "payout-trustline-required":
+      return {
+        tone: "err",
+        label: "Trustline required",
+        title: "The payout address cannot receive USDC yet.",
+        body:
+          "Ask the receiver to add the testnet USDC trustline for AYRA's configured issuer, then submit the payment again. AYRA blocked the SDP send before creating another failed transaction.",
       };
     case "promotion-error":
       return {
