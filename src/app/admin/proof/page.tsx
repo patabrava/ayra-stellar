@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 import { AdminShell } from "@/app/admin/admin-shell";
 import { buildAdminViewModel } from "@/app/admin/admin-view-model";
@@ -7,13 +7,19 @@ import { Chip, Hash, Money } from "@/components/ayra/ui";
 import { requireAdminSession } from "@/lib/ayra/session";
 
 type PageProps = {
-  searchParams?: Promise<{ status?: string }>;
+  searchParams?: Promise<{ batchId?: string; status?: string }>;
 };
 
 export default async function AdminProofPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const session = await requireAdminSession("/admin/proof");
-  const view = await buildAdminViewModel(session.state);
+  const view = await buildAdminViewModel(session.state, params?.batchId);
+  const proof = view.proof;
+  const proofPackCountLabel = `${view.proofOptions.length} ${
+    view.proofOptions.length === 1 ? "pack" : "packs"
+  }`;
+  const proofTotal =
+    proof?.receipts.reduce((sum, item) => sum + item.amountUsdc, 0) ?? 0;
 
   return (
     <AdminShell
@@ -27,97 +33,153 @@ export default async function AdminProofPage({ searchParams }: PageProps) {
           <div>
             <h1>Proof packs</h1>
             <p className="section-sub">
-              Simple public proof pages generated from canonical batch records.
+              Select one verified batch and preview the public proof pack
+              generated from canonical records.
             </p>
           </div>
         </div>
-        <div className="grid-2">
-          <div className="panel">
-            <div className="panel-head">
-              <span className="panel-title">Composer</span>
-            </div>
-            <div className="panel-body grid gap-4">
-              <div className="field">
-                <label>Batch</label>
-                <input readOnly value={view.proof.batchCode} />
+        {proof ? (
+          <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_1fr]">
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title">Batch selector</span>
+                <Chip tone="info">{proofPackCountLabel}</Chip>
               </div>
-              <div className="field">
-                <label>Sponsor</label>
-                <input readOnly value={view.proof.sponsorName ?? "General fund"} />
+              <div className="panel-body grid gap-2">
+                {view.proofOptions.map((option) => {
+                  const isSelected = option.batchId === view.selectedProofBatchId;
+
+                  return (
+                    <Link
+                      aria-current={isSelected ? "page" : undefined}
+                      className={[
+                        "block border p-3 transition",
+                        isSelected
+                          ? "border-[var(--accent-admin)] bg-[var(--accent-soft)]"
+                          : "border-rule bg-[var(--ops-surface)] hover:border-[var(--ink)]",
+                      ].join(" ")}
+                      href={`/admin/proof?batchId=${encodeURIComponent(option.batchId)}`}
+                      key={option.batchId}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="row-name break-words">{option.batchCode}</div>
+                          <div className="row-meta">
+                            {option.periodLabel} ·{" "}
+                            {option.sponsorName ?? "General fund"}
+                          </div>
+                        </div>
+                        <Chip tone={option.publicLabel === "Cleared" ? "ok" : "info"}>
+                          {option.publicLabel}
+                        </Chip>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs uppercase text-ink-muted">
+                        <span>{option.receiptCount} receipts</span>
+                        <span>
+                          <Money amount={option.totalUsdc} />
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
-              <Link
-                className="btn primary justify-self-start"
-                href={`/proof/${view.proof.batchId}`}
-              >
-                Generate preview <ShieldCheck className="h-4 w-4" />
-              </Link>
             </div>
-          </div>
-          <div className="panel">
-            <div className="panel-head">
-              <span className="panel-title">
-                {view.proof.sponsorName} · {view.proof.periodLabel}
-              </span>
-              <Chip tone="ok">{view.proof.publicLabel}</Chip>
-            </div>
-            <div className="panel-body">
-              <div className="stat-grid">
-                <div className="stat">
-                  <div className="stat-k">Backed</div>
-                  <div className="stat-v">
-                    <Money
-                      amount={view.proof.receipts.reduce(
-                        (sum, item) => sum + item.amountUsdc,
-                        0,
-                      )}
-                    />
+
+            <div className="grid content-start gap-4">
+              <div className="panel">
+                <div className="panel-head">
+                  <span className="panel-title">
+                    {proof.sponsorName ?? "General fund"} · {proof.periodLabel}
+                  </span>
+                  <Chip tone={proof.publicLabel === "Cleared" ? "ok" : "info"}>
+                    {proof.publicLabel}
+                  </Chip>
+                </div>
+                <div className="panel-body grid gap-5">
+                  <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
+                    <div>
+                      <div className="text-xs uppercase text-ink-muted">Selected batch</div>
+                      <h2 className="mt-1 text-xl font-medium">{proof.batchCode}</h2>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
+                        Public proof shows category-level USDC payments verified
+                        against Stellar transaction metadata. Private receipt
+                        files remain admin-only.
+                      </p>
+                    </div>
+                    <Link
+                      className="btn primary justify-self-start md:justify-self-end"
+                      href={`/proof/${proof.batchId}`}
+                    >
+                      Open public proof <ExternalLink className="h-4 w-4" />
+                    </Link>
+                  </div>
+
+                  <div className="stat-grid">
+                    <div className="stat">
+                      <div className="stat-k">Backed</div>
+                      <div className="stat-v">
+                        <Money amount={proofTotal} />
+                      </div>
+                    </div>
+                    <div className="stat">
+                      <div className="stat-k">Verified receipts</div>
+                      <div className="stat-v">{proof.receipts.length}</div>
+                    </div>
+                    <div className="stat">
+                      <div className="stat-k">Settlement</div>
+                      <div className="stat-v text-2xl">{proof.publicLabel}</div>
+                    </div>
                   </div>
                 </div>
-                <div className="stat">
-                  <div className="stat-k">Settled on-chain</div>
-                  <div className="stat-v">100%</div>
-                </div>
               </div>
-              <p className="mt-4 text-sm leading-6 text-ink-muted">
-                Page 1 summarizes batch totals. Page 2 lists category-level
-                receipts. Private receipt files remain admin-only.
+
+              <div className="panel overflow-x-auto">
+                <div className="panel-head">
+                  <span className="panel-title">Verified on-chain receipts</span>
+                  <Chip tone="ok">{proof.receipts.length} verified</Chip>
+                </div>
+                <table className="t min-w-[760px]">
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>USDC</th>
+                      <th>Asset</th>
+                      <th>Transaction</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {proof.receipts.map((receipt) => (
+                      <tr key={receipt.id}>
+                        <td>{receipt.category}</td>
+                        <td>
+                          <Money amount={receipt.amountUsdc} />
+                        </td>
+                        <td>
+                          <Chip tone="ok">{receipt.assetCode}</Chip>
+                        </td>
+                        <td>
+                          <Hash value={receipt.transactionHash} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="panel">
+            <div className="panel-head">
+              <span className="panel-title">No verified proof packs</span>
+            </div>
+            <div className="panel-body">
+              <p className="max-w-2xl text-sm leading-6 text-ink-muted">
+                Submitted or settled batches appear here after their public
+                receipt lines have verified USDC transaction metadata.
               </p>
             </div>
           </div>
-        </div>
-
-        <div className="panel mt-4 overflow-x-auto">
-          <div className="panel-head">
-            <span className="panel-title">Verified on-chain receipts</span>
-            <Chip tone="ok">{view.proof.receipts.length} verified</Chip>
-          </div>
-          <table className="t min-w-[760px]">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>USDC</th>
-                <th>Asset</th>
-                <th>Transaction</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.proof.receipts.map((receipt) => (
-                <tr key={receipt.id}>
-                  <td>{receipt.category}</td>
-                  <td>
-                    <Money amount={receipt.amountUsdc} />
-                  </td>
-                  <td>
-                    <Chip tone="ok">{receipt.assetCode}</Chip>
-                  </td>
-                  <td>
-                    <Hash value={receipt.transactionHash} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        )}
       </section>
     </AdminShell>
   );

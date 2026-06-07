@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  buildAdminViewModel,
+  getAdminProofOptions,
+} from "../src/app/admin/admin-view-model";
+import {
   approveApplication,
   createDemoState,
   createFundingBatch,
@@ -242,6 +246,76 @@ describe("AYRA Stellar domain smoke path", () => {
     assert.equal(getCurrentProofBatch(emptyScope), null);
     assert.equal(draftBatch ? getCurrentProofBatch([draftBatch]) : null, null);
     assert.equal(getCurrentProofBatch([settledBatch!, submittedBatch!])?.id, submittedBatch?.id);
+  });
+
+  it("lets admin proof packs select among verified batches without exposing drafts", async () => {
+    process.env.AYRA_USD_COP_RATE = "3900";
+    const state = createDemoState();
+    const verifiedHash =
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const draftHash =
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const newerVerifiedBatch = {
+      ...state.batches[0],
+      id: "batch-reforest-may26",
+      code: "PV-REFOREST-MAY26",
+      periodLabel: "May 2026",
+      status: "settled" as const,
+      createdAt: "2026-05-29T10:00:00.000Z",
+      submittedAt: "2026-05-30T09:14:00.000Z",
+      settledAt: "2026-05-30T12:00:00.000Z",
+    };
+    const readyBatch = {
+      ...state.batches[0],
+      id: "batch-reforest-ready",
+      code: "PV-REFOREST-READY",
+      status: "ready" as const,
+      createdAt: "2026-06-01T10:00:00.000Z",
+    };
+    const nextState = {
+      ...state,
+      batches: [readyBatch, newerVerifiedBatch, ...state.batches],
+      batchLineItems: [
+        {
+          ...state.batchLineItems[0],
+          id: "batch-reforest-may26-line-1",
+          batchId: newerVerifiedBatch.id,
+          category: "Canopy crew",
+          amountUsdc: 2,
+          localAmount: 7800,
+          status: "settled" as const,
+          transactionHash: verifiedHash,
+          paymentAssetCode: "USDC" as const,
+          paymentAssetIssuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+          paymentAssetAmount: 2,
+        },
+        {
+          ...state.batchLineItems[0],
+          id: "batch-reforest-ready-line-1",
+          batchId: readyBatch.id,
+          status: "settled" as const,
+          transactionHash: draftHash,
+          paymentAssetCode: "USDC" as const,
+          paymentAssetIssuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+          paymentAssetAmount: state.batchLineItems[0]!.amountUsdc,
+        },
+        ...state.batchLineItems,
+      ],
+    };
+
+    const options = getAdminProofOptions(nextState);
+    const defaultView = await buildAdminViewModel(nextState);
+    const selectedView = await buildAdminViewModel(nextState, "batch-reforest-apr26");
+    const fallbackView = await buildAdminViewModel(nextState, readyBatch.id);
+
+    assert.deepEqual(
+      options.map((option) => option.batchId),
+      ["batch-reforest-may26", "batch-reforest-apr26"],
+    );
+    assert.equal(defaultView.proof?.batchId, "batch-reforest-may26");
+    assert.equal(selectedView.proof?.batchId, "batch-reforest-apr26");
+    assert.equal(selectedView.proof?.publicLabel, "In flight");
+    assert.equal(fallbackView.proof?.batchId, "batch-reforest-may26");
   });
 
   it("runs application approval, update moderation, verified payout, mock SDP, and proof visibility", async () => {
