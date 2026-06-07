@@ -16,7 +16,7 @@ describe("AYRA application submit status copy", () => {
       tone: "ok",
       title: "Your application has been submitted.",
       body:
-        "AYRA has your application for review. An operator will review the track, initiative scope, and contact details before granting portal access. If approved, the steward portal will ask for the first Stellar payout address before any batch can be created.",
+        "AYRA has your application for review. An operator will review the track, initiative scope, and contact details before granting portal access. If approved, the steward portal will ask for the first Stellar payout address before any payment can be created.",
     });
   });
 
@@ -69,7 +69,7 @@ describe("AYRA steward and admin journey status copy", () => {
       details: [
         "Steward access is active for the approved applicant account.",
         "Next step: the steward submits the first Stellar payout address in the steward portal.",
-        "No funding batch can be created until that address is verified and locked.",
+        "No funding payment can be created until that address is verified and locked.",
       ],
     });
   });
@@ -81,6 +81,16 @@ describe("AYRA steward and admin journey status copy", () => {
       title: "Application rejected.",
       body:
         "The proposal stays out of the active registry and no steward or grantee-contact access was granted.",
+    });
+  });
+
+  it("maps duplicate payment references to a specific admin retry state", () => {
+    assert.deepEqual(getJourneyStatus("admin", "duplicate-batch-code"), {
+      tone: "err",
+      label: "Duplicate code",
+      title: "That payment reference already exists.",
+      body:
+        "Use the suggested timestamped reference or enter a unique payment label before saving again.",
     });
   });
 
@@ -100,7 +110,7 @@ describe("AYRA steward and admin journey status copy", () => {
       label: "Signed in",
       title: "You are signed in.",
       body:
-        "Your operator session is active. You can review applications, submissions, payout addresses, and batch actions from this console.",
+        "Your operator session is active. You can review applications, submissions, payout addresses, and payment actions from this console.",
     });
 
     assert.deepEqual(getJourneyStatus("steward", "signed-in"), {
@@ -140,9 +150,9 @@ describe("AYRA login status copy", () => {
 
     assert.deepEqual(status, {
       tone: "err",
-      title: "Your account does not have steward access yet.",
+      title: "Apply to a track before steward access.",
       body:
-        "The email matched, but the role records do not include steward or grantee access for this portal.",
+        "This account is signed in, but it is not connected to an approved AYRA track application or steward/grantee role yet. Submit an application first, or use the approved account for your track.",
     });
   });
 

@@ -21,6 +21,7 @@ import {
   submitBatchAction,
   syncBatchStatusAction,
 } from "@/lib/ayra/actions";
+import { suggestBatchCode } from "@/lib/ayra/batch-code";
 import { formatLocal } from "@/lib/ayra/domain";
 import { requireAdminSession } from "@/lib/ayra/session";
 
@@ -32,6 +33,9 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const session = await requireAdminSession("/admin/batches");
   const view = await buildAdminViewModel(session.state);
+  const suggestedBatchCode = suggestBatchCode({
+    initiativeCode: view.reforest.code,
+  });
   const batchTargets: BatchInitiativeTargetOption[] = session.state.initiatives.map(
     (initiative) => {
       const track = session.state.tracks.find((item) => item.id === initiative.trackId);
@@ -78,9 +82,9 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
       <section>
         <div className="section-head">
           <div>
-            <h1>Batches</h1>
+            <h1>Payments</h1>
             <p className="section-sub">
-              Manual disbursement batches. Line items become immutable once
+              Manual disbursement payments. Line items become immutable once
               submitted to the SDP boundary.
             </p>
           </div>
@@ -94,7 +98,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
             <table className="t min-w-[760px]">
               <thead>
                 <tr>
-                  <th>Batch</th>
+                  <th>Payment</th>
                   <th>Amount</th>
                   <th>Status</th>
                   <th>SDP</th>
@@ -144,9 +148,9 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                           </form>
                         ) : (
                           <div className="grid gap-1">
-                            <span className="text-xs uppercase text-ink-muted">SDP batch</span>
+                            <span className="text-xs uppercase text-ink-muted">SDP payment</span>
                             <Hash
-                              pendingLabel="Provider batch reference recorded"
+                              pendingLabel="Provider payment reference recorded"
                               value={batch.sdpBatchId}
                             />
                             <span className="mt-2 text-xs uppercase text-ink-muted">
@@ -174,7 +178,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
 
           <form action={createBatchAction} className="panel">
             <div className="panel-head">
-              <span className="panel-title">Create one-line batch</span>
+              <span className="panel-title">Create one-line payment</span>
               <Chip>Manual v1</Chip>
             </div>
             <div className="panel-body grid gap-4">
@@ -188,8 +192,8 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                 ) : null}
                 <div className="grid-2">
                   <div className="field">
-                    <label htmlFor="code">Batch reference label</label>
-                    <input id="code" name="code" defaultValue="PV-REFOREST-MAY26" />
+                    <label htmlFor="code">Payment reference label</label>
+                    <input id="code" name="code" defaultValue={suggestedBatchCode} />
                   </div>
                   <div className="field">
                     <label htmlFor="periodLabel">Period</label>
@@ -211,7 +215,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                     className="border border-rule bg-[var(--ops-surface)] px-4 py-3 text-sm text-ink-muted"
                     role="status"
                   >
-                    Daily USD/COP rate unavailable. Batch creation is paused until
+                    Daily USD/COP rate unavailable. Payment creation is paused until
                     the market-rate source is reachable.
                   </div>
                 )}
@@ -226,7 +230,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
 
         <div className="panel mt-4 overflow-x-auto">
           <div className="panel-head">
-            <span className="panel-title">{view.lineItemBatch.code} · line items</span>
+            <span className="panel-title">{view.lineItemBatch.code} · payment line items</span>
             <Chip tone="warn">partial settlement</Chip>
           </div>
           <table className="t min-w-[760px]">

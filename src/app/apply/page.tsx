@@ -37,7 +37,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
             <p className="section-sub">
               Approval grants scoped portal access only. If approved, the
               steward portal will ask for the first Stellar payout address
-              before any batch can be created. Funding approval and payout
+              before any payment can be created. Funding approval and payout
               execution remain separate admin-controlled steps.
             </p>
           </div>
@@ -176,7 +176,7 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                 [
                   "3",
                   "Payout address check",
-                  "After approval, the steward submits the first Stellar address from their portal. AYRA manually verifies it before any batch can be submitted.",
+                  "After approval, the steward submits the first Stellar address from their portal. AYRA manually verifies it before any payment can be submitted.",
                 ],
                 [
                   "4",

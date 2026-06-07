@@ -114,7 +114,7 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.ok(funding);
-    assert.match(funding.content, /visible batch volume:/i);
+    assert.match(funding.content, /visible payment volume:/i);
     assert.match(funding.content, /settled total:/i);
     assert.match(funding.content, /in flight total:/i);
     assert.match(funding.href ?? "", /\/projects\/providencia\/reforestation/);
@@ -319,7 +319,7 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.equal(response.status, "answered");
-    assert.match(response.answer, /Visible batch volume: 4,820 USDC/);
+    assert.match(response.answer, /Visible payment volume: 4,820 USDC/);
     assert.match(response.answer, /Crew wages: 4,820 USDC/);
     assert.doesNotMatch(response.answer, /mock-payment-/);
     assert.equal(response.citations[0]?.sourceId, "funding:providencia:reforestation");

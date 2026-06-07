@@ -33,7 +33,7 @@ export default async function AdminProofPage({ searchParams }: PageProps) {
           <div>
             <h1>Proof packs</h1>
             <p className="section-sub">
-              Select one verified batch and preview the public proof pack
+              Select one verified payment and preview the public proof pack
               generated from canonical records.
             </p>
           </div>
@@ -42,7 +42,7 @@ export default async function AdminProofPage({ searchParams }: PageProps) {
           <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_1fr]">
             <div className="panel">
               <div className="panel-head">
-                <span className="panel-title">Batch selector</span>
+                <span className="panel-title">Payment selector</span>
                 <Chip tone="info">{proofPackCountLabel}</Chip>
               </div>
               <div className="panel-body grid gap-2">
@@ -98,7 +98,7 @@ export default async function AdminProofPage({ searchParams }: PageProps) {
                 <div className="panel-body grid gap-5">
                   <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
                     <div>
-                      <div className="text-xs uppercase text-ink-muted">Selected batch</div>
+                      <div className="text-xs uppercase text-ink-muted">Selected payment</div>
                       <h2 className="mt-1 text-xl font-medium">{proof.batchCode}</h2>
                       <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
                         Public proof shows category-level USDC payments verified
@@ -174,7 +174,7 @@ export default async function AdminProofPage({ searchParams }: PageProps) {
             </div>
             <div className="panel-body">
               <p className="max-w-2xl text-sm leading-6 text-ink-muted">
-                Submitted or settled batches appear here after their public
+                Submitted or settled payments appear here after their public
                 receipt lines have verified USDC transaction metadata.
               </p>
             </div>

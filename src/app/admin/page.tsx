@@ -23,7 +23,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <h1>Operator console</h1>
             <p className="section-sub">
               Funding log, proposal queue, payout verification, moderation,
-              batch submission, proof packs, and audit-backed activity.
+              payment submission, proof packs, and audit-backed activity.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -45,7 +45,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <div className="stat-d">{session.state.initiatives.length} initiatives</div>
           </div>
           <div className="stat">
-            <div className="stat-k">Committed to batches</div>
+            <div className="stat-k">Committed to payments</div>
             <div className="stat-v">
               <Money amount={view.committed} />
             </div>

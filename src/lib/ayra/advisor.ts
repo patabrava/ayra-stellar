@@ -318,14 +318,14 @@ export function buildAdvisorSources(
       title: "AYRA public proof boundary",
       href: "/privacy",
       content:
-        "AYRA public surfaces show approved updates, project summaries, category-level spend, submitted or settled public batches, and proof links. AYRA public surfaces exclude contact data, file storage paths, wallet destinations, unsuccessful payment details, and operator-only reconciliation records.",
+        "AYRA public surfaces show approved updates, project summaries, category-level spend, submitted or settled public payments, and proof links. AYRA public surfaces exclude contact data, file storage paths, wallet destinations, unsuccessful payment details, and operator-only reconciliation records.",
     }),
     publicSource({
       id: "ayra:apply-flow",
       title: "AYRA application flow",
       href: "/apply",
       content:
-        "People apply to manage an AYRA track initiative from /apply. The application form asks for applicant name, email, track, initiative, scope, operational details, milestones, and Signal or phone. The applicant submits with Submit for review. AYRA then reviews the proposed track, initiative scope, and operational contact model before granting portal access. If approved, the steward portal asks for the first Stellar payout address before any funding batch can be created. Funding approval and payout execution remain separate admin-controlled steps.",
+        "People apply to manage an AYRA track initiative from /apply. The application form asks for applicant name, email, track, initiative, scope, operational details, milestones, and Signal or phone. The applicant submits with Submit for review. AYRA then reviews the proposed track, initiative scope, and operational contact model before granting portal access. If approved, the steward portal asks for the first Stellar payout address before any funding payment can be created. Funding approval and payout execution remain separate admin-controlled steps.",
     }),
     publicSource({
       id: "ayra:login-flow",
@@ -339,13 +339,13 @@ export function buildAdvisorSources(
       title: "AYRA admin and steward access",
       href: "/login",
       content:
-        "AYRA admin and steward portals are scoped access surfaces. Admin review covers applications, proposal approval or rejection, role promotion, payout-address verification, update moderation, and batch actions. Approved applicants can receive steward portal access for their scoped initiative. In the steward portal, a steward can submit public updates and submit the first Stellar payout address for AYRA verification. No funding batch can be created until the payout address is verified and locked.",
+        "AYRA admin and steward portals are scoped access surfaces. Admin review covers applications, proposal approval or rejection, role promotion, payout-address verification, update moderation, and payment actions. Approved applicants can receive steward portal access for their scoped initiative. In the steward portal, a steward can submit public updates and submit the first Stellar payout address for AYRA verification. No funding payment can be created until the payout address is verified and locked.",
     }),
     publicSource({
       id: "ayra:payment-language",
       title: "AYRA payment language",
       content:
-        "AYRA public payment labels use In flight for submitted batches and Cleared for settled batches. Funding numbers must come from public batch and line-item totals, not estimates.",
+        "AYRA public payment labels use In flight for submitted payments and Cleared for settled payments. Funding numbers must come from public payment and line-item totals, not estimates.",
     }),
     publicSource({
       id: "ayra:approved-projects",
@@ -357,7 +357,7 @@ export function buildAdvisorSources(
       title: "Stellar trace rules",
       href: "/proof/batch-reforest-mar26",
       content:
-        "Transaction hashes are public ledger references that help people trace a payment from the advisor, the proof pack, and the public project page into the Stellar explorer. A grantee should ask where the hash is shown, which proof pack it belongs to, and whether the batch is In flight or Cleared. Do not invent hidden recipient routing.",
+        "Transaction hashes are public ledger references that help people trace a payment from the advisor, the proof pack, and the public project page into the Stellar explorer. A grantee should ask where the hash is shown, which proof pack it belongs to, and whether the payment is In flight or Cleared. Do not invent hidden recipient routing.",
     }),
   ];
 
@@ -395,7 +395,7 @@ export function buildAdvisorSources(
             (batch) =>
               `${batch.periodLabel}: ${formatUsdc(batch.amountUsdc)} ${publicBatchLabel(batch.status)}`,
           )
-          .join("; ") || "No submitted or settled public batches yet.";
+          .join("; ") || "No submitted or settled public payments yet.";
       const categorySummary =
         project.spending
           .map((item) => `${item.category}: ${formatUsdc(item.amountUsdc)}`)
@@ -416,7 +416,7 @@ export function buildAdvisorSources(
           href: `/projects/${track.slug}/${initiative.slug}`,
           trackSlug: track.slug,
           initiativeSlug: initiative.slug,
-          content: `${initiative.name} funding in ${track.name}. Visible batch volume: ${formatUsdc(visibleTotal)}. Settled total: ${formatUsdc(settledTotal)}. In flight total: ${formatUsdc(inFlightTotal)}. Public batches: ${batchSummary}. Public category spend: ${categorySummary}.`,
+          content: `${initiative.name} funding in ${track.name}. Visible payment volume: ${formatUsdc(visibleTotal)}. Settled total: ${formatUsdc(settledTotal)}. In flight total: ${formatUsdc(inFlightTotal)}. Public payments: ${batchSummary}. Public category spend: ${categorySummary}.`,
         }),
         publicSource({
           id: `stellar:${track.slug}:${initiative.slug}`,
@@ -424,7 +424,7 @@ export function buildAdvisorSources(
           href: `/projects/${track.slug}/${initiative.slug}`,
           trackSlug: track.slug,
           initiativeSlug: initiative.slug,
-          content: `${initiative.name} Stellar tracing in ${track.name}. Transaction hashes are public references that can be watched from the proof pack or public project page. The hash identifies a payment record, the proof pack shows the batch context, and the Stellar explorer is the final public check for the chain record. Grantees can ask which batch the hash belongs to, whether the payment is In flight or Cleared, and where the proof link resolves.`,
+          content: `${initiative.name} Stellar tracing in ${track.name}. Transaction hashes are public references that can be watched from the proof pack or public project page. The hash identifies a payment record, the proof pack shows the payment context, and the Stellar explorer is the final public check for the chain record. Grantees can ask which payment the hash belongs to, whether the payment is In flight or Cleared, and where the proof link resolves.`,
         }),
       );
 
@@ -436,7 +436,7 @@ export function buildAdvisorSources(
             href: `/proof/${batch.id}`,
             trackSlug: track.slug,
             initiativeSlug: initiative.slug,
-            content: `${batch.code} is a public proof batch for ${initiative.name}. Period: ${batch.periodLabel}. Amount: ${formatUsdc(batch.amountUsdc)}. Public status: ${publicBatchLabel(batch.status)}. Sponsor: ${batch.sponsorName ?? "not published"}.`,
+            content: `${batch.code} is a public proof payment for ${initiative.name}. Period: ${batch.periodLabel}. Amount: ${formatUsdc(batch.amountUsdc)}. Public status: ${publicBatchLabel(batch.status)}. Sponsor: ${batch.sponsorName ?? "not published"}.`,
           }),
         );
       }
@@ -720,7 +720,7 @@ export function fallbackAdvisorAnswer(
   if (asksApplication && applicationSource) {
     return {
       answer:
-        "To make an application, go to /apply and fill out the initiative intake: applicant name, email, track, initiative, scope, operational details, milestones, and Signal or phone. Submit it with Submit for review. AYRA then runs admin review on the track, initiative scope, and contact model before granting scoped portal access. If the application is approved, the steward portal asks for the first Stellar payout address before any batch can be created.",
+        "To make an application, go to /apply and fill out the initiative intake: applicant name, email, track, initiative, scope, operational details, milestones, and Signal or phone. Submit it with Submit for review. AYRA then runs admin review on the track, initiative scope, and contact model before granting scoped portal access. If the application is approved, the steward portal asks for the first Stellar payout address before any payment can be created.",
       citations: [advisorCitation(applicationSource)],
       followups: [
         "What happens after I apply?",
@@ -748,7 +748,7 @@ export function fallbackAdvisorAnswer(
   if (asksPortalAccess && portalAccessSource) {
     return {
       answer:
-        "Portal access is scoped. Admins review applications, approve or reject proposals, promote roles, verify payout addresses, moderate updates, and manage batch actions. An approved applicant can receive steward portal access for their initiative. In the steward portal, the steward can submit public updates and submit the first Stellar payout address for AYRA verification; no funding batch can be created until that address is verified and locked.",
+        "Portal access is scoped. Admins review applications, approve or reject proposals, promote roles, verify payout addresses, moderate updates, and manage payment actions. An approved applicant can receive steward portal access for their initiative. In the steward portal, the steward can submit public updates and submit the first Stellar payout address for AYRA verification; no funding payment can be created until that address is verified and locked.",
       citations: [advisorCitation(portalAccessSource)],
       followups: [
         "How do I apply for steward access?",
@@ -790,7 +790,7 @@ export function fallbackAdvisorAnswer(
       ],
       followups: [
         "Show me the proof pack",
-        "Which batches are cleared?",
+        "Which payments are cleared?",
         "What does In flight mean?",
       ],
       status: "answered",
@@ -809,7 +809,7 @@ export function fallbackAdvisorAnswer(
       ],
       followups: [
         "Show me the proof pack",
-        "Which batch does this hash belong to?",
+        "Which payment does this hash belong to?",
         "Is this payment Cleared or In flight?",
       ],
       status: "answered",

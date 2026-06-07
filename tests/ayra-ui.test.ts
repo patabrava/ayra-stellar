@@ -84,11 +84,11 @@ describe("AYRA journey status banner", () => {
     assert.match(markup, /Application approved\./);
     assert.match(markup, /Steward access is active/);
     assert.match(markup, /Next step: the steward submits the first Stellar payout address/);
-    assert.match(markup, /No funding batch can be created until that address is verified/);
+    assert.match(markup, /No funding payment can be created until that address is verified/);
   });
 });
 
-describe("AYRA admin batch initiative target", () => {
+describe("AYRA admin payment initiative target", () => {
   const targets: BatchInitiativeTargetOption[] = [
     {
       id: "initiative-reforest",
@@ -110,7 +110,7 @@ describe("AYRA admin batch initiative target", () => {
     },
   ];
 
-  it("renders the selected initiative and active payout destination in the batch composer", () => {
+  it("renders the selected initiative and active payout destination in the payment composer", () => {
     const markup = renderToStaticMarkup(
       createElement(BatchInitiativeTarget, {
         defaultInitiativeId: "initiative-reforest",

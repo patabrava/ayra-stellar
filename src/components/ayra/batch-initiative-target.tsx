@@ -46,7 +46,7 @@ export function BatchInitiativeTarget({
   if (!target) {
     return (
       <div className="border border-rule bg-[var(--ops-surface)] px-4 py-3 text-sm text-ink-muted">
-        No initiatives are available for batch creation.
+        No initiatives are available for payment creation.
       </div>
     );
   }
@@ -114,7 +114,7 @@ export function BatchInitiativeTarget({
         disabled={!rateAvailable || !target.payoutAddress}
         type="submit"
       >
-        Create ready batch
+        Create ready payment
       </button>
     </div>
   );

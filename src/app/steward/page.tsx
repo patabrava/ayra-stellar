@@ -359,7 +359,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
           {currentBatch && currentProof ? (
             <div className="panel overflow-x-auto">
               <div className="panel-head">
-                <span className="panel-title">{currentProof.batchCode} · current batch</span>
+                <span className="panel-title">{currentProof.batchCode} · current payment</span>
                 <Chip tone={currentBatch.status === "settled" ? "ok" : "warn"}>
                   {currentProof.publicLabel}
                 </Chip>
@@ -409,7 +409,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
                   ) : (
                     <tr>
                       <td className="text-ink-muted" colSpan={6}>
-                        No line items are visible for this batch yet.
+                        No line items are visible for this payment yet.
                       </td>
                     </tr>
                   )}
@@ -419,15 +419,15 @@ export default async function StewardPage({ searchParams }: PageProps) {
           ) : (
               <div className="panel">
                 <div className="panel-head">
-                  <span className="panel-title">Current batch</span>
+                  <span className="panel-title">Current payment</span>
                   <Chip tone="info">Not submitted</Chip>
                 </div>
                 <div className="panel-body">
                   <p className="text-sm leading-6 text-ink-muted">
-                  No submitted payout batch exists for this initiative yet. That is
+                  No submitted payout payment exists for this initiative yet. That is
                   expected until AYRA verifies the first Stellar payout address.
                   You can still update milestones now; once the address is locked,
-                  the admin console can create the first batch.
+                  the admin console can create the first payment.
                   </p>
                 </div>
               </div>
@@ -435,7 +435,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
 
           <div className="panel mt-4">
             <div className="panel-head">
-              <span className="panel-title">Past batches</span>
+              <span className="panel-title">Past payments</span>
             </div>
             <div className="panel-body grid gap-3">
               {settledBatches.length > 0 ? (
@@ -456,8 +456,8 @@ export default async function StewardPage({ searchParams }: PageProps) {
                 ))
               ) : (
                 <p className="text-sm leading-6 text-ink-muted">
-                  No settled batches are visible for this initiative yet. Once the
-                  first batch clears, the proof link will appear here.
+                  No settled payments are visible for this initiative yet. Once the
+                  first payment clears, the proof link will appear here.
                 </p>
               )}
             </div>

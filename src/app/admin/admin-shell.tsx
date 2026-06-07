@@ -40,7 +40,7 @@ export function AdminShell({
           },
           {
             href: "/admin/batches",
-            label: "Batches",
+            label: "Payments",
             count: String(session.state.batches.length),
           },
           { href: "/admin/proof", label: "Proof packs" },

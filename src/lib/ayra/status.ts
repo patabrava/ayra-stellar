@@ -36,7 +36,7 @@ export function getApplicationSubmitStatus(
         tone: "ok",
         title: "Your application has been submitted.",
         body:
-          "AYRA has your application for review. An operator will review the track, initiative scope, and contact details before granting portal access. If approved, the steward portal will ask for the first Stellar payout address before any batch can be created.",
+          "AYRA has your application for review. An operator will review the track, initiative scope, and contact details before granting portal access. If approved, the steward portal will ask for the first Stellar payout address before any payment can be created.",
       };
     case "invalid":
       return {
@@ -70,7 +70,7 @@ export function getJourneyStatus(
       title: "You are signed in.",
       body:
         surface === "admin"
-          ? "Your operator session is active. You can review applications, submissions, payout addresses, and batch actions from this console."
+          ? "Your operator session is active. You can review applications, submissions, payout addresses, and payment actions from this console."
           : "Your portal session is active. You can submit updates and manage the payout-address verification step for your scoped initiative.",
     };
   }
@@ -149,7 +149,7 @@ export function getJourneyStatus(
         details: [
           "Steward access is active for the approved applicant account.",
           "Next step: the steward submits the first Stellar payout address in the steward portal.",
-          "No funding batch can be created until that address is verified and locked.",
+          "No funding payment can be created until that address is verified and locked.",
         ],
       };
     case "application-rejected":
@@ -160,13 +160,21 @@ export function getJourneyStatus(
         body:
           "The proposal stays out of the active registry and no steward or grantee-contact access was granted.",
       };
+    case "duplicate-batch-code":
+      return {
+        tone: "err",
+        label: "Duplicate code",
+        title: "That payment reference already exists.",
+        body:
+          "Use the suggested timestamped reference or enter a unique payment label before saving again.",
+      };
     case "payout-verified":
       return {
         tone: "ok",
         label: "Ready to fund",
         title: "Payout address verified.",
         body:
-          "The address is now locked. You can create a batch for this initiative once the line items are ready.",
+          "The address is now locked. You can create a payment for this initiative once the line items are ready.",
       };
     case "update-moderated":
       return {
@@ -179,8 +187,8 @@ export function getJourneyStatus(
     case "batch-created":
       return {
         tone: "info",
-        label: "Batch draft",
-        title: "Batch draft created.",
+        label: "Payment draft",
+        title: "Payment draft created.",
         body:
           "Add the line items you want to pay, then submit once the verified payout address is in place.",
       };
@@ -188,7 +196,7 @@ export function getJourneyStatus(
       return {
         tone: "info",
         label: "In flight",
-        title: "Batch sent to Stellar SDP.",
+        title: "Payment sent to Stellar SDP.",
         body:
           "AYRA is waiting on payment status sync and transaction hashes. The proof pack will update as settlement lands.",
       };
@@ -196,7 +204,7 @@ export function getJourneyStatus(
       return {
         tone: "ok",
         label: "Synced",
-        title: "Batch status synced.",
+        title: "Payment status synced.",
         body:
           "Payment states and hashes are refreshed across the proof pack and registry.",
       };
@@ -206,7 +214,7 @@ export function getJourneyStatus(
         label: "Blocked",
         title: "Verify a payout address first.",
         body:
-          "This initiative needs one verified Stellar address before a batch can be created or submitted.",
+          "This initiative needs one verified Stellar address before a payment can be created or submitted.",
       };
     case "promotion-error":
       return {
@@ -220,9 +228,9 @@ export function getJourneyStatus(
       return {
         tone: "err",
         label: "Line item issue",
-        title: "A batch line item needs attention.",
+        title: "A payment line item needs attention.",
         body:
-          "Check the batch items and payout address, then try again.",
+          "Check the payment items and payout address, then try again.",
       };
     case "allocation-error":
       return {
@@ -230,7 +238,7 @@ export function getJourneyStatus(
         label: "Allocation issue",
         title: "The allocation could not be saved.",
         body:
-          "Check the initiative, batch, and amount values, then retry.",
+          "Check the initiative, payment, and amount values, then retry.",
       };
     case "exchange-rate-error":
       return {
@@ -238,7 +246,7 @@ export function getJourneyStatus(
         label: "Rate unavailable",
         title: "AYRA could not load the daily USD/COP rate.",
         body:
-          "The one-line batch was not saved. Refresh the admin console and retry once the market-rate source is reachable.",
+          "The one-line payment was not saved. Refresh the admin console and retry once the market-rate source is reachable.",
       };
     case "receipt-error":
       return {
@@ -326,9 +334,9 @@ export function getLoginStatus(status?: string): LoginStatus | null {
     case "scope-required":
       return {
         tone: "err",
-        title: "Your account does not have steward access yet.",
+        title: "Apply to a track before steward access.",
         body:
-          "The email matched, but the role records do not include steward or grantee access for this portal.",
+          "This account is signed in, but it is not connected to an approved AYRA track application or steward/grantee role yet. Submit an application first, or use the approved account for your track.",
       };
     case "application-required":
       return {

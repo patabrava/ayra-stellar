@@ -160,7 +160,7 @@ export default async function Home({ searchParams }: PageProps) {
               <div className="place-line">Proof lanes</div>
               <p className="public-dim mt-4 max-w-md leading-7">
                 Active and planned Providencia workstreams with public updates,
-                batch receipts, and project-level proof when records are approved.
+                payment receipts, and project-level proof when records are approved.
               </p>
             </div>
             <div className="project-index-list">

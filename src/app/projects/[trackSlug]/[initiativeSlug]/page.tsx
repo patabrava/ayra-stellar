@@ -177,7 +177,7 @@ export default async function InitiativePage({ params }: PageProps) {
                 <div className="proof-rule-list">
                   <Chip tone="info">Category spend</Chip>
                   <Chip tone="ok">Approved updates</Chip>
-                  <Chip>Batch receipts</Chip>
+                  <Chip>Payment receipts</Chip>
                 </div>
                 <p className="public-dim text-sm leading-6">
                   Project pages show approved field updates and category spend,
@@ -185,11 +185,11 @@ export default async function InitiativePage({ params }: PageProps) {
                 </p>
               </section>
 
-              <section className="batch-volume" aria-label="Visible batch volume">
-                <span className="public-muted text-sm">Visible batch volume</span>
+              <section className="batch-volume" aria-label="Visible payment volume">
+                <span className="public-muted text-sm">Visible payment volume</span>
                 <strong>{formatUsdc(totalSubmitted)}</strong>
                 <span>
-                  Submitted and settled batches only. Drafts, failures, and
+                  Submitted and settled payments only. Drafts, failures, and
                   operational exceptions stay internal.
                 </span>
               </section>
@@ -250,7 +250,7 @@ export default async function InitiativePage({ params }: PageProps) {
               Receipts · {project.initiative.name}
             </h2>
             <p className="public-dim mt-2">
-              Batch-level proof from canonical records.
+              Payment-level proof from canonical records.
             </p>
           </div>
           {proof ? (
@@ -267,7 +267,7 @@ export default async function InitiativePage({ params }: PageProps) {
           <table className="t min-w-[720px] text-[var(--public-fg)]">
             <thead>
               <tr>
-                <th>Batch</th>
+                <th>Payment</th>
                 <th>Amount</th>
                 <th>Category</th>
                 <th>Local snapshot</th>
