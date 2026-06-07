@@ -79,6 +79,31 @@ test("admin submit actions always open success or error feedback modals", async 
   await expect(page.getByRole("dialog", { name: "The Stellar SDP step failed." })).toBeVisible();
 });
 
+test("admin payment confirmation can be dismissed without background refresh contention", async ({
+  page,
+}) => {
+  const refreshRequests: string[] = [];
+  page.on("request", (request) => {
+    const url = request.url();
+    if (url.includes("/admin/batches") && url.includes("_rsc=")) {
+      refreshRequests.push(url);
+    }
+  });
+
+  await page.goto("/admin/batches?status=demo-batch-submitted");
+  await expect(
+    page.getByRole("dialog", { name: "Payment sent to Stellar SDP." }),
+  ).toBeVisible();
+
+  refreshRequests.length = 0;
+  await page.waitForTimeout(1_000);
+  expect(refreshRequests).toHaveLength(0);
+
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/batches$/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
 test("admin one-line batch converts USDC and COP both ways", async ({ page }) => {
   await page.goto("/admin/batches");
   await expect(page.getByText("Daily market rate: 1 USD = 3,900.00 COP")).toBeVisible();

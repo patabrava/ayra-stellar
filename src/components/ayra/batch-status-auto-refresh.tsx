@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type BatchStatusAutoRefreshProps = {
   enabled: boolean;
@@ -13,9 +13,11 @@ export function BatchStatusAutoRefresh({
   intervalMs = 15000,
 }: BatchStatusAutoRefreshProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const statusModalActive = searchParams.has("status");
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || statusModalActive) return;
 
     const refresh = () => {
       if (document.visibilityState === "visible") {
@@ -31,7 +33,7 @@ export function BatchStatusAutoRefresh({
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [enabled, intervalMs, router]);
+  }, [enabled, intervalMs, router, statusModalActive]);
 
   return null;
 }

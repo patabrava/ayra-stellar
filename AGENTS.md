@@ -215,3 +215,4 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Before SDP submission, verify the destination account has the configured USDC trustline; a verified Stellar address with only XLM will create a failed on-chain payment, not a slow settlement.
 - Steward payout-address submission must check Horizon immediately and surface USDC trustline readiness in `/steward`; saving an address alone is never equivalent to payout readiness.
 - Hosted SDP `PATCH /payments/retry` currently rejects API-key auth because the handler still requires a JWT token in context; recover failed payments with a dashboard JWT or a verified manual settlement path, not with the verifier API key alone.
+- Admin submitted-payment polling must pause while a `status` modal query is active; do not refresh `/admin/batches?status=...` until the operator dismisses the confirmation.
