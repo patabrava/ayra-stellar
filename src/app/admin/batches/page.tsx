@@ -21,6 +21,7 @@ import {
 } from "@/components/ayra/ui";
 import {
   createBatchAction,
+  resolveAttributionExceptionAction,
   submitBatchAction,
   syncBatchStatusAction,
 } from "@/lib/ayra/actions";
@@ -336,8 +337,10 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
               <tr>
                 <th>Batch</th>
                 <th>Line item</th>
-                <th>Status</th>
+                <th>Receipt</th>
+                <th>Attribution</th>
                 <th>Private receipt</th>
+                <th>Exception path</th>
               </tr>
             </thead>
             <tbody>
@@ -358,9 +361,37 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                       </Chip>
                     </td>
                     <td>
+                      <Chip
+                        tone={item.attributionMatchStatus === "matched" ? "ok" : "warn"}
+                      >
+                        {item.attributionMatchStatus ?? "not checked"}
+                      </Chip>
+                    </td>
+                    <td>
                       <Chip tone={item.privateReceiptPath ? "ok" : "warn"}>
                         {item.privateReceiptPath ? "attached" : "missing"}
                       </Chip>
+                    </td>
+                    <td className="min-w-[260px]">
+                      {item.attributionMatchStatus === "unmatched" ? (
+                        <form action={resolveAttributionExceptionAction} className="grid gap-2">
+                          <input name="entityId" type="hidden" value={item.id} />
+                          <label className="text-xs text-ink-muted" htmlFor={`resolution-${item.id}`}>
+                            {item.exceptionCode ?? "attribution mismatch"}
+                          </label>
+                          <input
+                            defaultValue={item.resolutionAction ?? "Link the verified source record."}
+                            id={`resolution-${item.id}`}
+                            name="resolutionAction"
+                            required
+                          />
+                          <button className="btn" type="submit">Mark matched</button>
+                        </form>
+                      ) : (
+                        <span className="text-sm text-ink-muted">
+                          {item.resolutionAction ?? "No attribution exception."}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );

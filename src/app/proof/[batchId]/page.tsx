@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Download, ShieldCheck } from "lucide-react";
 
 import { Hash } from "@/components/ayra/ui";
 import { loadPublicAyraState } from "@/lib/ayra/data";
@@ -21,6 +21,9 @@ export default async function ProofPage({ params }: PageProps) {
   }
 
   const total = proof.receipts.reduce((sum, item) => sum + item.amountUsdc, 0);
+  const matched = proof.receipts.filter(
+    (receipt) => receipt.attributionMatchStatus === "matched",
+  ).length;
 
   return (
     <main className="public-proof min-h-screen bg-[var(--public-bg)] text-[var(--public-fg)]">
@@ -44,7 +47,12 @@ export default async function ProofPage({ params }: PageProps) {
                 {proof.sponsorName ? ` · ${proof.sponsorName}` : ""}
               </p>
             </div>
-            <div className="proof-stamp">{proof.publicLabel}</div>
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <Link className="btn ghost" href={`/proof/${proof.batchId}/export`}>
+                <Download className="h-4 w-4" /> Export CSV
+              </Link>
+              <div className="proof-stamp">{proof.publicLabel}</div>
+            </div>
           </div>
 
           <div className="proof-ledger-strip" aria-label="Proof pack summary">
@@ -57,8 +65,8 @@ export default async function ProofPage({ params }: PageProps) {
               <strong>{proof.receipts.length}</strong>
             </div>
             <div className="proof-ledger-cell">
-              <span>Source</span>
-              <strong>Canonical DB</strong>
+              <span>Attribution matched</span>
+              <strong>{matched} / {proof.receipts.length}</strong>
             </div>
           </div>
 
@@ -71,6 +79,7 @@ export default async function ProofPage({ params }: PageProps) {
                     <th>Category</th>
                     <th>Amount</th>
                     <th>Local</th>
+                    <th>Attribution</th>
                     <th>Payment proof</th>
                   </tr>
                 </thead>
@@ -83,6 +92,12 @@ export default async function ProofPage({ params }: PageProps) {
                       </td>
                       <td>
                         {formatLocal(receipt.localAmount, receipt.localCurrency)}
+                      </td>
+                      <td>
+                        <div>{receipt.nodeCode ?? "Pending"} · {receipt.milestoneCode ?? "Pending"}</div>
+                        <div className="mt-1 text-xs opacity-70">
+                          {receipt.sourceRecordExternalId ?? "Source record pending"}
+                        </div>
                       </td>
                       <td>
                         <Hash value={receipt.transactionHash} />

@@ -275,18 +275,35 @@ What to look for:
 1. Open the proof page for the settled batch.
 2. If the app gives you a proof link, click it.
 3. Confirm the page loads without admin access.
+4. Download the public CSV export.
 
 Expected result:
 
 - You see a public proof pack.
 - You see category-level receipts.
 - You see a payment proof hash.
+- You see source-record, node, track, milestone, recipient-category, and matched-attribution fields for traced receipts.
+- The CSV contains the same traced batch and transaction reference.
 - You do not see private recipient data or raw receipt file paths.
 
 Also confirm:
 
 - The project page shows the settled batch in the receipts section.
 - The proof page still looks public, not operator-only.
+- The public HTML and CSV do not contain private receipt paths, recipient names, internal notes, or failed-payment details.
+
+## Step 14: Verify Tranche 2 Reconciliation
+
+1. Open `/admin/batches` with an admin session.
+2. Find the `Reconciliation` table.
+3. Confirm the traced Providencia batch is marked `matched`.
+4. If an item is `unmatched`, review its exception code and next-action text, correct the source link, and use `Mark matched`.
+
+Expected result:
+
+- The table distinguishes receipt status from attribution match status.
+- Unmatched records expose an operator-only correction path.
+- Resolving an exception records the operator action and refreshes the proof projection.
 
 ## Pass Criteria
 

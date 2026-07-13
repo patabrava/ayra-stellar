@@ -62,6 +62,10 @@ const idActionSchema = z.object({
   entityId: z.string().trim().min(1),
 });
 
+const attributionResolutionSchema = idActionSchema.extend({
+  resolutionAction: z.string().trim().min(8).max(500),
+});
+
 const reviewMilestoneSubmissionSchema = idActionSchema.extend({
   status: z.enum(["approved", "rejected"]),
   reviewNote: z.string().trim().optional(),
@@ -1239,6 +1243,45 @@ export async function syncBatchStatusAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/batches");
   redirectWithStatus("/admin/batches", "batch-synced");
+}
+
+export async function resolveAttributionExceptionAction(formData: FormData) {
+  const session = await requireAdminSession("/admin/batches");
+  const parsed = attributionResolutionSchema.safeParse({
+    entityId: text(formData, "entityId"),
+    resolutionAction: text(formData, "resolutionAction"),
+  });
+  if (!parsed.success) redirectWithStatus("/admin/batches", "invalid");
+
+  const supabase = createSupabaseAdminClient();
+  const { data: item, error } = await supabase
+    .from("reconciliation_items")
+    .update({
+      attribution_match_status: "matched",
+      exception_code: null,
+      resolution_action: parsed.data.resolutionAction,
+    })
+    .eq("id", parsed.data.entityId)
+    .eq("attribution_match_status", "unmatched")
+    .select("id,batch_id")
+    .maybeSingle();
+  if (error || !item) {
+    redirectWithStatus("/admin/batches", "reconciliation-error");
+  }
+
+  await insertAudit(supabase, session, {
+    action: "attribution.exception_resolved",
+    entityType: "reconciliation_item",
+    entityId: item.id,
+    after: {
+      batchId: item.batch_id,
+      attributionMatchStatus: "matched",
+      resolutionAction: parsed.data.resolutionAction,
+    },
+  });
+  revalidatePath("/admin/batches");
+  revalidatePath(`/proof/${item.batch_id}`);
+  redirectWithStatus("/admin/batches", "attribution-resolved");
 }
 
 async function promoteApplication(

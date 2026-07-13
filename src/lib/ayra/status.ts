@@ -272,6 +272,14 @@ export function getJourneyStatus(
         body:
           "Payment states and hashes are refreshed across the proof pack and registry.",
       };
+    case "attribution-resolved":
+      return {
+        tone: "ok",
+        label: "Attribution matched",
+        title: "The attribution exception is resolved.",
+        body:
+          "The source record and local attribution now resolve for this line item. The public export will show the matched state without exposing operator notes or private receipts.",
+      };
     case "payout-required":
       return {
         tone: "warn",

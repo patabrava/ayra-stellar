@@ -186,6 +186,13 @@ export type BatchLineItem = {
   paymentAssetIssuer?: string;
   paymentAssetAmount?: number;
   recipientName?: string;
+  sourceRecordExternalId?: string;
+  externalId?: string;
+  nodeCode?: string;
+  trackCode?: string;
+  milestoneCode?: string;
+  recipientCategory?: string;
+  attributionMatchStatus?: "matched" | "unmatched";
 };
 
 export type FundingAllocation = {
@@ -213,6 +220,9 @@ export type ReconciliationItem = {
   createdByProfileId: string;
   createdAt: string;
   reconciledAt?: string;
+  attributionMatchStatus?: "matched" | "unmatched";
+  exceptionCode?: string;
+  resolutionAction?: string;
 };
 
 export type SdpSyncEvent = {
@@ -346,6 +356,13 @@ export type ProofPack = {
     assetCode: "USDC";
     assetIssuer?: string;
     assetAmount: number;
+    sourceRecordExternalId?: string;
+    externalId?: string;
+    nodeCode?: string;
+    trackCode?: string;
+    milestoneCode?: string;
+    recipientCategory?: string;
+    attributionMatchStatus?: "matched" | "unmatched";
   }>;
 };
 
@@ -1905,8 +1922,45 @@ export function getProofPack(state: AyraState, batchId: string): ProofPack {
         assetCode: lineItem.paymentAssetCode!,
         assetIssuer: lineItem.paymentAssetIssuer,
         assetAmount: lineItem.paymentAssetAmount!,
-    })),
+        sourceRecordExternalId: lineItem.sourceRecordExternalId,
+        externalId: lineItem.externalId,
+        nodeCode: lineItem.nodeCode,
+        trackCode: lineItem.trackCode,
+        milestoneCode: lineItem.milestoneCode,
+        recipientCategory: lineItem.recipientCategory,
+        attributionMatchStatus: lineItem.attributionMatchStatus,
+      })),
   };
+}
+
+export function summarizeAttributionReconciliation(
+  state: AyraState,
+  batchId: string,
+) {
+  const items = state.reconciliationItems.filter((item) => item.batchId === batchId);
+  const matched = items.filter(
+    (item) => item.attributionMatchStatus === "matched",
+  ).length;
+  const unmatched = items.filter(
+    (item) => item.attributionMatchStatus === "unmatched",
+  ).length;
+  return { matched, unmatched, total: matched + unmatched };
+}
+
+export function resolveAttributionException(
+  state: AyraState,
+  reconciliationItemId: string,
+  resolutionAction: string,
+) {
+  const next = cloneState(state);
+  const item = next.reconciliationItems.find(
+    (entry) => entry.id === reconciliationItemId,
+  );
+  if (!item) throw new Error("Reconciliation item not found.");
+  item.attributionMatchStatus = "matched";
+  item.exceptionCode = undefined;
+  item.resolutionAction = resolutionAction.trim();
+  return next;
 }
 
 export function getCurrentProofBatch(batches: Batch[]) {

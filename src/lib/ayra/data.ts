@@ -168,6 +168,13 @@ type ReceiptRow = {
   payment_asset_code: string | null;
   payment_asset_issuer: string | null;
   payment_asset_amount: number | string | null;
+  source_record_external_id: string | null;
+  line_item_external_id: string | null;
+  node_code: string | null;
+  track_code: string | null;
+  milestone_code: string | null;
+  recipient_category: string | null;
+  attribution_match_status: string | null;
 };
 
 type ProfileRow = {
@@ -265,6 +272,12 @@ type LineItemRow = {
   payment_asset_issuer: string | null;
   payment_asset_amount: number | string | null;
   private_recipient_name: string | null;
+  source_records: { external_id: string } | null;
+  external_id: string | null;
+  node_code: string | null;
+  track_code: string | null;
+  milestone_code: string | null;
+  recipient_category: string | null;
 };
 
 type FundingAllocationRow = {
@@ -292,6 +305,9 @@ type ReconciliationRow = {
   created_by_profile_id: string;
   created_at: string;
   reconciled_at: string | null;
+  attribution_match_status: string | null;
+  exception_code: string | null;
+  resolution_action: string | null;
 };
 
 type SdpSyncEventRow = {
@@ -440,7 +456,7 @@ async function loadPublicAyraStateFromClient(
     supabase
       .from("public_batch_receipts")
       .select(
-        "line_item_id,batch_id,batch_code,period_label,batch_status,initiative_name,sponsor_name,category,amount_usdc,local_amount,local_currency,line_item_status,transaction_hash,payment_asset_code,payment_asset_issuer,payment_asset_amount",
+        "line_item_id,batch_id,batch_code,period_label,batch_status,initiative_name,sponsor_name,category,amount_usdc,local_amount,local_currency,line_item_status,transaction_hash,payment_asset_code,payment_asset_issuer,payment_asset_amount,source_record_external_id,line_item_external_id,node_code,track_code,milestone_code,recipient_category,attribution_match_status",
       ),
   ]);
 
@@ -552,7 +568,7 @@ async function loadOperatorAyraStateFromClient(
     supabase
       .from("batch_line_items")
       .select(
-        "id,batch_id,category,amount_usdc,local_amount,local_currency,status,sdp_payment_id,transaction_hash,payment_asset_code,payment_asset_issuer,payment_asset_amount,private_recipient_name",
+        "id,batch_id,category,amount_usdc,local_amount,local_currency,status,sdp_payment_id,transaction_hash,payment_asset_code,payment_asset_issuer,payment_asset_amount,private_recipient_name,source_records(external_id),external_id,node_code,track_code,milestone_code,recipient_category",
       ),
     supabase
       .from("funding_allocations")
@@ -562,7 +578,7 @@ async function loadOperatorAyraStateFromClient(
     supabase
       .from("reconciliation_items")
       .select(
-        "id,batch_id,line_item_id,status,private_receipt_path,note,created_by_profile_id,created_at,reconciled_at",
+        "id,batch_id,line_item_id,status,private_receipt_path,note,created_by_profile_id,created_at,reconciled_at,attribution_match_status,exception_code,resolution_action",
       ),
     supabase
       .from("sdp_sync_events")
@@ -815,6 +831,15 @@ function mapReceiptLineItem(row: ReceiptRow): BatchLineItem {
     paymentAssetIssuer: row.payment_asset_issuer ?? undefined,
     paymentAssetAmount:
       row.payment_asset_amount == null ? undefined : numeric(row.payment_asset_amount),
+    sourceRecordExternalId: row.source_record_external_id ?? undefined,
+    externalId: row.line_item_external_id ?? undefined,
+    nodeCode: row.node_code ?? undefined,
+    trackCode: row.track_code ?? undefined,
+    milestoneCode: row.milestone_code ?? undefined,
+    recipientCategory: row.recipient_category ?? undefined,
+    attributionMatchStatus:
+      row.attribution_match_status === "matched" ? "matched" :
+      row.attribution_match_status === "unmatched" ? "unmatched" : undefined,
   };
 }
 
@@ -834,6 +859,12 @@ function mapLineItem(row: LineItemRow): BatchLineItem {
     paymentAssetAmount:
       row.payment_asset_amount == null ? undefined : numeric(row.payment_asset_amount),
     recipientName: row.private_recipient_name ?? undefined,
+    sourceRecordExternalId: row.source_records?.external_id ?? undefined,
+    externalId: row.external_id ?? undefined,
+    nodeCode: row.node_code ?? undefined,
+    trackCode: row.track_code ?? undefined,
+    milestoneCode: row.milestone_code ?? undefined,
+    recipientCategory: row.recipient_category ?? undefined,
   };
 }
 
@@ -873,6 +904,11 @@ function mapReconciliationItem(row: ReconciliationRow): ReconciliationItem {
     createdByProfileId: row.created_by_profile_id,
     createdAt: row.created_at,
     reconciledAt: row.reconciled_at ?? undefined,
+    attributionMatchStatus:
+      row.attribution_match_status === "matched" ? "matched" :
+      row.attribution_match_status === "unmatched" ? "unmatched" : undefined,
+    exceptionCode: row.exception_code ?? undefined,
+    resolutionAction: row.resolution_action ?? undefined,
   };
 }
 
