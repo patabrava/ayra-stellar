@@ -168,13 +168,13 @@ type ReceiptRow = {
   payment_asset_code: string | null;
   payment_asset_issuer: string | null;
   payment_asset_amount: number | string | null;
-  source_record_external_id: string | null;
-  line_item_external_id: string | null;
-  node_code: string | null;
-  track_code: string | null;
-  milestone_code: string | null;
-  recipient_category: string | null;
-  attribution_match_status: string | null;
+  source_record_external_id?: string | null;
+  line_item_external_id?: string | null;
+  node_code?: string | null;
+  track_code?: string | null;
+  milestone_code?: string | null;
+  recipient_category?: string | null;
+  attribution_match_status?: string | null;
 };
 
 type ProfileRow = {
@@ -272,12 +272,12 @@ type LineItemRow = {
   payment_asset_issuer: string | null;
   payment_asset_amount: number | string | null;
   private_recipient_name: string | null;
-  source_records: { external_id: string } | null;
-  external_id: string | null;
-  node_code: string | null;
-  track_code: string | null;
-  milestone_code: string | null;
-  recipient_category: string | null;
+  source_records?: Array<{ external_id: string }> | null;
+  external_id?: string | null;
+  node_code?: string | null;
+  track_code?: string | null;
+  milestone_code?: string | null;
+  recipient_category?: string | null;
 };
 
 type FundingAllocationRow = {
@@ -305,9 +305,9 @@ type ReconciliationRow = {
   created_by_profile_id: string;
   created_at: string;
   reconciled_at: string | null;
-  attribution_match_status: string | null;
-  exception_code: string | null;
-  resolution_action: string | null;
+  attribution_match_status?: string | null;
+  exception_code?: string | null;
+  resolution_action?: string | null;
 };
 
 type SdpSyncEventRow = {
@@ -859,7 +859,7 @@ function mapLineItem(row: LineItemRow): BatchLineItem {
     paymentAssetAmount:
       row.payment_asset_amount == null ? undefined : numeric(row.payment_asset_amount),
     recipientName: row.private_recipient_name ?? undefined,
-    sourceRecordExternalId: row.source_records?.external_id ?? undefined,
+    sourceRecordExternalId: row.source_records?.[0]?.external_id ?? undefined,
     externalId: row.external_id ?? undefined,
     nodeCode: row.node_code ?? undefined,
     trackCode: row.track_code ?? undefined,
