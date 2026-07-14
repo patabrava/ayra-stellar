@@ -1,3 +1,5 @@
+import type { StellarNetwork } from "@/lib/ayra/stellar-network";
+
 export type Role = "admin" | "steward" | "grantee_contact" | "applicant";
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 export type UpdateStatus = "draft" | "pending" | "approved" | "rejected";
@@ -92,6 +94,7 @@ export type PayoutAddress = {
   id: string;
   initiativeId: string;
   address: string;
+  stellarNetwork: StellarNetwork;
   status: PayoutAddressStatus;
   submittedByProfileId: string;
   submittedAt: string;
@@ -162,6 +165,7 @@ export type Batch = {
   sponsorId?: string;
   code: string;
   periodLabel: string;
+  stellarNetwork: StellarNetwork;
   paymentKind: PaymentKind;
   milestoneSubmissionId?: string;
   status: BatchStatus;
@@ -345,6 +349,7 @@ export type ProofPack = {
   trackSlug: string;
   sponsorName?: string;
   periodLabel: string;
+  stellarNetwork: StellarNetwork;
   publicLabel: "In flight" | "Cleared";
   receipts: Array<{
     id: string;
@@ -371,6 +376,7 @@ export type FundingBatchInput = {
   initiativeId: string;
   code: string;
   periodLabel: string;
+  stellarNetwork?: StellarNetwork;
   sponsorId?: string;
   paymentKind?: PaymentKind;
   milestoneSubmissionId?: string;
@@ -493,10 +499,15 @@ function requireInitiativeAccess(
   }
 }
 
-function requireVerifiedPayoutAddress(state: AyraState, initiativeId: string) {
+function requireVerifiedPayoutAddress(
+  state: AyraState,
+  initiativeId: string,
+  stellarNetwork: StellarNetwork,
+) {
   const address = state.payoutAddresses.find(
     (item) =>
       item.initiativeId === initiativeId &&
+      item.stellarNetwork === stellarNetwork &&
       (item.status === "verified" || item.status === "locked"),
   );
   if (!address) {
@@ -677,6 +688,7 @@ export function createDemoState(): AyraState {
       sponsorId: "sponsor-climate-future",
       code: "PV-REFOREST-APR26",
       periodLabel: "April 2026",
+      stellarNetwork: "testnet",
       paymentKind: "normal",
       milestoneSubmissionId: "milestone-submission-reforest-apr26",
       status: "submitted",
@@ -691,6 +703,7 @@ export function createDemoState(): AyraState {
       sponsorId: "sponsor-audi",
       code: "PV-REFOREST-MAR26",
       periodLabel: "March 2026",
+      stellarNetwork: "testnet",
       paymentKind: "normal",
       milestoneSubmissionId: "milestone-submission-reforest-mar26",
       status: "settled",
@@ -705,6 +718,7 @@ export function createDemoState(): AyraState {
       initiativeId: "initiative-reforest",
       code: "PV-REFOREST-FEB26",
       periodLabel: "February 2026",
+      stellarNetwork: "testnet",
       paymentKind: "normal",
       milestoneSubmissionId: "milestone-submission-reforest-feb26",
       status: "settled",
@@ -719,6 +733,7 @@ export function createDemoState(): AyraState {
       initiativeId: "initiative-amazonas-corridor",
       code: "AMZ-CORRIDOR-APR26",
       periodLabel: "April 2026",
+      stellarNetwork: "testnet",
       paymentKind: "advance",
       status: "submitted",
       createdByProfileId: "profile-admin",
@@ -792,6 +807,7 @@ export function createDemoState(): AyraState {
         id: "payout-reforest",
         initiativeId: "initiative-reforest",
         address: "GBLEIDYECOPARQUEIRONWOODPROVIDENCIASTELLAR3RS9KQ4MWL2VTYGB7",
+        stellarNetwork: "testnet",
         status: "locked",
         submittedByProfileId: "profile-leidy",
         submittedAt: "2026-02-12T10:00:00.000Z",
@@ -804,6 +820,7 @@ export function createDemoState(): AyraState {
         id: "payout-sterilization",
         initiativeId: "initiative-sterilization",
         address: "GBVETPROVIDENCIASTERILIZATIONSTELLAR7K9F000000000000",
+        stellarNetwork: "testnet",
         status: "pending",
         submittedByProfileId: "profile-applicant",
         submittedAt: "2026-04-30T18:42:00.000Z",
@@ -1224,6 +1241,7 @@ export function approveApplication(
     id: idFor("payout", initiative.code),
     initiativeId: initiative.id,
     address: input.payoutAddress,
+    stellarNetwork: "testnet",
     status: "pending",
     submittedByProfileId: profile.id,
     submittedAt: stamp(next.payoutAddresses.length),
@@ -1306,12 +1324,16 @@ export function submitPayoutAddress(
     actorProfileId: string;
     initiativeId: string;
     address: string;
+    stellarNetwork?: StellarNetwork;
   },
 ) {
   requireInitiativeAccess(state, input.actorProfileId, input.initiativeId);
   const next = cloneState(state);
+  const stellarNetwork = input.stellarNetwork ?? "testnet";
   next.payoutAddresses = next.payoutAddresses.map((item) =>
-    item.initiativeId === input.initiativeId && item.status !== "rejected"
+    item.initiativeId === input.initiativeId &&
+    item.stellarNetwork === stellarNetwork &&
+    item.status !== "rejected"
       ? { ...item, status: "rejected" }
       : item,
   );
@@ -1320,6 +1342,7 @@ export function submitPayoutAddress(
     id: idFor("payout", `${input.initiativeId}-${next.payoutAddresses.length + 1}`),
     initiativeId: input.initiativeId,
     address: input.address,
+    stellarNetwork,
     status: "pending",
     submittedByProfileId: input.actorProfileId,
     submittedAt: stamp(next.payoutAddresses.length),
@@ -1356,6 +1379,7 @@ export function verifyPayoutAddress(
   next.payoutAddresses.forEach((item) => {
     if (
       item.initiativeId === payoutAddress.initiativeId &&
+      item.stellarNetwork === payoutAddress.stellarNetwork &&
       item.id !== payoutAddress.id &&
       item.status !== "rejected"
     ) {
@@ -1571,7 +1595,8 @@ export function approvedUnusedMilestoneSubmissions(
 
 export function createFundingBatch(state: AyraState, input: FundingBatchInput) {
   requireAdmin(state, input.actorProfileId);
-  requireVerifiedPayoutAddress(state, input.initiativeId);
+  const stellarNetwork = input.stellarNetwork ?? "testnet";
+  requireVerifiedPayoutAddress(state, input.initiativeId, stellarNetwork);
   const paymentKind = input.paymentKind ?? "normal";
   let milestoneSubmissionId: string | undefined;
   if (paymentKind === "normal") {
@@ -1602,6 +1627,7 @@ export function createFundingBatch(state: AyraState, input: FundingBatchInput) {
     sponsorId: input.sponsorId,
     code: input.code,
     periodLabel: input.periodLabel,
+    stellarNetwork,
     paymentKind,
     milestoneSubmissionId,
     status: "ready",
@@ -1693,7 +1719,7 @@ export function submitBatchToSdp(
   if (batch.status !== "ready") {
     throw new Error("Only ready batches can be submitted to SDP.");
   }
-  requireVerifiedPayoutAddress(next, batch.initiativeId);
+  requireVerifiedPayoutAddress(next, batch.initiativeId, batch.stellarNetwork);
 
   const lineItems = next.batchLineItems.filter(
     (item) => item.batchId === batch.id,
@@ -1910,6 +1936,7 @@ export function getProofPack(state: AyraState, batchId: string): ProofPack {
       state.tracks.find((item) => item.id === initiative.trackId)?.slug ?? "providencia",
     sponsorName: state.sponsors.find((item) => item.id === batch.sponsorId)?.name,
     periodLabel: batch.periodLabel,
+    stellarNetwork: batch.stellarNetwork,
     publicLabel: batch.status === "settled" ? "Cleared" : "In flight",
     receipts: publicProofLineItems(state, batch.id)
       .map((lineItem) => ({

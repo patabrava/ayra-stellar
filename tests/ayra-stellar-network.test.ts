@@ -6,6 +6,7 @@ import {
   STELLAR_TESTNET_USDC_ISSUER,
   getConfiguredStellarNetwork,
   getStellarExpertTransactionUrl,
+  requireMainnetPaymentsEnabled,
   resolveStellarNetworkConfig,
 } from "../src/lib/ayra/stellar-network";
 
@@ -66,5 +67,18 @@ describe("AYRA Stellar network configuration", () => {
       `https://stellar.expert/explorer/public/tx/${hash}`,
     );
     assert.equal(getStellarExpertTransactionUrl("mock-payment", "pubnet"), null);
+  });
+
+  it("keeps pubnet submission behind an explicit kill switch", () => {
+    assert.doesNotThrow(() => requireMainnetPaymentsEnabled("testnet", {}));
+    assert.throws(
+      () => requireMainnetPaymentsEnabled("pubnet", {}),
+      /Mainnet payments are disabled/,
+    );
+    assert.doesNotThrow(() =>
+      requireMainnetPaymentsEnabled("pubnet", {
+        AYRA_MAINNET_PAYMENTS_ENABLED: "1",
+      }),
+    );
   });
 });

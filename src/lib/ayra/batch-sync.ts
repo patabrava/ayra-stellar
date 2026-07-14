@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
-  createSdpGateway,
+  createSdpGatewayForNetwork,
   SdpGatewayError,
   type SdpGateway,
   type SdpGatewayEvent,
@@ -13,12 +13,18 @@ import {
   type StellarUsdcProof,
   type StellarUsdcProofInput,
 } from "@/lib/ayra/stellar-proof";
+import {
+  requireStellarNetwork,
+  resolveStellarNetworkConfig,
+  type StellarNetwork,
+} from "@/lib/ayra/stellar-network";
 
 type BatchRow = {
   id: string;
   initiative_id: string;
   code: string;
   sdp_batch_id: string | null;
+  stellar_network?: string | null;
 };
 
 type LineItemRow = {
@@ -53,6 +59,7 @@ export async function settleLineItemsWithVerifiedPayments(input: {
   expectedUsdcIssuer?: string;
   expectedDestination: string;
   horizonUrl?: string;
+  network?: StellarNetwork;
   verifyPayment?: VerifyPayment;
 }) {
   const verifiedPayments = new Map<string, {
@@ -61,28 +68,22 @@ export async function settleLineItemsWithVerifiedPayments(input: {
   }>();
   const events: SdpGatewayEvent[] = [];
   const verifyPayment = input.verifyPayment ?? verifyStellarUsdcPayment;
+  const network = input.network ?? "testnet";
+  const networkConfig = resolveStellarNetworkConfig(network, {
+    STELLAR_USDC_ISSUER: input.expectedUsdcIssuer,
+    STELLAR_HORIZON_URL: input.horizonUrl,
+  });
 
   for (const payment of input.payments) {
     const lineItem = input.lineItems.find((item) => item.id === payment.lineItemId);
     if (!lineItem) continue;
-    if (!input.expectedUsdcIssuer) {
-      events.push({
-        provider: "stellar-sdp",
-        action: "sync_status",
-        status: "error",
-        externalId: payment.transactionHash,
-        message: "Missing STELLAR_USDC_ISSUER for USDC proof verification",
-      });
-      continue;
-    }
-
     try {
       const proof = await verifyPayment({
         transactionHash: payment.transactionHash,
         expectedAmount: Number(lineItem.amount_usdc),
-        expectedIssuer: input.expectedUsdcIssuer,
+        expectedIssuer: networkConfig.usdcIssuer,
         expectedDestination: input.expectedDestination,
-        horizonUrl: input.horizonUrl,
+        horizonUrl: networkConfig.horizonUrl,
       });
       verifiedPayments.set(payment.lineItemId, {
         transactionHash: payment.transactionHash,
@@ -136,7 +137,7 @@ export async function syncSubmittedBatches(
 ) {
   const { data: batches, error } = await supabase
     .from("funding_batches")
-    .select("id,initiative_id,code,sdp_batch_id")
+    .select("id,initiative_id,code,sdp_batch_id,stellar_network")
     .eq("status", "submitted")
     .order("submitted_at", { ascending: true })
     .limit(options.limit ?? 20);
@@ -152,8 +153,10 @@ export async function syncSubmittedBatches(
 export async function syncSubmittedBatch(
   supabase: SupabaseClient,
   batch: BatchRow,
-  gateway: SdpGateway = createSdpGateway(),
+  gateway?: SdpGateway,
 ) {
+  const network = requireStellarNetwork(batch.stellar_network ?? "testnet");
+  const activeGateway = gateway ?? createSdpGatewayForNetwork(network);
   const { data: lineItems, error: lineItemError } = await supabase
     .from("batch_line_items")
     .select("id,category,amount_usdc,sdp_payment_id")
@@ -162,12 +165,16 @@ export async function syncSubmittedBatch(
     return { batchId: batch.id, status: "line-item-error" as const };
   }
 
-  const destination = await loadSdpDestination(supabase, batch.initiative_id);
+  const destination = await loadSdpDestination(
+    supabase,
+    batch.initiative_id,
+    network,
+  );
   if (!destination) return { batchId: batch.id, status: "payout-required" as const };
 
   let sdp;
   try {
-    sdp = await gateway.syncStatus(
+    sdp = await activeGateway.syncStatus(
       { id: batch.id, code: batch.code, sdpBatchId: batch.sdp_batch_id },
       (lineItems as LineItemRow[]).map((item) => ({
         id: item.id,
@@ -187,9 +194,8 @@ export async function syncSubmittedBatch(
   const settlement = await settleLineItemsWithVerifiedPayments({
     lineItems: lineItems as LineItemRow[],
     payments: sdp.payments,
-    expectedUsdcIssuer: process.env.STELLAR_USDC_ISSUER?.trim(),
+    network,
     expectedDestination: destination.walletAddress,
-    horizonUrl: process.env.STELLAR_HORIZON_URL?.trim(),
   });
 
   const updates = await Promise.all(
@@ -242,11 +248,13 @@ export async function syncSubmittedBatch(
 async function loadSdpDestination(
   supabase: SupabaseClient,
   initiativeId: string,
+  stellarNetwork?: StellarNetwork,
 ): Promise<SdpDestination | null> {
   const { data: address, error: addressError } = await supabase
     .from("payout_addresses")
     .select("address")
     .eq("initiative_id", initiativeId)
+    .eq("stellar_network", stellarNetwork ?? "testnet")
     .in("status", ["verified", "locked"])
     .limit(1)
     .maybeSingle();

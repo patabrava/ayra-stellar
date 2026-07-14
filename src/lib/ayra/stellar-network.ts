@@ -77,6 +77,15 @@ export function getStellarExpertTransactionUrl(
   return `https://stellar.expert/explorer/${explorerNetwork}/tx/${transactionHash}`;
 }
 
+export function requireMainnetPaymentsEnabled(
+  network: StellarNetwork,
+  env: StellarEnvironment = process.env,
+) {
+  if (network === "pubnet" && env.AYRA_MAINNET_PAYMENTS_ENABLED !== "1") {
+    throw new Error("Mainnet payments are disabled by the release switch.");
+  }
+}
+
 function normalizeUrl(value: string | undefined) {
   return value?.trim().replace(/\/+$/, "");
 }

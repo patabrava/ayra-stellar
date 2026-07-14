@@ -26,7 +26,7 @@ import {
   type AyraSession,
 } from "@/lib/ayra/session";
 import {
-  createSdpGateway,
+  createSdpGatewayForNetwork,
   SdpGatewayError,
   type SdpGatewayEvent,
 } from "@/lib/ayra/sdp";
@@ -36,6 +36,13 @@ import {
   verifyStellarUsdcTrustline,
   StellarProofError,
 } from "@/lib/ayra/stellar-proof";
+import {
+  getConfiguredStellarNetwork,
+  requireMainnetPaymentsEnabled,
+  requireStellarNetwork,
+  resolveStellarNetworkConfig,
+  type StellarNetwork,
+} from "@/lib/ayra/stellar-network";
 import { insertPublicApplication } from "@/lib/ayra/public-write";
 import {
   getUsdCopRate,
@@ -561,11 +568,14 @@ export async function submitPayoutAddressAction(formData: FormData) {
     redirectWithStatus("/steward", "scope-denied");
   }
 
+  const stellarNetwork = getConfiguredStellarNetwork();
+  const networkConfig = resolveStellarNetworkConfig(stellarNetwork);
   const supabase = createSupabaseAdminClient();
   await supabase
     .from("payout_addresses")
     .update({ status: "rejected" })
     .eq("initiative_id", parsed.data.initiativeId)
+    .eq("stellar_network", stellarNetwork)
     .in("status", ["pending", "verified", "locked"]);
 
   const { data, error } = await supabase
@@ -573,6 +583,7 @@ export async function submitPayoutAddressAction(formData: FormData) {
     .insert({
       initiative_id: parsed.data.initiativeId,
       address: parsed.data.address,
+      stellar_network: stellarNetwork,
       status: "pending",
       submitted_by_profile_id: session.context.profile.id,
     })
@@ -589,15 +600,10 @@ export async function submitPayoutAddressAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/steward");
 
-  const expectedUsdcIssuer = process.env.STELLAR_USDC_ISSUER?.trim();
-  if (!expectedUsdcIssuer) {
-    redirectWithStatus("/steward", "payout-submitted");
-  }
-
   const trustlineStatus = await getStellarUsdcTrustlineStatus({
     accountId: parsed.data.address,
-    expectedIssuer: expectedUsdcIssuer,
-    horizonUrl: process.env.STELLAR_HORIZON_URL?.trim(),
+    expectedIssuer: networkConfig.usdcIssuer,
+    horizonUrl: networkConfig.horizonUrl,
   });
   if (trustlineStatus === "ready") {
     redirectWithStatus("/steward", "payout-submitted-ready");
@@ -701,15 +707,28 @@ export async function verifyPayoutAddressAction(formData: FormData) {
   const supabase = session.supabase!;
   const { data: payoutAddress, error: readError } = await supabase
     .from("payout_addresses")
-    .select("id,initiative_id")
+    .select("id,initiative_id,address,stellar_network")
     .eq("id", parsed.data.entityId)
     .single();
   if (readError || !payoutAddress) redirectWithStatus("/admin/registry", "error");
+
+  const stellarNetwork = requireStellarNetwork(payoutAddress.stellar_network);
+  const networkConfig = resolveStellarNetworkConfig(stellarNetwork);
+  try {
+    await verifyStellarUsdcTrustline({
+      accountId: payoutAddress.address,
+      expectedIssuer: networkConfig.usdcIssuer,
+      horizonUrl: networkConfig.horizonUrl,
+    });
+  } catch {
+    redirectWithStatus("/admin/registry", "payout-trustline-required");
+  }
 
   await supabase
     .from("payout_addresses")
     .update({ status: "rejected" })
     .eq("initiative_id", payoutAddress.initiative_id)
+    .eq("stellar_network", stellarNetwork)
     .neq("id", parsed.data.entityId)
     .in("status", ["pending", "verified", "locked"]);
 
@@ -859,9 +878,11 @@ export async function createBatchAction(formData: FormData) {
   }
 
   const supabase = session.supabase!;
+  const stellarNetwork = getConfiguredStellarNetwork();
   const hasVerifiedAddress = await initiativeHasVerifiedAddress(
     supabase,
     parsed.data.initiativeId,
+    stellarNetwork,
   );
   if (!hasVerifiedAddress) redirectWithStatus("/admin/batches", "payout-required");
   const milestoneSubmissionId =
@@ -882,6 +903,7 @@ export async function createBatchAction(formData: FormData) {
       sponsor_id: parsed.data.sponsorId ?? null,
       code: parsed.data.code,
       period_label: parsed.data.periodLabel,
+      stellar_network: stellarNetwork,
       payment_kind: parsed.data.paymentKind,
       milestone_submission_id: milestoneSubmissionId,
       status: "ready",
@@ -979,15 +1001,22 @@ export async function submitBatchAction(formData: FormData) {
   const supabase = session.supabase!;
   const { data: batch, error: batchError } = await supabase
     .from("funding_batches")
-    .select("id,initiative_id,code,sdp_batch_id")
+    .select("id,initiative_id,code,sdp_batch_id,stellar_network")
     .eq("id", parsed.data.entityId)
     .eq("status", "ready")
     .single();
   if (batchError || !batch) redirectWithStatus("/admin/batches", "error");
+  const stellarNetwork = requireStellarNetwork(batch.stellar_network);
+  try {
+    requireMainnetPaymentsEnabled(stellarNetwork);
+  } catch {
+    redirectWithStatus("/admin/batches", "mainnet-disabled");
+  }
 
   const hasVerifiedAddress = await initiativeHasVerifiedAddress(
     supabase,
     batch.initiative_id,
+    stellarNetwork,
   );
   if (!hasVerifiedAddress) redirectWithStatus("/admin/batches", "payout-required");
 
@@ -999,21 +1028,24 @@ export async function submitBatchAction(formData: FormData) {
     redirectWithStatus("/admin/batches", "line-item-error");
   }
 
-  const destination = await loadSdpDestination(supabase, batch.initiative_id);
+  const destination = await loadSdpDestination(
+    supabase,
+    batch.initiative_id,
+    stellarNetwork,
+  );
   if (!destination) redirectWithStatus("/admin/batches", "payout-required");
-  if (process.env.STELLAR_USDC_ISSUER?.trim()) {
-    try {
-      await verifyStellarUsdcTrustline({
-        accountId: destination.walletAddress,
-        expectedIssuer: process.env.STELLAR_USDC_ISSUER.trim(),
-        horizonUrl: process.env.STELLAR_HORIZON_URL?.trim(),
-      });
-    } catch {
-      redirectWithStatus("/admin/batches", "payout-trustline-required");
-    }
+  const networkConfig = resolveStellarNetworkConfig(stellarNetwork);
+  try {
+    await verifyStellarUsdcTrustline({
+      accountId: destination.walletAddress,
+      expectedIssuer: networkConfig.usdcIssuer,
+      horizonUrl: networkConfig.horizonUrl,
+    });
+  } catch {
+    redirectWithStatus("/admin/batches", "payout-trustline-required");
   }
 
-  const gateway = createSdpGateway();
+  const gateway = createSdpGatewayForNetwork(stellarNetwork);
   let sdp;
   try {
     sdp = await gateway.submitBatch(
@@ -1089,11 +1121,12 @@ export async function syncBatchStatusAction(formData: FormData) {
   const supabase = session.supabase!;
   const { data: batch, error: batchError } = await supabase
     .from("funding_batches")
-    .select("id,initiative_id,code,sdp_batch_id")
+    .select("id,initiative_id,code,sdp_batch_id,stellar_network")
     .eq("id", parsed.data.entityId)
     .eq("status", "submitted")
     .single();
   if (batchError || !batch) redirectWithStatus("/admin/batches", "error");
+  const stellarNetwork = requireStellarNetwork(batch.stellar_network);
 
   const { data: lineItems, error: lineItemError } = await supabase
     .from("batch_line_items")
@@ -1103,10 +1136,14 @@ export async function syncBatchStatusAction(formData: FormData) {
     redirectWithStatus("/admin/batches", "line-item-error");
   }
 
-  const destination = await loadSdpDestination(supabase, batch.initiative_id);
+  const destination = await loadSdpDestination(
+    supabase,
+    batch.initiative_id,
+    stellarNetwork,
+  );
   if (!destination) redirectWithStatus("/admin/batches", "payout-required");
 
-  const gateway = createSdpGateway();
+  const gateway = createSdpGatewayForNetwork(stellarNetwork);
   let sdp;
   try {
     sdp = await gateway.syncStatus(
@@ -1126,8 +1163,9 @@ export async function syncBatchStatusAction(formData: FormData) {
     redirectWithStatus("/admin/batches", "sdp-error");
   }
 
-  const expectedUsdcIssuer = process.env.STELLAR_USDC_ISSUER?.trim();
-  const horizonUrl = process.env.STELLAR_HORIZON_URL?.trim();
+  const networkConfig = resolveStellarNetworkConfig(stellarNetwork);
+  const expectedUsdcIssuer = networkConfig.usdcIssuer;
+  const horizonUrl = networkConfig.horizonUrl;
   const verifiedPayments = new Map<
     string,
     {
@@ -1413,11 +1451,13 @@ function applicationMilestones(application: ApplicationRow) {
 async function initiativeHasVerifiedAddress(
   supabase: SupabaseClient,
   initiativeId: string,
+  stellarNetwork: StellarNetwork,
 ) {
   const { data, error } = await supabase
     .from("payout_addresses")
     .select("id")
     .eq("initiative_id", initiativeId)
+    .eq("stellar_network", stellarNetwork)
     .in("status", ["verified", "locked"])
     .limit(1)
     .maybeSingle();
@@ -1451,11 +1491,13 @@ async function approvedMilestoneSubmissionAvailable(
 async function loadSdpDestination(
   supabase: SupabaseClient,
   initiativeId: string,
+  stellarNetwork: StellarNetwork,
 ) {
   const { data: address, error: addressError } = await supabase
     .from("payout_addresses")
     .select("address")
     .eq("initiative_id", initiativeId)
+    .eq("stellar_network", stellarNetwork)
     .in("status", ["verified", "locked"])
     .limit(1)
     .maybeSingle();

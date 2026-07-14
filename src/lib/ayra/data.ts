@@ -1,6 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import WebSocket from "ws";
 
+import { requireStellarNetwork } from "@/lib/ayra/stellar-network";
+
 import {
   createSupabaseAdminClient,
   hasSupabaseAdminEnv,
@@ -141,6 +143,7 @@ type BatchRow = {
   sponsor_id: string | null;
   code: string;
   period_label: string;
+  stellar_network?: string | null;
   payment_kind?: string | null;
   milestone_submission_id?: string | null;
   status: string;
@@ -157,6 +160,7 @@ type ReceiptRow = {
   batch_code: string;
   period_label: string;
   batch_status: string;
+  stellar_network?: string | null;
   initiative_name: string;
   sponsor_name: string | null;
   category: string;
@@ -234,6 +238,7 @@ type PayoutAddressRow = {
   id: string;
   initiative_id: string;
   address: string;
+  stellar_network?: string | null;
   status: string;
   submitted_by_profile_id: string;
   submitted_at: string;
@@ -449,14 +454,14 @@ async function loadPublicAyraStateFromClient(
     supabase
       .from("funding_batches")
       .select(
-        "id,initiative_id,sponsor_id,code,period_label,status,created_by_profile_id,created_at,submitted_at,settled_at,sdp_batch_id",
+        "id,initiative_id,sponsor_id,code,period_label,stellar_network,status,created_by_profile_id,created_at,submitted_at,settled_at,sdp_batch_id",
       )
       .in("status", ["submitted", "settled"])
       .order("created_at", { ascending: false }),
     supabase
       .from("public_batch_receipts")
       .select(
-        "line_item_id,batch_id,batch_code,period_label,batch_status,initiative_name,sponsor_name,category,amount_usdc,local_amount,local_currency,line_item_status,transaction_hash,payment_asset_code,payment_asset_issuer,payment_asset_amount,source_record_external_id,line_item_external_id,node_code,track_code,milestone_code,recipient_category,attribution_match_status",
+        "line_item_id,batch_id,batch_code,period_label,batch_status,stellar_network,initiative_name,sponsor_name,category,amount_usdc,local_amount,local_currency,line_item_status,transaction_hash,payment_asset_code,payment_asset_issuer,payment_asset_amount,source_record_external_id,line_item_external_id,node_code,track_code,milestone_code,recipient_category,attribution_match_status",
       ),
   ]);
 
@@ -546,7 +551,7 @@ async function loadOperatorAyraStateFromClient(
     supabase
       .from("payout_addresses")
       .select(
-        "id,initiative_id,address,status,submitted_by_profile_id,submitted_at,verified_at,verified_by_profile_id,locked_at,verification_note",
+        "id,initiative_id,address,stellar_network,status,submitted_by_profile_id,submitted_at,verified_at,verified_by_profile_id,locked_at,verification_note",
       ),
     supabase.from("milestones").select("id,initiative_id,code,title,percent_complete,status"),
     supabase
@@ -558,7 +563,7 @@ async function loadOperatorAyraStateFromClient(
     supabase
       .from("funding_batches")
       .select(
-        "id,initiative_id,sponsor_id,code,period_label,payment_kind,milestone_submission_id,status,created_by_profile_id,created_at,submitted_at,settled_at,sdp_batch_id",
+        "id,initiative_id,sponsor_id,code,period_label,stellar_network,payment_kind,milestone_submission_id,status,created_by_profile_id,created_at,submitted_at,settled_at,sdp_batch_id",
       ),
     supabase
       .from("milestone_submissions")
@@ -789,6 +794,7 @@ function mapBatch(row: BatchRow): Batch {
     sponsorId: row.sponsor_id ?? undefined,
     code: row.code,
     periodLabel: row.period_label,
+    stellarNetwork: requireStellarNetwork(row.stellar_network ?? "testnet"),
     paymentKind: paymentKind(row.payment_kind),
     milestoneSubmissionId: row.milestone_submission_id ?? undefined,
     status: batchStatus(row.status),
@@ -985,6 +991,7 @@ function mapPayoutAddress(row: PayoutAddressRow): PayoutAddress {
     id: row.id,
     initiativeId: row.initiative_id,
     address: row.address,
+    stellarNetwork: requireStellarNetwork(row.stellar_network ?? "testnet"),
     status: payoutAddressStatus(row.status),
     submittedByProfileId: row.submitted_by_profile_id,
     submittedAt: row.submitted_at,

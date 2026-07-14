@@ -44,4 +44,33 @@ describe("AYRA batch sync", () => {
     );
     assert.match(result.events[1]?.message ?? "", /No successful payment operation/);
   });
+
+  it("uses the stored pubnet identity for issuer and Horizon verification", async () => {
+    const calls: Array<{ expectedIssuer?: string; horizonUrl?: string }> = [];
+    const result = await settleLineItemsWithVerifiedPayments({
+      lineItems: [lineItems[0]!],
+      payments: [{ lineItemId: "line-1", transactionHash: "a".repeat(64) }],
+      network: "pubnet",
+      expectedDestination: "GDESTINATION",
+      verifyPayment: async (input) => {
+        calls.push({
+          expectedIssuer: input.expectedIssuer,
+          horizonUrl: input.horizonUrl,
+        });
+        return {
+          assetCode: "USDC",
+          assetIssuer: input.expectedIssuer!,
+          assetAmount: 1,
+        };
+      },
+    });
+
+    assert.equal(result.allSettled, true);
+    assert.deepEqual(calls, [
+      {
+        expectedIssuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+        horizonUrl: "https://horizon.stellar.org",
+      },
+    ]);
+  });
 });
