@@ -78,7 +78,7 @@ services:
         ./stellar-disbursement-platform db auth migrate up --all
         ./stellar-disbursement-platform db sdp migrate up --all
         ./stellar-disbursement-platform db setup-for-network --all
-        ./stellar-disbursement-platform tenants ensure-default \
+        if ! ./stellar-disbursement-platform tenants ensure-default \
           --sdp-ui-base-url "https://${SDP_DASHBOARD_HOST}" \
           --base-url "https://${SDP_API_HOST}" \
           --database-url "postgres://sdp:${POSTGRES_PASSWORD}@db:5432/${DATABASE_NAME}?sslmode=disable" \
@@ -92,7 +92,9 @@ services:
           --default-tenant-distribution-account-type "DISTRIBUTION_ACCOUNT.STELLAR.ENV" \
           --distribution-account-encryption-passphrase "${DISTRIBUTION_ACCOUNT_ENCRYPTION_PASSPHRASE}" \
           --channel-account-encryption-passphrase "${CHANNEL_ACCOUNT_ENCRYPTION_PASSPHRASE}" \
-          --disable-recaptcha
+          --disable-recaptcha; then
+          echo "Default tenant provisioning deferred until authorized mainnet funding"
+        fi
         exec ./stellar-disbursement-platform serve
     labels:
       traefik.enable: "true"

@@ -24,6 +24,14 @@ describe("AYRA isolated mainnet SDP deployment", () => {
       compose,
       /until \.\/stellar-disbursement-platform channel-accounts ensure 1/,
     );
+    assert.match(
+      compose,
+      /if ! \.\/stellar-disbursement-platform tenants ensure-default/,
+    );
+    assert.match(
+      compose,
+      /Default tenant provisioning deferred until authorized mainnet funding/,
+    );
     assert.doesNotMatch(compose, /horizon-testnet|explorer\/testnet|--disable-mfa/);
   });
 

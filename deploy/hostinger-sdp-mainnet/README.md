@@ -4,9 +4,16 @@ This folder defines a second, isolated Stellar Disbursement Platform project for
 
 ## Hosts
 
-- API: `https://sdp-mainnet-api.ayra.haus`
-- Dashboard: `https://sdp-mainnet-dashboard.ayra.haus`
+- Intended API: `https://sdp-mainnet-api.ayra.haus`
+- Intended dashboard: `https://sdp-mainnet-dashboard.ayra.haus`
 - Transparency app: `https://transparency.ayra.haus`
+
+The 2026-07-14 pre-activation deployment uses temporary TLS endpoints because the available Vercel role cannot edit the authoritative AYRA DNS zone:
+
+- API: `https://sdp-mainnet-api.187.124.16.6.sslip.io`
+- Dashboard: `https://sdp-mainnet-dashboard.187.124.16.6.sslip.io`
+
+These endpoints are for infrastructure validation only. Replace them with the intended AYRA records before payment activation.
 
 Postgres, metrics, admin, and TSS ports are internal. Traefik exposes only API port 8000 and dashboard port 80 over TLS.
 
@@ -40,6 +47,8 @@ Creating the project is not payment authorization. Keep `AYRA_MAINNET_PAYMENTS_E
 5. the line items and sponsor authorization are approved.
 
 Use `npm run verify:sdp-mainnet -- --require-ready` for the final non-spending readiness gate.
+
+An unfunded distribution account leaves the API in observable pre-activation mode and the TSS waiting for funding. This is expected. Restart the project after authorized funding so the default tenant, trustline, and channel account are provisioned before creating API credentials.
 
 ## Rollback
 

@@ -27,6 +27,8 @@ Create A records for `sdp-mainnet-api.ayra.haus` and `sdp-mainnet-dashboard.ayra
 
 Traefik obtains certificates after the containers start. A TLS or DNS failure is a stop condition; do not substitute an unencrypted endpoint.
 
+If the AYRA DNS operator is unavailable during pre-activation, an exact `sslip.io` hostname resolving to the VPS may be used temporarily for encrypted infrastructure validation. Record the exception and replace it with the two AYRA A records before payment activation.
+
 ## 3. Distribution account funding
 
 The generated environment prints the distribution public key only. Fund that exact pubnet account from an authorized treasury source. Minimum funding must cover:
@@ -42,6 +44,8 @@ After XLM lands, add the Circle Stellar USDC trustline for issuer `GA5ZSEJYB37JR
 ## 4. Deploy the isolated project
 
 Deploy `deploy/hostinger-sdp-mainnet/docker-compose.yml` as Hostinger project `ayra-sdp-mainnet`, passing the generated `.env` through Hostinger's project environment field. The compose project pins backend `6.6.1`, frontend `6.6.0`, public Horizon, the public network passphrase, and MFA enabled.
+
+Before the distribution account is funded, the API intentionally serves in pre-activation mode while default-tenant trustline provisioning is deferred; the TSS remains in a bounded funding wait. Restart the project once funding and the Circle USDC trustline exist so tenant and channel-account provisioning complete.
 
 Acceptance checks:
 
