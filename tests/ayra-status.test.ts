@@ -77,7 +77,7 @@ describe("AYRA steward and admin journey status copy", () => {
         label: "Trustline missing",
         title: "Your payout address is saved, but it cannot receive USDC yet.",
         body:
-          "AYRA saved the address, but Horizon does not show the expected USDC trustline on that account yet. Open the wallet that controls this address, add the testnet USDC trustline, and then resubmit the address or ask AYRA to recheck it.",
+        "AYRA saved the address, but Horizon does not show the expected USDC trustline on the configured Stellar network yet. Open the wallet that controls this address, add that USDC trustline, and then resubmit the address or ask AYRA to recheck it.",
       },
     );
   });

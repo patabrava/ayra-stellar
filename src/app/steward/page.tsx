@@ -22,6 +22,10 @@ import {
   getProofPack,
 } from "@/lib/ayra/domain";
 import { getStellarUsdcTrustlineStatus } from "@/lib/ayra/stellar-proof";
+import {
+  getConfiguredStellarNetwork,
+  resolveStellarNetworkConfig,
+} from "@/lib/ayra/stellar-network";
 
 type PageProps = {
   searchParams?: Promise<{ status?: string }>;
@@ -46,8 +50,14 @@ export default async function StewardPage({ searchParams }: PageProps) {
     (item) => item.initiativeId === initiative.id,
   );
   const grantee = state.grantees.find((item) => item.initiativeId === initiative.id);
+  const stellarNetwork = getConfiguredStellarNetwork();
+  const networkConfig = resolveStellarNetworkConfig(stellarNetwork);
+  const networkLabel =
+    stellarNetwork === "pubnet" ? "Stellar public network" : "Stellar testnet";
   const addresses = state.payoutAddresses.filter(
-    (item) => item.initiativeId === initiative.id,
+    (item) =>
+      item.initiativeId === initiative.id &&
+      item.stellarNetwork === stellarNetwork,
   );
   const verifiedAddress = addresses.find((item) =>
     ["verified", "locked"].includes(item.status),
@@ -55,13 +65,12 @@ export default async function StewardPage({ searchParams }: PageProps) {
   const pendingAddress = addresses.find((item) => item.status === "pending");
   const activeAddress = verifiedAddress ?? pendingAddress ?? null;
   const hasAddressOnFile = Boolean(activeAddress);
-  const expectedUsdcIssuer = process.env.STELLAR_USDC_ISSUER?.trim();
   const usdcTrustlineStatus =
-    activeAddress && expectedUsdcIssuer
+    activeAddress
       ? await getStellarUsdcTrustlineStatus({
           accountId: activeAddress.address,
-          expectedIssuer: expectedUsdcIssuer,
-          horizonUrl: process.env.STELLAR_HORIZON_URL?.trim(),
+          expectedIssuer: networkConfig.usdcIssuer,
+          horizonUrl: networkConfig.horizonUrl,
         })
       : null;
   const addressChipTone = verifiedAddress ? "ok" : "warn";
@@ -108,7 +117,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
     usdcTrustlineStatus === "ready"
       ? "Horizon shows the expected USDC trustline already. After operator review, this address is ready to be locked for payout."
       : usdcTrustlineStatus === "missing"
-        ? "The wallet owner still needs to fund the account if needed and sign the testnet USDC trustline from the wallet that controls this address. Saving the address does not grant that permission."
+        ? `The wallet owner still needs to fund the account if needed and sign the ${networkLabel} USDC trustline from the wallet that controls this address. Saving the address does not grant that permission.`
         : "The address is saved, but this page could not confirm its trustline state from Horizon. AYRA can still review the address, or you can retry after the network check succeeds.";
   const milestones = state.milestones.filter(
     (item) => item.initiativeId === initiative.id,
@@ -220,7 +229,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
                   [
                     "Step 2 · Your wallet",
                     "Enable USDC",
-                    "Use the wallet that controls this address to fund the account if needed and add the AYRA testnet USDC trustline.",
+                    `Use the wallet that controls this address to fund the account if needed and add the AYRA USDC trustline on ${networkLabel}.`,
                   ],
                   [
                     "Step 3 · Operator",
@@ -244,7 +253,7 @@ export default async function StewardPage({ searchParams }: PageProps) {
                   {addressStatNote}
                 </p>
               </div>
-              {activeAddress && expectedUsdcIssuer ? (
+              {activeAddress ? (
                 <div className="mt-4 border border-rule bg-[var(--ops-surface)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="stat-k">USDC payout readiness</div>

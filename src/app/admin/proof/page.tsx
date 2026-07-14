@@ -4,6 +4,8 @@ import { ExternalLink } from "lucide-react";
 import { AdminShell } from "@/app/admin/admin-shell";
 import { buildAdminViewModel } from "@/app/admin/admin-view-model";
 import { Chip, Hash, Money } from "@/components/ayra/ui";
+import { FormSubmitButton } from "@/components/ayra/form-submit-button";
+import { freezeProofPackReleaseAction } from "@/lib/ayra/actions";
 import { requireAdminSession } from "@/lib/ayra/session";
 
 type PageProps = {
@@ -100,18 +102,38 @@ export default async function AdminProofPage({ searchParams }: PageProps) {
                     <div>
                       <div className="text-xs uppercase text-ink-muted">Selected payment</div>
                       <h2 className="mt-1 text-xl font-medium">{proof.batchCode}</h2>
+                      <div className="mt-2">
+                        <Chip tone={proof.stellarNetwork === "pubnet" ? "ok" : "info"}>
+                          {proof.stellarNetwork === "pubnet"
+                            ? "Stellar public network"
+                            : "Stellar testnet"}
+                        </Chip>
+                      </div>
                       <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
                         Public proof shows category-level USDC payments verified
                         against Stellar transaction metadata. Private receipt
                         files remain admin-only.
                       </p>
                     </div>
-                    <Link
-                      className="btn primary justify-self-start md:justify-self-end"
-                      href={`/proof/${proof.batchId}`}
-                    >
-                      Open public proof <ExternalLink className="h-4 w-4" />
-                    </Link>
+                    <div className="grid justify-items-start gap-2 md:justify-items-end">
+                      <Link
+                        className="btn primary"
+                        href={`/proof/${proof.batchId}`}
+                      >
+                        Open public proof <ExternalLink className="h-4 w-4" />
+                      </Link>
+                      {proof.publicLabel === "Cleared" ? (
+                        <form action={freezeProofPackReleaseAction}>
+                          <input name="batchId" type="hidden" value={proof.batchId} />
+                          <FormSubmitButton
+                            className="btn"
+                            pendingLabel="Freezing release..."
+                          >
+                            Freeze versioned release
+                          </FormSubmitButton>
+                        </form>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="stat-grid">
@@ -158,7 +180,10 @@ export default async function AdminProofPage({ searchParams }: PageProps) {
                           <Chip tone="ok">{receipt.assetCode}</Chip>
                         </td>
                         <td>
-                          <Hash value={receipt.transactionHash} />
+                          <Hash
+                            stellarNetwork={proof.stellarNetwork}
+                            value={receipt.transactionHash}
+                          />
                         </td>
                       </tr>
                     ))}

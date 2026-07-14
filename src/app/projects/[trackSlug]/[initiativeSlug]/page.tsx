@@ -287,7 +287,10 @@ export default async function InitiativePage({ params }: PageProps) {
                     </td>
                     <td>
                       <span className="inline-flex items-center gap-2">
-                        <Hash value={receipt.transactionHash} />
+                        <Hash
+                          stellarNetwork={batchProof.stellarNetwork}
+                          value={receipt.transactionHash}
+                        />
                         <ExternalLink className="public-dim h-4 w-4" />
                       </span>
                     </td>

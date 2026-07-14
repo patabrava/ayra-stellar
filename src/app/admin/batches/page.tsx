@@ -28,6 +28,7 @@ import {
 import { suggestBatchCode } from "@/lib/ayra/batch-code";
 import { approvedUnusedMilestoneSubmissions, formatLocal } from "@/lib/ayra/domain";
 import { requireAdminSession } from "@/lib/ayra/session";
+import { getConfiguredStellarNetwork } from "@/lib/ayra/stellar-network";
 
 type PageProps = {
   searchParams?: Promise<{ status?: string }>;
@@ -37,6 +38,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const session = await requireAdminSession("/admin/batches");
   const view = await buildAdminViewModel(session.state);
+  const stellarNetwork = getConfiguredStellarNetwork();
   const shouldAutoRefresh = session.state.batches.some(
     (batch) => batch.status === "submitted",
   );
@@ -49,6 +51,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
       const payoutAddress = session.state.payoutAddresses.find(
         (item) =>
           item.initiativeId === initiative.id &&
+          item.stellarNetwork === stellarNetwork &&
           (item.status === "verified" || item.status === "locked"),
       );
       const payoutStatus =
@@ -245,6 +248,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                         settledTransactionHashes.map((transactionHash) => (
                           <StellarTransactionVerificationLink
                             key={transactionHash}
+                            stellarNetwork={batch.stellarNetwork}
                             transactionHash={transactionHash}
                           />
                         ))
@@ -306,6 +310,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                         <span className="text-xs uppercase text-ink-muted">On-chain</span>
                         <Hash
                           pendingLabel="On-chain transaction pending"
+                          stellarNetwork={view.lineItemBatch.stellarNetwork}
                           value={line.transactionHash}
                         />
                         {line.sdpPaymentId ? (

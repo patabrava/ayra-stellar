@@ -3,6 +3,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { getJourneyStatus, type JourneySurface } from "@/lib/ayra/status";
+import {
+  getStellarExpertTransactionUrl,
+  type StellarNetwork,
+} from "@/lib/ayra/stellar-network";
 
 export function AyraLogo({
   alt = "AYRA",
@@ -35,21 +39,25 @@ export function Chip({
 export function Hash({
   value,
   pendingLabel = "Reference pending",
+  stellarNetwork = "testnet",
 }: {
   value?: string;
   pendingLabel?: string;
+  stellarNetwork?: StellarNetwork;
 }) {
   if (!value) return <span className="text-ink-muted">-</span>;
   if (isInternalPlaceholderReference(value)) {
     return <span className="text-ink-muted">{pendingLabel}</span>;
   }
 
-  const explorerUrl = getStellarExpertTransactionUrl(value);
+  const explorerUrl = getStellarExpertTransactionUrl(value, stellarNetwork);
+  const networkLabel =
+    stellarNetwork === "pubnet" ? "public network" : "testnet";
 
   if (explorerUrl) {
     return (
       <a
-        aria-label={`Open Stellar testnet transaction ${value}`}
+        aria-label={`Open Stellar ${networkLabel} transaction ${value}`}
         className="hashish"
         href={explorerUrl}
         rel="noopener noreferrer"
@@ -66,11 +74,13 @@ export function Hash({
 
 export function StellarTransactionVerificationLink({
   transactionHash,
+  stellarNetwork = "testnet",
 }: {
   transactionHash?: string;
+  stellarNetwork?: StellarNetwork;
 }) {
   const explorerUrl = transactionHash
-    ? getStellarExpertTransactionUrl(transactionHash)
+    ? getStellarExpertTransactionUrl(transactionHash, stellarNetwork)
     : null;
   if (!explorerUrl || !transactionHash) {
     return <span className="text-ink-muted">Verification URL pending</span>;
@@ -78,7 +88,9 @@ export function StellarTransactionVerificationLink({
 
   return (
     <a
-      aria-label={`Verify Stellar testnet transaction ${transactionHash}`}
+      aria-label={`Verify Stellar ${
+        stellarNetwork === "pubnet" ? "public network" : "testnet"
+      } transaction ${transactionHash}`}
       className="hashish"
       href={explorerUrl}
       rel="noopener noreferrer"
@@ -92,12 +104,6 @@ export function StellarTransactionVerificationLink({
 
 function isInternalPlaceholderReference(value: string) {
   return /^(mock|demo)-/i.test(value);
-}
-
-function getStellarExpertTransactionUrl(value: string) {
-  return /^[a-f0-9]{64}$/i.test(value)
-    ? `https://stellar.expert/explorer/testnet/tx/${value}`
-    : null;
 }
 
 export function StatusBanner({ status }: { status?: string }) {

@@ -99,7 +99,7 @@ export function getJourneyStatus(
           label: "Trustline missing",
           title: "Your payout address is saved, but it cannot receive USDC yet.",
           body:
-            "AYRA saved the address, but Horizon does not show the expected USDC trustline on that account yet. Open the wallet that controls this address, add the testnet USDC trustline, and then resubmit the address or ask AYRA to recheck it.",
+            "AYRA saved the address, but Horizon does not show the expected USDC trustline on the configured Stellar network yet. Open the wallet that controls this address, add that USDC trustline, and then resubmit the address or ask AYRA to recheck it.",
         };
       case "update-submitted":
         return {
@@ -280,6 +280,30 @@ export function getJourneyStatus(
         body:
           "The source record and local attribution now resolve for this line item. The public export will show the matched state without exposing operator notes or private receipts.",
       };
+    case "proof-release-created":
+      return {
+        tone: "ok",
+        label: "Release frozen",
+        title: "The versioned proof release is immutable.",
+        body:
+          "AYRA stored the normalized public proof payload with its SHA-256 digest, application commit, deployment identity, and Stellar network.",
+      };
+    case "proof-release-ineligible":
+      return {
+        tone: "err",
+        label: "Release blocked",
+        title: "This proof pack is not ready to freeze.",
+        body:
+          "The batch must be settled and every receipt must have verified USDC metadata plus matched attribution before a versioned release can be created.",
+      };
+    case "mainnet-disabled":
+      return {
+        tone: "warn",
+        label: "Mainnet paused",
+        title: "Mainnet payment submission is disabled.",
+        body:
+          "Fund the isolated mainnet distribution account, verify a pubnet recipient and Circle USDC trustline, then enable the release switch before submitting.",
+      };
     case "payout-required":
       return {
         tone: "warn",
@@ -294,7 +318,7 @@ export function getJourneyStatus(
         label: "Trustline required",
         title: "The payout address cannot receive USDC yet.",
         body:
-          "Ask the receiver to add the testnet USDC trustline for AYRA's configured issuer, then submit the payment again. AYRA blocked the SDP send before creating another failed transaction.",
+          "Ask the receiver to add the USDC trustline for AYRA's configured Stellar network and issuer, then submit the payment again. AYRA blocked the SDP send before creating another failed transaction.",
       };
     case "promotion-error":
       return {

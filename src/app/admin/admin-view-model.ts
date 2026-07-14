@@ -1,5 +1,6 @@
 import { getUsdCopRate } from "@/lib/ayra/currency";
 import { getProofPack, type AyraState, type ProofPack } from "@/lib/ayra/domain";
+import { getConfiguredStellarNetwork } from "@/lib/ayra/stellar-network";
 
 export type AdminViewModel = Awaited<ReturnType<typeof buildAdminViewModel>>;
 
@@ -73,9 +74,9 @@ export async function buildAdminViewModel(
     lineItemBatch,
     usdCopRate,
     paymentRailLabel:
-      process.env.AYRA_SDP_MODE === "testnet"
-        ? "Stellar testnet"
-        : "Provider setup pending",
+      getConfiguredStellarNetwork() === "pubnet"
+        ? "Stellar public network"
+        : "Stellar testnet",
   };
 }
 

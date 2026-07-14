@@ -16,7 +16,12 @@ import {
   applicationSchema,
   normalizeMilestonePlan,
 } from "@/lib/ayra/application-intake";
-import { hasPublicSupabaseEnv } from "@/lib/ayra/data";
+import {
+  hasPublicSupabaseEnv,
+  loadStrictPublicAyraState,
+} from "@/lib/ayra/data";
+import { getProofPack } from "@/lib/ayra/domain";
+import { createProofPackRelease } from "@/lib/ayra/proof-release";
 import { MAX_UPDATE_MEDIA_BYTES } from "@/lib/ayra/upload";
 import {
   loginPath,
@@ -174,7 +179,8 @@ function mediaKindFromFile(file: File | null) {
 }
 
 function redirectWithStatus(path: string, status: string): never {
-  redirect(`${path}?status=${encodeURIComponent(status)}`);
+  const separator = path.includes("?") ? "&" : "?";
+  redirect(`${path}${separator}status=${encodeURIComponent(status)}`);
 }
 
 function demoRedirect(path: string, status: string): never {
@@ -1281,6 +1287,79 @@ export async function syncBatchStatusAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/batches");
   redirectWithStatus("/admin/batches", "batch-synced");
+}
+
+export async function freezeProofPackReleaseAction(formData: FormData) {
+  const parsed = idActionSchema.safeParse({
+    entityId: text(formData, "batchId"),
+  });
+  if (!parsed.success) redirectWithStatus("/admin/proof", "invalid");
+
+  const session = await requireAdminSession("/admin/proof");
+  if (session.isDemo) demoRedirect("/admin/proof", "proof-release-created");
+
+  let proof;
+  try {
+    proof = getProofPack(
+      await loadStrictPublicAyraState(),
+      parsed.data.entityId,
+    );
+  } catch {
+    redirectWithStatus("/admin/proof", "proof-release-ineligible");
+  }
+
+  const supabase = session.supabase!;
+  const { data: latest, error: latestError } = await supabase
+    .from("proof_pack_releases")
+    .select("version")
+    .eq("batch_id", parsed.data.entityId)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latestError) redirectWithStatus("/admin/proof", "error");
+
+  let release;
+  try {
+    release = createProofPackRelease(proof, {
+      version: Number(latest?.version ?? 0) + 1,
+      appCommit:
+        process.env.VERCEL_GIT_COMMIT_SHA?.trim() ||
+        process.env.AYRA_RELEASE_COMMIT?.trim() ||
+        "local-unversioned",
+      deploymentId: process.env.VERCEL_URL?.trim(),
+    });
+  } catch {
+    redirectWithStatus("/admin/proof", "proof-release-ineligible");
+  }
+
+  const { error } = await supabase.from("proof_pack_releases").insert({
+    batch_id: parsed.data.entityId,
+    version: release.payload.releaseVersion,
+    stellar_network: release.payload.stellarNetwork,
+    payload: release.payload,
+    sha256: release.sha256,
+    app_commit: release.payload.appCommit,
+    deployment_id: release.payload.deploymentId,
+    created_by_profile_id: session.context.profile.id,
+  });
+  if (error) redirectWithStatus("/admin/proof", "error");
+
+  await insertAudit(supabase, session, {
+    action: "proof_pack.release_created",
+    entityType: "funding_batch",
+    entityId: parsed.data.entityId,
+    after: {
+      version: release.payload.releaseVersion,
+      stellarNetwork: release.payload.stellarNetwork,
+      sha256: release.sha256,
+    },
+  });
+  revalidatePath(`/proof/${parsed.data.entityId}`);
+  revalidatePath(`/proof/${parsed.data.entityId}/release`);
+  redirectWithStatus(
+    `/admin/proof?batchId=${encodeURIComponent(parsed.data.entityId)}`,
+    "proof-release-created",
+  );
 }
 
 export async function resolveAttributionExceptionAction(formData: FormData) {
