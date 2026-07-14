@@ -11,7 +11,10 @@
     "test:e2e": "playwright test",
     "sync:advisor-sources": "tsx scripts/sync-advisor-sources.ts",
     "verify:hostinger-sdp-env": "node scripts/verify-hostinger-sdp-env.mjs",
+    "generate:sdp-mainnet-env": "node scripts/generate-sdp-mainnet-env.mjs",
+    "verify:hostinger-sdp-mainnet-env": "node scripts/verify-hostinger-sdp-mainnet-env.mjs",
     "verify:sdp-testnet": "node scripts/verify-sdp-testnet.mjs",
+    "verify:sdp-mainnet": "node scripts/verify-sdp-mainnet.mjs",
     "populate:public-sdp-testnet-receipts": "node scripts/populate-public-sdp-testnet-receipts.mjs",
     "backfill:usdc-proof-metadata": "node scripts/backfill-usdc-proof-metadata.mjs"
   },
@@ -19,10 +22,10 @@
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
     "lucide-react": "^1.16.0",
-    "next": "16.2.6",
+    "next": "^16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "ws": "^8.20.1",
+    "ws": "^8.21.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -33,9 +36,14 @@
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
     "eslint": "^9",
-    "eslint-config-next": "16.2.6",
+    "eslint-config-next": "^16.2.10",
     "tailwindcss": "^4",
     "tsx": "^4.22.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "8.5.19"
+    }
   }
 }
