@@ -94,6 +94,7 @@ export type PayoutAddress = {
   id: string;
   initiativeId: string;
   address: string;
+  walletAddressMemo?: string;
   stellarNetwork: StellarNetwork;
   status: PayoutAddressStatus;
   submittedByProfileId: string;

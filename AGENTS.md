@@ -219,3 +219,4 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Admin Payments must not block initial render on live SDP/Horizon sync; keep settlement polling in explicit sync actions or cron, otherwise `/admin/batches` tab navigation becomes multi-second.
 - SDP status sync must use persisted `sdp_payment_id` reads before `/payments?q=...` fallback; external-payment search can lag the canonical payment record and make settled payouts look submitted.
 - After manual Vercel production deploys, commit and push the deployed source branch before declaring admin-visible UI complete; otherwise later branch-linked deployments can serve older navigation.
+- Payout destinations that require Stellar memos must persist and display the verified memo and pass it unchanged to SDP; an address-only registry row is not payment-ready.

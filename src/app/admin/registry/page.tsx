@@ -34,11 +34,12 @@ export default async function AdminRegistryPage({ searchParams }: PageProps) {
             <div className="panel-head">
               <span className="panel-title">Payout addresses</span>
             </div>
-            <table className="t min-w-[720px]">
+            <table className="t min-w-[820px]">
               <thead>
                 <tr>
                   <th>Initiative</th>
                   <th>Address</th>
+                  <th>Memo</th>
                   <th>Network</th>
                   <th>Status</th>
                   <th>Action</th>
@@ -57,6 +58,7 @@ export default async function AdminRegistryPage({ searchParams }: PageProps) {
                           value={`${address.address.slice(0, 10)}...${address.address.slice(-6)}`}
                         />
                       </td>
+                      <td className="mono text-xs">{address.walletAddressMemo ?? "—"}</td>
                       <td>
                         <Chip tone={address.stellarNetwork === "pubnet" ? "ok" : "info"}>
                           {address.stellarNetwork}

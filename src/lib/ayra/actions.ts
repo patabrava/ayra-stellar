@@ -21,6 +21,7 @@ import {
   loadStrictPublicAyraState,
 } from "@/lib/ayra/data";
 import { getProofPack } from "@/lib/ayra/domain";
+import { normalizeWalletAddressMemo } from "@/lib/ayra/payout-address";
 import { createProofPackRelease } from "@/lib/ayra/proof-release";
 import { MAX_UPDATE_MEDIA_BYTES } from "@/lib/ayra/upload";
 import {
@@ -118,6 +119,7 @@ const batchSchema = z.object({
 const payoutAddressSchema = z.object({
   initiativeId: z.string().trim().min(1),
   address: z.string().trim().regex(/^G[A-Z2-7]{55}$/, "Invalid Stellar address"),
+  walletAddressMemo: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -565,8 +567,16 @@ export async function submitPayoutAddressAction(formData: FormData) {
   const parsed = payoutAddressSchema.safeParse({
     initiativeId: text(formData, "initiativeId"),
     address: text(formData, "address"),
+    walletAddressMemo: optionalText(formData, "walletAddressMemo"),
   });
   if (!parsed.success) redirectWithStatus("/steward", "invalid");
+
+  let walletAddressMemo: string | undefined;
+  try {
+    walletAddressMemo = normalizeWalletAddressMemo(parsed.data.walletAddressMemo);
+  } catch {
+    redirectWithStatus("/steward", "invalid");
+  }
 
   const session = await requireStewardSession("/steward");
   if (session.isDemo) demoRedirect("/steward", "payout-submitted");
@@ -589,6 +599,7 @@ export async function submitPayoutAddressAction(formData: FormData) {
     .insert({
       initiative_id: parsed.data.initiativeId,
       address: parsed.data.address,
+      wallet_address_memo: walletAddressMemo ?? null,
       stellar_network: stellarNetwork,
       status: "pending",
       submitted_by_profile_id: session.context.profile.id,
@@ -1574,7 +1585,7 @@ async function loadSdpDestination(
 ) {
   const { data: address, error: addressError } = await supabase
     .from("payout_addresses")
-    .select("address")
+    .select("address,wallet_address_memo")
     .eq("initiative_id", initiativeId)
     .eq("stellar_network", stellarNetwork)
     .in("status", ["verified", "locked"])
@@ -1603,7 +1614,7 @@ async function loadSdpDestination(
   return {
     receiverEmail,
     walletAddress: address.address as string,
-    walletAddressMemo: null,
+    walletAddressMemo: address.wallet_address_memo ?? null,
   };
 }
 

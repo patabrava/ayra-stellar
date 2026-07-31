@@ -252,7 +252,7 @@ async function loadSdpDestination(
 ): Promise<SdpDestination | null> {
   const { data: address, error: addressError } = await supabase
     .from("payout_addresses")
-    .select("address")
+    .select("address,wallet_address_memo")
     .eq("initiative_id", initiativeId)
     .eq("stellar_network", stellarNetwork ?? "testnet")
     .in("status", ["verified", "locked"])
@@ -281,7 +281,7 @@ async function loadSdpDestination(
   return {
     receiverEmail,
     walletAddress: address.address,
-    walletAddressMemo: null,
+    walletAddressMemo: address.wallet_address_memo ?? null,
   };
 }
 

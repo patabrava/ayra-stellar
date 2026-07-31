@@ -238,6 +238,7 @@ type PayoutAddressRow = {
   id: string;
   initiative_id: string;
   address: string;
+  wallet_address_memo: string | null;
   stellar_network?: string | null;
   status: string;
   submitted_by_profile_id: string;
@@ -551,7 +552,7 @@ async function loadOperatorAyraStateFromClient(
     supabase
       .from("payout_addresses")
       .select(
-        "id,initiative_id,address,stellar_network,status,submitted_by_profile_id,submitted_at,verified_at,verified_by_profile_id,locked_at,verification_note",
+        "id,initiative_id,address,wallet_address_memo,stellar_network,status,submitted_by_profile_id,submitted_at,verified_at,verified_by_profile_id,locked_at,verification_note",
       ),
     supabase.from("milestones").select("id,initiative_id,code,title,percent_complete,status"),
     supabase
@@ -991,6 +992,7 @@ function mapPayoutAddress(row: PayoutAddressRow): PayoutAddress {
     id: row.id,
     initiativeId: row.initiative_id,
     address: row.address,
+    walletAddressMemo: row.wallet_address_memo ?? undefined,
     stellarNetwork: requireStellarNetwork(row.stellar_network ?? "testnet"),
     status: payoutAddressStatus(row.status),
     submittedByProfileId: row.submitted_by_profile_id,

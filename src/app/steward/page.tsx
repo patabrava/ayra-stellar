@@ -292,6 +292,11 @@ export default async function StewardPage({ searchParams }: PageProps) {
                 <div className="mono mt-2 break-all text-sm">
                   {addressStatBody}
                 </div>
+                {activeAddress?.walletAddressMemo ? (
+                  <div className="mt-3 text-sm text-ink-muted">
+                    Memo: <span className="mono text-ink">{activeAddress.walletAddressMemo}</span>
+                  </div>
+                ) : null}
                 <p className="mt-2 text-sm text-ink-muted">
                   {addressStatNote}
                 </p>
@@ -319,6 +324,18 @@ export default async function StewardPage({ searchParams }: PageProps) {
                     placeholder="G..."
                     required
                   />
+                </div>
+                <div className="field">
+                  <label htmlFor="walletAddressMemo">Wallet memo (optional)</label>
+                  <input
+                    className="mono"
+                    id="walletAddressMemo"
+                    name="walletAddressMemo"
+                    placeholder="e.g. 4192883277"
+                  />
+                  <p className="text-sm text-ink-muted">
+                    Enter the destination memo exactly as supplied by the recipient wallet.
+                  </p>
                 </div>
                 <button className="btn primary justify-self-start" type="submit">
                   {addressButtonLabel} <Send className="h-4 w-4" />
