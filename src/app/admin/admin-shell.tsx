@@ -43,6 +43,7 @@ export function AdminShell({
             label: "Payments",
             count: String(session.state.batches.length),
           },
+          { href: "/admin/treasury", label: "Treasury" },
           { href: "/admin/proof", label: "Proof packs" },
           { href: "/admin/registry", label: "Registry" },
         ]}
