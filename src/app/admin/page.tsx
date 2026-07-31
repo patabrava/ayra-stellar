@@ -144,7 +144,8 @@ export default async function AdminPage({ searchParams }: PageProps) {
                     </td>
                     <td>
                       <div className="row-name">
-                        {view.reforest.name} · {update.caption.slice(0, 42)}
+                        {view.reforest?.name ?? "Unassigned initiative"} ·{" "}
+                        {update.caption.slice(0, 42)}
                       </div>
                       <div className="row-meta">Shared moderation queue</div>
                     </td>

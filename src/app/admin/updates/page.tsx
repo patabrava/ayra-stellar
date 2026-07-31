@@ -42,7 +42,7 @@ export default async function AdminUpdatesPage({ searchParams }: PageProps) {
               {view.pendingUpdates.map((update) => (
                 <article className="p-4" key={update.id}>
                   <div className="row-meta">
-                    From Leidy Mendoza · {view.reforest.name} ·{" "}
+                    From Leidy Mendoza · {view.reforest?.name ?? "Unassigned initiative"} ·{" "}
                     {update.submittedAt.slice(0, 16).replace("T", " ")} UTC
                   </div>
                   <p className="mt-3 text-sm leading-6">{update.caption}</p>
