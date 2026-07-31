@@ -44,8 +44,51 @@ export default async function StewardPage({ searchParams }: PageProps) {
     ) ??
     state.initiatives.find((item) =>
       session.context.scopedInitiativeIds.includes(item.id),
-    ) ??
-    state.initiatives[0]!;
+    );
+
+  if (!initiative) {
+    return (
+      <main className="ops-shell">
+        <StewardStatusModal status={params?.status} />
+        <OpsNav
+          role="GRANTEE"
+          scope="Awaiting initiative assignment"
+          user={profile.email}
+          tabs={[{ href: "#assignment", label: "Access" }]}
+        />
+        <div className="ops-main max-w-6xl">
+          <StatusBannerForSurface status={params?.status} surface="steward" />
+          <section id="assignment">
+            <div className="section-head">
+              <div>
+                <h1>Steward portal</h1>
+                <p className="section-sub">
+                  Your account is signed in and ready. An AYRA administrator
+                  still needs to assign your first approved initiative.
+                </p>
+              </div>
+              <Link className="btn ghost" href="/">
+                View wall
+              </Link>
+            </div>
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title">Awaiting initiative assignment</span>
+                <Chip tone="info">Access ready</Chip>
+              </div>
+              <div className="panel-body">
+                <p className="max-w-2xl text-sm leading-6 text-ink-muted">
+                  No project workspace is attached to this steward account yet.
+                  Payout addresses, updates, milestones, and payment history will
+                  appear here after an administrator approves and assigns an initiative.
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
   const steward = state.stewardProfiles.find(
     (item) => item.initiativeId === initiative.id,
   );
