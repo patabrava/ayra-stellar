@@ -24,7 +24,7 @@ export function AdminShell({
       <OpsNav
         activeHref={activeHref}
         role="ADMIN"
-        scope={`${view.providencia.name} · Climate Future`}
+        scope={view.scopeLabel}
         user={session.context.profile.email}
         tabs={[
           { href: "/admin", label: "Overview" },
@@ -43,6 +43,7 @@ export function AdminShell({
             label: "Payments",
             count: String(session.state.batches.length),
           },
+          { href: "/admin/treasury", label: "Treasury" },
           { href: "/admin/proof", label: "Proof packs" },
           { href: "/admin/registry", label: "Registry" },
         ]}

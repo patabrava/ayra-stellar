@@ -132,7 +132,7 @@ test("seeded MVP journey from application intake to public disbursement proof", 
 
   await page.goto("/admin");
   await expect(page.getByText("Payment rail").first()).toBeVisible();
-  await expect(page.getByText("Provider setup pending").first()).toBeVisible();
+  await expect(page.getByText("Stellar testnet", { exact: true }).first()).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Mock");
   await expect(page.locator("body")).not.toContainText("mock-");
   await expect(page.getByRole("link", { name: /Export CSV/ })).toBeVisible();

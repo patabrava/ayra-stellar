@@ -12,7 +12,7 @@
 
 ## File Map
 
-- Create `supabase/migrations/0015_application_project_media.sql`: rights field, normalized media tables, constraints, buckets, and RLS.
+- Create `supabase/migrations/0016_application_project_media.sql`: rights field, normalized media tables, constraints, buckets, and RLS.
 - Create `src/lib/ayra/project-media.ts`: media constraints, byte parsing, metadata parsing, storage paths, and role/order operations.
 - Create `src/lib/ayra/project-media-storage.ts`: private upload compensation and public promotion helpers with injectable Supabase boundary.
 - Create `src/components/ayra/application-media-field.tsx`: main/gallery selection, previews, per-photo metadata, and ordering.
@@ -28,7 +28,7 @@
 ### Task 1: Database and storage contract
 
 **Files:**
-- Create: `supabase/migrations/0015_application_project_media.sql`
+- Create: `supabase/migrations/0016_application_project_media.sql`
 
 - [ ] **Step 1: Implement normalized tables and constraints**
 
@@ -40,7 +40,7 @@ Create private `ayra-private-application-media` and public `ayra-public-initiati
 
 - [ ] **Step 3: Verify and commit**
 
-Run `rg -n "application_media|initiative_media|private-application|public-initiative|unique.*main|is_admin" supabase/migrations/0015_application_project_media.sql`. Expected: all contracts and policies are present. Commit only the migration.
+Run `rg -n "application_media|initiative_media|private-application|public-initiative|unique.*main|is_admin" supabase/migrations/0016_application_project_media.sql`. Expected: all contracts and policies are present. Commit only the migration.
 
 ### Task 2: Byte-level validation and metadata contract
 
@@ -227,4 +227,3 @@ Use `superpowers:verification-before-completion` and `superpowers:finishing-a-de
 - [ ] **Step 4: Verify published result**
 
 Confirm the remote branch contains the merge commit. If deployment is connected, verify the deployment and live routes. Report code, migration/deployment state, browser evidence, commit, and any external blocker precisely.
-

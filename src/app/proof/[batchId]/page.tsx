@@ -46,10 +46,18 @@ export default async function ProofPage({ params }: PageProps) {
                 {proof.initiativeName} · {proof.periodLabel}
                 {proof.sponsorName ? ` · ${proof.sponsorName}` : ""}
               </p>
+              <p className="mt-2 text-xs uppercase opacity-70">
+                {proof.stellarNetwork === "pubnet"
+                  ? "Stellar public network"
+                  : "Stellar testnet"}
+              </p>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-3">
               <Link className="btn ghost" href={`/proof/${proof.batchId}/export`}>
                 <Download className="h-4 w-4" /> Export CSV
+              </Link>
+              <Link className="btn ghost" href={`/proof/${proof.batchId}/release`}>
+                <Download className="h-4 w-4" /> Versioned JSON
               </Link>
               <div className="proof-stamp">{proof.publicLabel}</div>
             </div>
@@ -100,7 +108,10 @@ export default async function ProofPage({ params }: PageProps) {
                         </div>
                       </td>
                       <td>
-                        <Hash value={receipt.transactionHash} />
+                        <Hash
+                          stellarNetwork={proof.stellarNetwork}
+                          value={receipt.transactionHash}
+                        />
                       </td>
                     </tr>
                   ))}

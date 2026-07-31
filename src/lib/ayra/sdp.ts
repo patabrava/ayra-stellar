@@ -1,3 +1,8 @@
+import {
+  getConfiguredStellarNetwork,
+  type StellarNetwork,
+} from "@/lib/ayra/stellar-network";
+
 export type SdpBatchRef = {
   id: string;
   code: string;
@@ -686,13 +691,28 @@ export function createSdpGateway(
   env: NodeJS.ProcessEnv = process.env,
   fetchImpl: FetchLike = fetch,
 ) {
+  return createSdpGatewayForNetwork(
+    getConfiguredStellarNetwork(env),
+    env,
+    fetchImpl,
+  );
+}
+
+export function createSdpGatewayForNetwork(
+  network: StellarNetwork,
+  env: NodeJS.ProcessEnv = process.env,
+  fetchImpl: FetchLike = fetch,
+) {
   const mode = env.AYRA_SDP_MODE ?? "mock";
   if (mode === "mock") return createMockSdpGateway();
-  if (mode !== "testnet") {
-    throw new Error("AYRA_SDP_MODE must be mock or testnet.");
+  if (mode !== "testnet" && mode !== "pubnet" && mode !== "live") {
+    throw new Error("AYRA_SDP_MODE must be mock, testnet, pubnet, or live.");
   }
 
-  return createTestnetSdpGateway(readTestnetConfig(env), fetchImpl);
+  return createTestnetSdpGateway(
+    network === "pubnet" ? readMainnetConfig(env) : readTestnetConfig(env),
+    fetchImpl,
+  );
 }
 
 function readTestnetConfig(env: NodeJS.ProcessEnv): TestnetSdpGatewayConfig {
@@ -710,6 +730,30 @@ function readTestnetConfig(env: NodeJS.ProcessEnv): TestnetSdpGatewayConfig {
   if (config.registrationContactType !== "EMAIL_AND_WALLET_ADDRESS") {
     throw new Error(
       "AYRA MVP supports STELLAR_SDP_REGISTRATION_CONTACT_TYPE=EMAIL_AND_WALLET_ADDRESS.",
+    );
+  }
+  return config;
+}
+
+function readMainnetConfig(env: NodeJS.ProcessEnv): TestnetSdpGatewayConfig {
+  const config = {
+    baseUrl: requiredEnv(env, "STELLAR_MAINNET_SDP_BASE_URL"),
+    createAuthorization: requiredEnv(
+      env,
+      "STELLAR_MAINNET_SDP_CREATE_AUTHORIZATION",
+    ),
+    startAuthorization:
+      env.STELLAR_MAINNET_SDP_START_AUTHORIZATION ||
+      requiredEnv(env, "STELLAR_MAINNET_SDP_CREATE_AUTHORIZATION"),
+    tenantName: env.STELLAR_MAINNET_SDP_TENANT_NAME || undefined,
+    assetId: requiredEnv(env, "STELLAR_MAINNET_SDP_ASSET_ID"),
+    registrationContactType:
+      env.STELLAR_MAINNET_SDP_REGISTRATION_CONTACT_TYPE ||
+      "EMAIL_AND_WALLET_ADDRESS",
+  };
+  if (config.registrationContactType !== "EMAIL_AND_WALLET_ADDRESS") {
+    throw new Error(
+      "AYRA MVP supports STELLAR_MAINNET_SDP_REGISTRATION_CONTACT_TYPE=EMAIL_AND_WALLET_ADDRESS.",
     );
   }
   return config;

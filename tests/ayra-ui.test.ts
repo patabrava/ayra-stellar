@@ -44,6 +44,19 @@ describe("AYRA UI hash renderer", () => {
     assert.match(markup, /title="Open on Stellar Expert"/);
   });
 
+  it("links pubnet receipts to Stellar Expert public network", () => {
+    const txHash = "b".repeat(64);
+    const markup = renderToStaticMarkup(
+      createElement(Hash, { value: txHash, stellarNetwork: "pubnet" }),
+    );
+
+    assert.match(
+      markup,
+      new RegExp(`href="https://stellar\\.expert/explorer/public/tx/${txHash}"`),
+    );
+    assert.match(markup, /Open Stellar public network transaction/);
+  });
+
   it("hides placeholder provider references from the UI", () => {
     const markup = renderToStaticMarkup(
       createElement(Hash, { value: "mock-payment-apr-3" }),

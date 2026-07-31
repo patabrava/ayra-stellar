@@ -1,5 +1,11 @@
 import { getUsdCopRate } from "@/lib/ayra/currency";
-import { getProofPack, type AyraState, type ProofPack } from "@/lib/ayra/domain";
+import {
+  getProofPack,
+  type AyraState,
+  type Batch,
+  type ProofPack,
+} from "@/lib/ayra/domain";
+import { getConfiguredStellarNetwork } from "@/lib/ayra/stellar-network";
 
 export type AdminViewModel = Awaited<ReturnType<typeof buildAdminViewModel>>;
 
@@ -19,10 +25,11 @@ export async function buildAdminViewModel(
   selectedProofBatchId?: string,
 ) {
   const providencia =
-    state.tracks.find((item) => item.slug === "providencia") ?? state.tracks[0]!;
+    state.tracks.find((item) => item.slug === "providencia") ?? state.tracks[0] ?? null;
   const reforest =
     state.initiatives.find((item) => item.slug === "reforestation") ??
-    state.initiatives[0]!;
+    state.initiatives[0] ??
+    null;
   const defaultSponsor =
     state.sponsors.find((item) => item.slug === "climate-future") ??
     state.sponsors[0];
@@ -44,10 +51,7 @@ export async function buildAdminViewModel(
   const selectedProofOption =
     proofOptions.find((option) => option.batchId === selectedProofBatchId) ??
     proofOptions[0];
-  const lineItemBatch =
-    state.batches.find((batch) => batch.code === "PV-REFOREST-APR26") ??
-    state.batches.find((batch) => batch.status === "submitted") ??
-    state.batches[0]!;
+  const lineItemBatch = getAdminLineItemBatch(state.batches);
   const proof = selectedProofOption
     ? getProofPack(state, selectedProofOption.batchId)
     : null;
@@ -61,6 +65,9 @@ export async function buildAdminViewModel(
   return {
     providencia,
     reforest,
+    scopeLabel: providencia
+      ? `${providencia.name} · Climate Future`
+      : "No active track · Mainnet setup",
     defaultSponsor,
     pendingApplications,
     pendingUpdates,
@@ -73,10 +80,26 @@ export async function buildAdminViewModel(
     lineItemBatch,
     usdCopRate,
     paymentRailLabel:
-      process.env.AYRA_SDP_MODE === "testnet"
-        ? "Stellar testnet"
-        : "Provider setup pending",
+      getConfiguredStellarNetwork() === "pubnet"
+        ? "Stellar public network"
+        : "Stellar testnet",
   };
+}
+
+export function getAdminLineItemBatch(batches: Batch[]) {
+  const byNewest = [...batches].sort((a, b) => {
+    const bySubmittedAt =
+      Date.parse(b.submittedAt ?? b.createdAt) -
+      Date.parse(a.submittedAt ?? a.createdAt);
+    return bySubmittedAt || b.code.localeCompare(a.code);
+  });
+
+  return (
+    byNewest.find((batch) => batch.status === "submitted") ??
+    byNewest.find((batch) => batch.status === "settled") ??
+    byNewest[0] ??
+    null
+  );
 }
 
 export function batchTotal(state: AyraState, batchId: string) {

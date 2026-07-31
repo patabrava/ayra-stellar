@@ -40,6 +40,7 @@ export default async function AdminRegistryPage({ searchParams }: PageProps) {
                 <tr>
                   <th>Initiative</th>
                   <th>Address</th>
+                  <th>Network</th>
                   <th>Status</th>
                   <th>Action</th>
                 </tr>
@@ -56,6 +57,11 @@ export default async function AdminRegistryPage({ searchParams }: PageProps) {
                         <Hash
                           value={`${address.address.slice(0, 10)}...${address.address.slice(-6)}`}
                         />
+                      </td>
+                      <td>
+                        <Chip tone={address.stellarNetwork === "pubnet" ? "ok" : "info"}>
+                          {address.stellarNetwork}
+                        </Chip>
                       </td>
                       <td>
                         <Chip tone={address.status === "pending" ? "warn" : "ok"}>

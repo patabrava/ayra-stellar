@@ -28,6 +28,7 @@ import {
 import { suggestBatchCode } from "@/lib/ayra/batch-code";
 import { approvedUnusedMilestoneSubmissions, formatLocal } from "@/lib/ayra/domain";
 import { requireAdminSession } from "@/lib/ayra/session";
+import { getConfiguredStellarNetwork } from "@/lib/ayra/stellar-network";
 
 type PageProps = {
   searchParams?: Promise<{ status?: string }>;
@@ -37,11 +38,12 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const session = await requireAdminSession("/admin/batches");
   const view = await buildAdminViewModel(session.state);
+  const stellarNetwork = getConfiguredStellarNetwork();
   const shouldAutoRefresh = session.state.batches.some(
     (batch) => batch.status === "submitted",
   );
   const suggestedBatchCode = suggestBatchCode({
-    initiativeCode: view.reforest.code,
+    initiativeCode: view.reforest?.code ?? "MAINNET",
   });
   const batchTargets: BatchInitiativeTargetOption[] = session.state.initiatives.map(
     (initiative) => {
@@ -49,6 +51,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
       const payoutAddress = session.state.payoutAddresses.find(
         (item) =>
           item.initiativeId === initiative.id &&
+          item.stellarNetwork === stellarNetwork &&
           (item.status === "verified" || item.status === "locked"),
       );
       const payoutStatus =
@@ -123,7 +126,8 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
         </div>
 
         <div className="admin-payments-stack">
-          <form
+          {view.reforest ? (
+            <form
             action={createBatchAction}
             className="panel payment-composer"
             data-admin-payments-section="composer"
@@ -177,7 +181,20 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                 </div>
               </BatchInitiativeTarget>
             </div>
-          </form>
+            </form>
+          ) : (
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title">Mainnet setup required</span>
+              </div>
+              <div className="panel-body">
+                <p className="max-w-2xl text-sm leading-6 text-ink-muted">
+                  Create and approve the first initiative before composing a payment.
+                  The clean database contains no payout target yet.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div
             className="panel payment-registry"
@@ -245,6 +262,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                         settledTransactionHashes.map((transactionHash) => (
                           <StellarTransactionVerificationLink
                             key={transactionHash}
+                            stellarNetwork={batch.stellarNetwork}
                             transactionHash={transactionHash}
                           />
                         ))
@@ -269,7 +287,8 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
           </div>
         </div>
 
-        <div className="panel mt-4 overflow-x-auto">
+        {view.lineItemBatch ? (
+          <div className="panel mt-4 overflow-x-auto">
           <div className="panel-head">
             <span className="panel-title">{view.lineItemBatch.code} · payment line items</span>
             <Chip tone="warn">partial settlement</Chip>
@@ -306,6 +325,7 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                         <span className="text-xs uppercase text-ink-muted">On-chain</span>
                         <Hash
                           pendingLabel="On-chain transaction pending"
+                          stellarNetwork={view.lineItemBatch.stellarNetwork}
                           value={line.transactionHash}
                         />
                         {line.sdpPaymentId ? (
@@ -325,7 +345,19 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                 ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        ) : (
+          <div className="panel mt-4">
+            <div className="panel-head">
+              <span className="panel-title">No payment line items</span>
+            </div>
+            <div className="panel-body">
+              <p className="text-sm leading-6 text-ink-muted">
+                Payment line items will appear after the first initiative and payout are ready.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="panel mt-4 overflow-x-auto">
           <div className="panel-head">

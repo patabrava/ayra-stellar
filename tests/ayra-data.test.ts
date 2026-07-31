@@ -89,6 +89,7 @@ const publicRows = {
       sponsor_id: "sponsor-1",
       code: "PV-REFOREST-APR26",
       period_label: "April 2026",
+      stellar_network: "pubnet",
       payment_kind: "normal",
       milestone_submission_id: "milestone-submission-1",
       status: "submitted",
@@ -106,6 +107,7 @@ const publicRows = {
       batch_code: "PV-REFOREST-APR26",
       period_label: "April 2026",
       batch_status: "submitted",
+      stellar_network: "pubnet",
       initiative_name: "Reforestation",
       sponsor_name: "Climate Future",
       category: "Crew wages",
@@ -124,6 +126,7 @@ const publicRows = {
       batch_code: "PV-REFOREST-APR26",
       period_label: "April 2026",
       batch_status: "submitted",
+      stellar_network: "pubnet",
       initiative_name: "Reforestation",
       sponsor_name: "Climate Future",
       category: "Seedlings",
@@ -143,6 +146,7 @@ const publicRows = {
       batch_code: "PV-REFOREST-APR26",
       period_label: "April 2026",
       batch_status: "submitted",
+      stellar_network: "pubnet",
       initiative_name: "Reforestation",
       sponsor_name: "Climate Future",
       category: "Crew wages",
@@ -227,6 +231,8 @@ describe("AYRA Supabase row mapping", () => {
     assert.equal(wall.spending[0]?.amountUsdc, 1);
     assert.equal(wall.batches[0]?.amountUsdc, 1);
     assert.equal(wall.batches[0]?.publicLabel, "In flight");
+    assert.equal(state.batches[0]?.stellarNetwork, "pubnet");
+    assert.equal(proof.stellarNetwork, "pubnet");
     assert.equal(proof.receipts.length, 1);
     assert.equal(proof.receipts[0]?.id, "line-2");
     assert.equal(

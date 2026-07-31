@@ -9,6 +9,7 @@ import {
   createMockSdpGateway,
   buildSdpInstructionsCsv,
   createSdpGateway,
+  createSdpGatewayForNetwork,
   createTestnetSdpGateway,
   SdpGatewayError,
   type SdpLineItemRef,
@@ -52,6 +53,20 @@ describe("AYRA SDP gateway and CSV exports", () => {
       STELLAR_SDP_REGISTRATION_CONTACT_TYPE: "EMAIL_AND_WALLET_ADDRESS",
       STELLAR_USDC_ISSUER: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
       STELLAR_HORIZON_URL: "https://horizon-testnet.stellar.org",
+    } as unknown as NodeJS.ProcessEnv);
+
+    assert.ok(gateway);
+  });
+
+  it("loads pubnet SDP credentials from the isolated mainnet namespace", () => {
+    const gateway = createSdpGatewayForNetwork("pubnet", {
+      AYRA_SDP_MODE: "live",
+      STELLAR_MAINNET_SDP_BASE_URL: "https://sdp-mainnet-api.ayra.haus",
+      STELLAR_MAINNET_SDP_CREATE_AUTHORIZATION: "SDP_mainnet.create",
+      STELLAR_MAINNET_SDP_START_AUTHORIZATION: "SDP_mainnet.start",
+      STELLAR_MAINNET_SDP_ASSET_ID: "mainnet-usdc-asset",
+      STELLAR_MAINNET_SDP_REGISTRATION_CONTACT_TYPE:
+        "EMAIL_AND_WALLET_ADDRESS",
     } as unknown as NodeJS.ProcessEnv);
 
     assert.ok(gateway);

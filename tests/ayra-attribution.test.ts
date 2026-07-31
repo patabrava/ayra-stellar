@@ -46,7 +46,8 @@ describe("SCF tranche 2 attribution and transparency", () => {
     const { state, batch } = tracedState();
     const csv = buildPublicBatchCsv(getProofPack(state, batch.id));
 
-    assert.match(csv, /batch_code,period,status,category/);
+    assert.match(csv, /batch_code,period,status,stellar_network,category/);
+    assert.match(csv, /testnet/);
     assert.match(csv, /VIIO-PVD-2026-03-001/);
     assert.match(csv, /AYRA-LI-PVD-2026-03-001/);
     assert.match(csv, /local-operator/);

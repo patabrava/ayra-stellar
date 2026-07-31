@@ -1,3 +1,5 @@
+import { resolveStellarNetworkConfig } from "@/lib/ayra/stellar-network";
+
 export type StellarUsdcProofInput = {
   transactionHash: string;
   expectedAmount: number;
@@ -46,7 +48,7 @@ type HorizonOperation = {
   to?: string;
 };
 
-const DEFAULT_HORIZON_URL = "https://horizon-testnet.stellar.org";
+const DEFAULT_HORIZON_URL = resolveStellarNetworkConfig("testnet", {}).horizonUrl;
 const STROOP_SCALE = 10_000_000;
 
 export class StellarProofError extends Error {

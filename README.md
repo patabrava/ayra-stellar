@@ -2,7 +2,8 @@
 
 AYRA Stellar is a Next.js + Supabase app for managing the reforestation track
 workflow. This repo is configured to run against the Stellar Disbursement
-Platform in `testnet` mode only.
+Platform with preserved testnet history and a separately gated Stellar public
+network rail.
 
 ## What you need
 
@@ -12,6 +13,10 @@ Platform in `testnet` mode only.
 - The sibling SDP backend repo at `../SDP/stellar-disbursement-platform-backend`
 - Supabase project credentials for AYRA
 - A Stellar testnet receiver wallet address for verification
+
+Mainnet deployment is intentionally separate from local/testnet setup. See
+[`docs/ayra-stellar-sdp-mainnet-runbook.md`](docs/ayra-stellar-sdp-mainnet-runbook.md)
+before provisioning or funding the public-network rail.
 
 ## 1. Start the SDP Docker stack
 
@@ -59,6 +64,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
 AYRA_SDP_MODE=testnet
+AYRA_STELLAR_NETWORK=testnet
+AYRA_MAINNET_PAYMENTS_ENABLED=0
 STELLAR_SDP_BASE_URL=http://localhost:8000
 STELLAR_SDP_CREATE_AUTHORIZATION=SDP_<id>.<secret>
 STELLAR_SDP_START_AUTHORIZATION=SDP_<id>.<secret-or-same-if-allowed>
@@ -76,6 +83,9 @@ STELLAR_SDP_SYNC_DELAY_MS=10000
 Notes:
 
 - `AYRA_SDP_MODE=testnet` is required for the live SDP flow.
+- `AYRA_STELLAR_NETWORK=testnet` preserves the default development and current
+  production rail. Pubnet batches use separate SDP credentials and remain
+  disabled unless every mainnet release gate passes.
 - `STELLAR_SDP_CREATE_AUTHORIZATION` and `STELLAR_SDP_START_AUTHORIZATION`
   must match the authorization format required by your local SDP instance.
 - The local verifier expects a real Stellar testnet wallet address.
@@ -119,6 +129,7 @@ npm test
 npm run lint
 npm run build
 npm run verify:sdp-testnet
+npm run verify:sdp-mainnet
 ```
 
 ## Troubleshooting
