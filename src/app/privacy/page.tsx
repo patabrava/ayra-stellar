@@ -13,17 +13,17 @@ const privacyPoints = [
   {
     title: "What we collect",
     body:
-      "We only use the information needed to run the public transparency wall, applications, project pages, and operator workflows: names, email addresses, submission content, and basic site interaction data.",
+      "We only use the information needed to run the public transparency wall, applications, project pages, and operator workflows: names, email addresses, submission content, submitted project photography, and basic site interaction data.",
   },
   {
     title: "How we use it",
     body:
-      "Data is used to review applications, manage portal access, publish approved public records, and keep private operator-only material out of the public surfaces.",
+      "Data is used to review applications and their photography, manage portal access, publish only admin-selected project images and approved public records, and keep pending material out of public surfaces.",
   },
   {
     title: "What we do not publish",
     body:
-      "Private receipts, raw contact details, failed payment details, and internal reconciliation notes stay off the public wall and project pages.",
+      "Pending or rejected application photos, excluded gallery photos, private receipts, raw contact details, failed payment details, and internal reconciliation notes stay off the public wall and project pages.",
   },
 ] as const;
 

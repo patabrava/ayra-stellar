@@ -1,7 +1,8 @@
 import { AdminShell } from "@/app/admin/admin-shell";
 import { buildAdminViewModel } from "@/app/admin/admin-view-model";
 import { Chip, Hash } from "@/components/ayra/ui";
-import { verifyPayoutAddressAction } from "@/lib/ayra/actions";
+import { ApplicationMediaField } from "@/components/ayra/application-media-field";
+import { replaceInitiativeMediaAction, verifyPayoutAddressAction } from "@/lib/ayra/actions";
 import { requireAdminSession } from "@/lib/ayra/session";
 
 type PageProps = {
@@ -100,6 +101,23 @@ export default async function AdminRegistryPage({ searchParams }: PageProps) {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+        <div className="panel mt-6">
+          <div className="panel-head"><span className="panel-title">Public project photography</span></div>
+          <div className="panel-body grid gap-6">
+            {session.state.initiatives.map((initiative) => {
+              const media = (session.state.initiativeMedia ?? []).filter((item) => item.initiativeId === initiative.id);
+              return <form action={replaceInitiativeMediaAction} className="border border-rule p-4" key={initiative.id}>
+                <input name="initiativeId" type="hidden" value={initiative.id} />
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div><h2 className="font-medium">{initiative.name}</h2><p className="text-sm text-ink-muted">{media.length ? `${media.length} public photo${media.length === 1 ? "" : "s"}` : "Main image required before homepage featuring"}</p></div>
+                  <Chip tone={media.some((item) => item.role === "main") ? "ok" : "warn"}>{media.some((item) => item.role === "main") ? "Ready" : "Image required"}</Chip>
+                </div>
+                <ApplicationMediaField requireRights={false} />
+                <button className="btn primary mt-4" type="submit">{media.length ? "Replace public media" : "Add project media"}</button>
+              </form>;
+            })}
           </div>
         </div>
       </section>

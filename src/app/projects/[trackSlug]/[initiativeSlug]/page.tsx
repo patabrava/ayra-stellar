@@ -7,6 +7,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { SiteFooter } from "@/components/ayra/site-footer";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
 import { AyraLogo, Chip, Hash } from "@/components/ayra/ui";
+import { ProjectGallery } from "@/components/ayra/project-gallery";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
   formatLocal,
@@ -14,6 +15,7 @@ import {
   getProofPack,
   getPublicInitiativeProjection,
 } from "@/lib/ayra/domain";
+import { initiativeMediaFor } from "@/lib/ayra/public-project-media";
 
 type PageProps = {
   params: Promise<{ trackSlug: string; initiativeSlug: string }>;
@@ -66,10 +68,13 @@ export default async function InitiativePage({ params }: PageProps) {
     project.batches.find((batch) => batch.status === "settled") ??
     project.batches[0];
   const proof = proofBatch ? getProofPack(state, proofBatch.id) : null;
-  const image =
-    projectImageBySlug[
+  const approvedMedia = initiativeMediaFor(state, project.initiative.id);
+  const fallbackImage = projectImageBySlug[
       project.initiative.slug as keyof typeof projectImageBySlug
     ] ?? projectImageBySlug.reforestation;
+  const image = approvedMedia.main
+    ? { alt: approvedMedia.main.alt, src: approvedMedia.main.url, focalPosition: approvedMedia.main.focalPosition, remote: true, credit: approvedMedia.main.credit }
+    : { ...fallbackImage, focalPosition: "center", remote: false, credit: undefined };
 
   return (
     <main className="public-shell">
@@ -137,9 +142,12 @@ export default async function InitiativePage({ params }: PageProps) {
                 priority
                 sizes="(min-width: 1024px) 58vw, 100vw"
                 src={image.src}
+                style={{ objectPosition: image.focalPosition }}
+                unoptimized={image.remote}
                 width={928}
               />
             </div>
+            {image.credit ? <p className="public-dim mt-2 text-xs">Photo: {image.credit}</p> : null}
 
             <div className="project-dossier">
               <section className="progress-rail" aria-label="Project progress">
@@ -194,6 +202,7 @@ export default async function InitiativePage({ params }: PageProps) {
                 </span>
               </section>
             </div>
+            <ProjectGallery media={approvedMedia.gallery} />
 
             <div className="mt-10 grid gap-3">
               {project.spending.slice(0, 5).map((item) => (

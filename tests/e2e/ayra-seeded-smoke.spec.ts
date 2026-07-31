@@ -74,6 +74,19 @@ test("seeded MVP journey from application intake to public disbursement proof", 
     .getByLabel("Milestones")
     .fill("Nursery setup\nSeedling germination count\nFirst public proof review");
   await page.getByLabel("Signal / phone").fill("+57 300 111 2222");
+  const mainPng = Buffer.alloc(24);
+  mainPng.set([0x89, 0x50, 0x4e, 0x47], 0);
+  mainPng.writeUInt32BE(2400, 16);
+  mainPng.writeUInt32BE(1350, 20);
+  const galleryPng = Buffer.alloc(24);
+  galleryPng.set([0x89, 0x50, 0x4e, 0x47], 0);
+  galleryPng.writeUInt32BE(1400, 16);
+  galleryPng.writeUInt32BE(900, 20);
+  await page.getByLabel("Main image", { exact: true }).setInputFiles({ name: "nursery-main.png", mimeType: "image/png", buffer: mainPng });
+  await page.getByLabel("Main image description").fill("Mangrove seedlings in the Providencia nursery");
+  await page.getByLabel("Additional gallery photos (optional)").setInputFiles({ name: "nursery-gallery.png", mimeType: "image/png", buffer: galleryPng });
+  await page.getByLabel("Photo description").fill("Local team preparing seedlings for planting");
+  await page.getByRole("checkbox", { name: /I own these photos/ }).check();
   await page.getByRole("button", { name: /Submit for review/ }).click();
   await expect(page).toHaveURL(/status=demo-submitted/, { timeout: 30_000 });
   await expect(
@@ -95,9 +108,9 @@ test("seeded MVP journey from application intake to public disbursement proof", 
   await page.waitForURL(/\/admin\/updates$/);
   await expect(page.getByRole("heading", { name: "Updates publisher" })).toBeVisible();
 
-  await page.getByRole("link", { name: /Batches/ }).click();
+  await page.getByRole("link", { name: /Payments/ }).click();
   await page.waitForURL(/\/admin\/batches$/);
-  await expect(page.getByRole("heading", { name: "Batches" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Payments" })).toBeVisible();
   await expect(page.getByLabel("Target initiative")).toBeVisible();
   await expect(page.getByLabel("Target initiative")).toContainText("Reforestation");
   const stellarLinks = page.getByRole("link", {
@@ -139,13 +152,13 @@ test("seeded MVP journey from application intake to public disbursement proof", 
   await expect(page).toHaveURL(/\/admin\/batches\?status=demo-batch-synced/, {
     timeout: 30_000,
   });
-  await expect(page.getByRole("status")).toContainText("Batch status synced.");
+  await expect(page.getByRole("status")).toContainText("Payment status synced.");
   await page.goto("/admin/batches");
-  await page.getByRole("button", { name: "Create ready batch" }).click();
+  await page.getByRole("button", { name: "Create ready payment" }).click();
   await expect(page).toHaveURL(/\/admin\/batches\?status=demo-batch-created/, {
     timeout: 30_000,
   });
-  await expect(page.getByRole("status")).toContainText("Batch draft created.");
+  await expect(page.getByRole("status")).toContainText("Payment draft created.");
 
   await page.goto("/steward");
   await expect(page.getByRole("heading", { name: "Steward portal" })).toBeVisible();

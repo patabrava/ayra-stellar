@@ -23,6 +23,9 @@ const validApplication = {
     "First public proof review",
   ],
   contactSignal: "+57 300 555 0199",
+  mainImageAlt: "Mangrove seedlings growing in the island nursery",
+  mainImageCredit: "AYRA field team",
+  heroImageRightsConfirmed: true as const,
 };
 
 describe("AYRA application intake validation", () => {

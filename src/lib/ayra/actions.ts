@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { randomUUID } from "node:crypto";
 
 import {
   buildAuthCallbackUrl,
@@ -36,12 +37,19 @@ import {
   verifyStellarUsdcTrustline,
   StellarProofError,
 } from "@/lib/ayra/stellar-proof";
-import { insertPublicApplication } from "@/lib/ayra/public-write";
+import {
+  ProjectMediaError,
+  privateProjectMediaPath,
+  validateProjectImage,
+  validateProjectMediaFiles,
+  type ProjectMediaMetadata,
+  publicProjectMediaPath,
+} from "@/lib/ayra/project-media";
 import {
   getUsdCopRate,
   normalizeBatchCurrencyAmounts,
 } from "@/lib/ayra/currency";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loginStatusForAuthError } from "@/lib/ayra/status";
 
@@ -60,6 +68,13 @@ const milestoneSubmissionSchema = z.object({
 
 const idActionSchema = z.object({
   entityId: z.string().trim().min(1),
+});
+
+const applicationMediaActionSchema = z.object({
+  applicationId: z.string().uuid(),
+  mediaId: z.string().uuid(),
+  action: z.enum(["toggle", "earlier", "later", "main", "focal"]),
+  focalPosition: z.enum(["center", "top", "bottom", "left", "right"]).optional(),
 });
 
 const attributionResolutionSchema = idActionSchema.extend({
@@ -123,6 +138,22 @@ type ApplicationRow = {
   operational_notes: string;
   milestone_plan: string[] | null;
   contact_signal: string;
+  hero_image_rights_confirmed: boolean;
+};
+
+type ApplicationMediaRow = {
+  id: string;
+  application_id: string;
+  storage_path: string;
+  role: "main" | "gallery";
+  mime_type: "image/jpeg" | "image/png" | "image/webp";
+  width: number;
+  height: number;
+  alt: string;
+  credit: string | null;
+  selected_for_public: boolean;
+  sort_order: number;
+  focal_position: "center" | "top" | "bottom" | "left" | "right";
 };
 
 function text(formData: FormData, key: string) {
@@ -160,6 +191,34 @@ function optionalFile(formData: FormData, key: string) {
     return value as File;
   }
   return null;
+}
+
+function requiredFile(formData: FormData, key: string) {
+  return optionalFile(formData, key);
+}
+
+function files(formData: FormData, key: string) {
+  return formData.getAll(key).filter((value): value is File =>
+    Boolean(value && typeof value === "object" && "size" in value && Number(value.size) > 0),
+  );
+}
+
+function galleryMetadata(formData: FormData): Array<Pick<ProjectMediaMetadata, "alt" | "credit">> | null {
+  try {
+    const value = JSON.parse(text(formData, "galleryMetadata"));
+    if (!Array.isArray(value)) return null;
+    return value.map((item) => ({
+      alt: typeof item?.alt === "string" ? item.alt.trim() : "",
+      credit: typeof item?.credit === "string" && item.credit.trim() ? item.credit.trim() : undefined,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+function mediaStatus(error: unknown) {
+  if (!(error instanceof ProjectMediaError)) return "media-error";
+  return `media-${error.code}`;
 }
 
 function mediaKindFromFile(file: File | null) {
@@ -374,19 +433,86 @@ export async function submitApplicationAction(formData: FormData) {
     operationalNotes: text(formData, "operationalNotes"),
     milestonePlan: normalizeMilestonePlan(text(formData, "milestonePlan")),
     contactSignal: text(formData, "contactSignal"),
+    mainImageAlt: text(formData, "mainImageAlt"),
+    mainImageCredit: optionalText(formData, "mainImageCredit"),
+    heroImageRightsConfirmed: text(formData, "heroImageRightsConfirmed") === "true",
   });
 
   if (!parsed.success) redirectWithStatus("/apply", "invalid");
-  if (!hasPublicSupabaseEnv()) demoRedirect("/apply", "submitted");
+  const mainFile = requiredFile(formData, "mainImage");
+  const galleryFiles = files(formData, "galleryImages");
+  const galleryMeta = galleryMetadata(formData);
+  if (!galleryMeta || galleryMeta.length !== galleryFiles.length || galleryMeta.some((item) => item.alt.length < 5 || item.alt.length > 240 || (item.credit?.length ?? 0) > 160)) {
+    redirectWithStatus("/apply", "media-metadata");
+  }
 
-  const result = await insertPublicApplication(
-    {
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    },
-    parsed.data,
-  );
-  if (!result.ok) redirectWithStatus("/apply", "error");
+  let mainImage;
+  let galleryImages;
+  try {
+    validateProjectMediaFiles(mainFile, galleryFiles);
+    mainImage = await validateProjectImage(mainFile!, "main");
+    galleryImages = await Promise.all(galleryFiles.map((file) => validateProjectImage(file, "gallery")));
+  } catch (error) {
+    redirectWithStatus("/apply", mediaStatus(error));
+  }
+
+  if (!hasPublicSupabaseEnv()) demoRedirect("/apply", "submitted");
+  if (!hasSupabaseAdminEnv()) redirectWithStatus("/apply", "media-error");
+
+  const supabase = createSupabaseAdminClient();
+  const applicationId = randomUUID();
+  const mediaInputs = [
+    { file: mainFile!, image: mainImage!, role: "main" as const, alt: parsed.data.mainImageAlt, credit: parsed.data.mainImageCredit, sortOrder: 0 },
+    ...galleryFiles.map((file, index) => ({ file, image: galleryImages![index], role: "gallery" as const, alt: galleryMeta[index].alt, credit: galleryMeta[index].credit, sortOrder: index + 1 })),
+  ].map((item) => ({ ...item, id: randomUUID() }));
+  const uploadedPaths: string[] = [];
+
+  const { error: applicationError } = await supabase.from("applications").insert({
+    id: applicationId,
+    applicant_name: parsed.data.applicantName,
+    applicant_email: parsed.data.applicantEmail,
+    proposed_track_name: parsed.data.proposedTrackName,
+    proposed_initiative_name: parsed.data.proposedInitiativeName,
+    scope_summary: parsed.data.scopeSummary,
+    operational_notes: parsed.data.operationalNotes,
+    milestone_plan: parsed.data.milestonePlan,
+    contact_signal: parsed.data.contactSignal,
+    hero_image_rights_confirmed: true,
+    status: "pending",
+  });
+  if (applicationError) redirectWithStatus("/apply", "error");
+
+  try {
+    for (const item of mediaInputs) {
+      const path = privateProjectMediaPath(applicationId, item.id, item.image.extension);
+      const { error } = await supabase.storage.from("ayra-private-application-media").upload(path, item.image.bytes, {
+        contentType: item.image.mimeType,
+        upsert: false,
+      });
+      if (error) throw error;
+      uploadedPaths.push(path);
+    }
+    const { error } = await supabase.from("application_media").insert(mediaInputs.map((item, index) => ({
+      id: item.id,
+      application_id: applicationId,
+      storage_path: uploadedPaths[index],
+      role: item.role,
+      original_name: item.file.name.slice(0, 255),
+      mime_type: item.image.mimeType,
+      width: item.image.width,
+      height: item.image.height,
+      alt: item.alt,
+      credit: item.credit ?? null,
+      selected_for_public: true,
+      sort_order: item.sortOrder,
+      focal_position: "center",
+    })));
+    if (error) throw error;
+  } catch {
+    if (uploadedPaths.length) await supabase.storage.from("ayra-private-application-media").remove(uploadedPaths);
+    await supabase.from("applications").delete().eq("id", applicationId);
+    redirectWithStatus("/apply", "media-error");
+  }
 
   revalidatePath("/admin");
   redirectWithStatus("/apply", "submitted");
@@ -608,6 +734,99 @@ export async function submitPayoutAddressAction(formData: FormData) {
   redirectWithStatus("/steward", "payout-submitted");
 }
 
+export async function curateApplicationMediaAction(formData: FormData) {
+  const parsed = applicationMediaActionSchema.safeParse({
+    applicationId: text(formData, "applicationId"),
+    mediaId: text(formData, "mediaId"),
+    action: text(formData, "action"),
+    focalPosition: optionalText(formData, "focalPosition"),
+  });
+  if (!parsed.success) redirectWithStatus("/admin/applications", "invalid");
+  const session = await requireAdminSession("/admin/applications");
+  if (session.isDemo) demoRedirect("/admin/applications", "media-updated");
+  const supabase = session.supabase!;
+  const { data: application } = await supabase.from("applications").select("id").eq("id", parsed.data.applicationId).eq("status", "pending").single();
+  if (!application) redirectWithStatus("/admin/applications", "error");
+  const { data: target } = await supabase.from("application_media").select("id,role,selected_for_public,sort_order").eq("id", parsed.data.mediaId).eq("application_id", parsed.data.applicationId).single();
+  if (!target) redirectWithStatus("/admin/applications", "error");
+
+  if (parsed.data.action === "main") {
+    const { error } = await supabase.rpc("admin_set_application_main_media", { p_application_id: parsed.data.applicationId, p_media_id: parsed.data.mediaId });
+    if (error) redirectWithStatus("/admin/applications", "error");
+  } else if (parsed.data.action === "toggle") {
+    if (target.role === "main") redirectWithStatus("/admin/applications", "media-main-required");
+    const { error } = await supabase.from("application_media").update({ selected_for_public: !target.selected_for_public }).eq("id", target.id);
+    if (error) redirectWithStatus("/admin/applications", "error");
+  } else if (parsed.data.action === "focal") {
+    const { error } = await supabase.from("application_media").update({ focal_position: parsed.data.focalPosition ?? "center" }).eq("id", target.id);
+    if (error) redirectWithStatus("/admin/applications", "error");
+  } else {
+    const direction = parsed.data.action === "earlier" ? -1 : 1;
+    const desired = Math.max(1, target.sort_order + direction);
+    const { data: neighbour } = await supabase.from("application_media").select("id,sort_order").eq("application_id", parsed.data.applicationId).eq("role", "gallery").eq("sort_order", desired).maybeSingle();
+    if (neighbour) await supabase.from("application_media").update({ sort_order: target.sort_order }).eq("id", neighbour.id);
+    const { error } = await supabase.from("application_media").update({ sort_order: desired }).eq("id", target.id);
+    if (error) redirectWithStatus("/admin/applications", "error");
+  }
+  revalidatePath("/admin/applications");
+  redirectWithStatus("/admin/applications", "media-updated");
+}
+
+export async function replaceInitiativeMediaAction(formData: FormData) {
+  const initiativeId = text(formData, "initiativeId");
+  if (!z.string().uuid().safeParse(initiativeId).success) redirectWithStatus("/admin/registry", "invalid");
+  const session = await requireAdminSession("/admin/registry");
+  if (session.isDemo) demoRedirect("/admin/registry", "initiative-media-updated");
+  const mainFile = requiredFile(formData, "mainImage");
+  const galleryFiles = files(formData, "galleryImages");
+  const galleryMeta = galleryMetadata(formData);
+  const mainAlt = text(formData, "mainImageAlt").trim();
+  const mainCredit = optionalText(formData, "mainImageCredit");
+  if (mainAlt.length < 5 || mainAlt.length > 240 || !galleryMeta || galleryMeta.length !== galleryFiles.length || galleryMeta.some((item) => item.alt.length < 5 || item.alt.length > 240)) {
+    redirectWithStatus("/admin/registry", "media-metadata");
+  }
+  let mainImage;
+  let galleryImages;
+  try {
+    validateProjectMediaFiles(mainFile, galleryFiles);
+    mainImage = await validateProjectImage(mainFile!, "main");
+    galleryImages = await Promise.all(galleryFiles.map((file) => validateProjectImage(file, "gallery")));
+  } catch (error) {
+    redirectWithStatus("/admin/registry", mediaStatus(error));
+  }
+  const supabase = session.supabase!;
+  const { data: initiative } = await supabase.from("initiatives").select("id,track_id,slug,tracks(slug)").eq("id", initiativeId).single();
+  if (!initiative) redirectWithStatus("/admin/registry", "error");
+  const { data: oldMedia } = await supabase.from("initiative_media").select("storage_path").eq("initiative_id", initiativeId);
+  const mediaInputs = [
+    { image: mainImage!, role: "main" as const, alt: mainAlt, credit: mainCredit, sortOrder: 0 },
+    ...galleryFiles.map((_, index) => ({ image: galleryImages![index], role: "gallery" as const, alt: galleryMeta[index].alt, credit: galleryMeta[index].credit, sortOrder: index + 1 })),
+  ].map((item) => ({ ...item, id: randomUUID() }));
+  const newPaths: string[] = [];
+  const rows = [];
+  for (const item of mediaInputs) {
+    const path = publicProjectMediaPath(initiativeId, item.id, item.image.extension);
+    const { error } = await supabase.storage.from("ayra-public-initiative-media").upload(path, item.image.bytes, { contentType: item.image.mimeType, upsert: false });
+    if (error) {
+      if (newPaths.length) await supabase.storage.from("ayra-public-initiative-media").remove(newPaths);
+      redirectWithStatus("/admin/registry", "media-promotion-error");
+    }
+    newPaths.push(path);
+    rows.push({ id: item.id, storage_path: path, role: item.role, mime_type: item.image.mimeType, width: item.image.width, height: item.image.height, alt: item.alt, credit: item.credit ?? "", sort_order: item.sortOrder, focal_position: "center" });
+  }
+  const { error: replaceError } = await supabase.rpc("admin_replace_initiative_media", { p_initiative_id: initiativeId, p_media: rows });
+  if (replaceError) {
+    await supabase.storage.from("ayra-public-initiative-media").remove(newPaths);
+    redirectWithStatus("/admin/registry", "media-promotion-error");
+  }
+  const superseded = (oldMedia ?? []).map((item) => item.storage_path).filter((path) => !newPaths.includes(path));
+  if (superseded.length) await supabase.storage.from("ayra-public-initiative-media").remove(superseded);
+  await insertAudit(supabase, session, { action: "initiative.media_updated", entityType: "initiative", entityId: initiativeId, after: { mediaCount: rows.length } });
+  revalidatePath("/");
+  revalidatePath("/admin/registry");
+  redirectWithStatus("/admin/registry", "initiative-media-updated");
+}
+
 export async function approveApplicationAction(formData: FormData) {
   const parsed = idActionSchema.safeParse({
     entityId: text(formData, "applicationId"),
@@ -621,15 +840,61 @@ export async function approveApplicationAction(formData: FormData) {
   const { data: application, error: applicationError } = await supabase
     .from("applications")
     .select(
-      "id,applicant_name,applicant_email,proposed_track_name,proposed_initiative_name,scope_summary,operational_notes,milestone_plan,contact_signal",
+      "id,applicant_name,applicant_email,proposed_track_name,proposed_initiative_name,scope_summary,operational_notes,milestone_plan,contact_signal,hero_image_rights_confirmed",
     )
     .eq("id", parsed.data.entityId)
     .eq("status", "pending")
     .single();
   if (applicationError || !application) redirectWithStatus("/admin/applications", "error");
+  const { data: media, error: mediaError } = await supabase
+    .from("application_media")
+    .select("id,application_id,storage_path,role,mime_type,width,height,alt,credit,selected_for_public,sort_order,focal_position")
+    .eq("application_id", parsed.data.entityId)
+    .eq("selected_for_public", true)
+    .order("sort_order");
+  const selectedMedia = (media ?? []) as ApplicationMediaRow[];
+  if (mediaError || !application.hero_image_rights_confirmed || selectedMedia.filter((item) => item.role === "main").length !== 1) {
+    redirectWithStatus("/admin/applications", "media-main-required");
+  }
 
   const promoted = await promoteApplication(supabase, application as ApplicationRow);
   if (!promoted) redirectWithStatus("/admin/applications", "promotion-error");
+
+  const publicPaths: string[] = [];
+  const initiativeMediaRows = [];
+  for (const item of selectedMedia) {
+    const { data: privateFile, error: downloadError } = await supabase.storage.from("ayra-private-application-media").download(item.storage_path);
+    if (downloadError || !privateFile) {
+      if (publicPaths.length) await supabase.storage.from("ayra-public-initiative-media").remove(publicPaths);
+      redirectWithStatus("/admin/applications", "media-promotion-error");
+    }
+    const extension = item.storage_path.split(".").pop() ?? "jpg";
+    const path = publicProjectMediaPath(promoted.initiativeId, item.id, extension);
+    const { error: uploadError } = await supabase.storage.from("ayra-public-initiative-media").upload(path, privateFile, { contentType: item.mime_type, upsert: true });
+    if (uploadError) {
+      if (publicPaths.length) await supabase.storage.from("ayra-public-initiative-media").remove(publicPaths);
+      redirectWithStatus("/admin/applications", "media-promotion-error");
+    }
+    publicPaths.push(path);
+    initiativeMediaRows.push({
+      id: item.id,
+      initiative_id: promoted.initiativeId,
+      storage_path: path,
+      role: item.role,
+      mime_type: item.mime_type,
+      width: item.width,
+      height: item.height,
+      alt: item.alt,
+      credit: item.credit,
+      sort_order: item.sort_order,
+      focal_position: item.focal_position,
+    });
+  }
+  const { error: publishedMediaError } = await supabase.from("initiative_media").upsert(initiativeMediaRows, { onConflict: "id" });
+  if (publishedMediaError) {
+    await supabase.storage.from("ayra-public-initiative-media").remove(publicPaths);
+    redirectWithStatus("/admin/applications", "media-promotion-error");
+  }
 
   const { error } = await supabase
     .from("applications")
@@ -650,10 +915,13 @@ export async function approveApplicationAction(formData: FormData) {
       status: "approved",
       initiativeId: promoted.initiativeId,
       profileId: promoted.profileId,
+      publishedMediaCount: initiativeMediaRows.length,
     },
   });
   revalidatePath("/admin");
   revalidatePath("/admin/applications");
+  revalidatePath("/");
+  revalidatePath(`/projects/${slugify(application.proposed_track_name)}/${slugify(application.proposed_initiative_name)}`);
   redirectWithStatus("/admin/applications", "application-approved");
 }
 

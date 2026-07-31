@@ -7,6 +7,7 @@ import { AdvisorPanel } from "@/components/ayra/advisor-panel";
 import { SiteFooter } from "@/components/ayra/site-footer";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import { getOptionalPublicWallProjection } from "@/lib/ayra/domain";
+import { initiativeMediaFor } from "@/lib/ayra/public-project-media";
 
 type PageProps = {
   searchParams?: Promise<{ track?: string }>;
@@ -93,18 +94,21 @@ export default async function Home({ searchParams }: PageProps) {
       </main>
     );
   }
+  const allowMockupFallback = process.env.AYRA_DEMO_MODE === "1" || !process.env.NEXT_PUBLIC_SUPABASE_URL;
   const leadInitiative =
-    wall.initiatives.find((initiative) => initiative.slug === "reforestation") ??
-    wall.initiatives[0];
+    wall.initiatives.find((initiative) => initiativeMediaFor(state, initiative.id).main) ??
+    (allowMockupFallback ? wall.initiatives.find((initiative) => initiative.slug === "reforestation") ?? wall.initiatives[0] : undefined);
   const leadIndex = wall.initiatives.findIndex(
     (initiative) => initiative.id === leadInitiative?.id,
   );
-  const leadImage =
-    leadInitiative
-      ? projectImageBySlug[
+  const approvedLeadImage = leadInitiative ? initiativeMediaFor(state, leadInitiative.id).main : undefined;
+  const leadImage = approvedLeadImage
+    ? { alt: approvedLeadImage.alt, src: approvedLeadImage.url, focalPosition: approvedLeadImage.focalPosition, remote: true }
+    : leadInitiative
+      ? { ...(projectImageBySlug[
           leadInitiative.slug as keyof typeof projectImageBySlug
-        ] ?? projectImages[Math.max(leadIndex, 0) % projectImages.length]
-      : projectImages[0];
+        ] ?? projectImages[Math.max(leadIndex, 0) % projectImages.length]), focalPosition: "center", remote: false }
+      : { ...projectImages[0], focalPosition: "center", remote: false };
   const secondaryInitiatives = wall.initiatives.filter(
     (initiative) => initiative.id !== leadInitiative?.id,
   );
@@ -199,6 +203,8 @@ export default async function Home({ searchParams }: PageProps) {
                   priority
                   sizes="(min-width: 1024px) 46vw, 100vw"
                   src={leadImage.src}
+                  style={{ objectPosition: leadImage.focalPosition }}
+                  unoptimized={leadImage.remote}
                   width={928}
                 />
               </div>
