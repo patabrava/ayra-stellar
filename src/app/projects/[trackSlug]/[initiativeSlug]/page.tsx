@@ -6,6 +6,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import { SiteFooter } from "@/components/ayra/site-footer";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
+import { PublicRichText } from "@/components/ayra/public-rich-text";
 import { AyraLogo, Chip, Hash } from "@/components/ayra/ui";
 import { ProjectGallery } from "@/components/ayra/project-gallery";
 import { loadPublicAyraState } from "@/lib/ayra/data";
@@ -123,13 +124,16 @@ export default async function InitiativePage({ params }: PageProps) {
           <div>
             <div className="mb-6 flex flex-wrap items-start justify-between gap-6">
               <div>
-                <div className="place-line">{project.initiative.name}</div>
+                <div className="place-line">Field project</div>
                 <h1 className="display mt-5 max-w-3xl text-5xl font-medium md:text-6xl">
-                  {project.initiative.headline}
+                  {project.initiative.name}
                 </h1>
-                <p className="public-muted mt-5 max-w-2xl text-lg leading-8">
-                  {project.initiative.description}
-                </p>
+                <div className="project-scope public-muted mt-5 max-w-2xl text-lg leading-8">
+                  <div className="public-dim text-sm uppercase">Project scope</div>
+                  <div className="mt-3">
+                    <PublicRichText>{project.initiative.headline}</PublicRichText>
+                  </div>
+                </div>
               </div>
               <span className="score">
                 <strong>{project.initiative.leagueScore}</strong> / 99
@@ -138,16 +142,29 @@ export default async function InitiativePage({ params }: PageProps) {
             <div className="project-detail-visual">
               <Image
                 alt={image.alt}
-                height={1152}
+                height={approvedMedia.main?.height ?? 1152}
                 priority
                 sizes="(min-width: 1024px) 58vw, 100vw"
                 src={image.src}
                 style={{ objectPosition: image.focalPosition }}
                 unoptimized={image.remote}
-                width={928}
+                width={approvedMedia.main?.width ?? 928}
               />
             </div>
             {image.credit ? <p className="public-dim mt-2 text-xs">Photo: {image.credit}</p> : null}
+
+            <section className="proposal-details" aria-labelledby="proposal-details-title">
+              <div className="place-line">Approved application</div>
+              <h2
+                className="display mt-5 text-3xl font-medium md:text-4xl"
+                id="proposal-details-title"
+              >
+                Proposal details
+              </h2>
+              <div className="public-muted mt-6 text-base leading-8 md:text-lg">
+                <PublicRichText>{project.initiative.description}</PublicRichText>
+              </div>
+            </section>
 
             <div className="project-dossier">
               <section className="progress-rail" aria-label="Project progress">
@@ -202,7 +219,10 @@ export default async function InitiativePage({ params }: PageProps) {
                 </span>
               </section>
             </div>
-            <ProjectGallery media={approvedMedia.gallery} />
+            <ProjectGallery
+              media={approvedMedia.gallery}
+              projectName={project.initiative.name}
+            />
 
             <div className="mt-10 grid gap-3">
               {project.spending.slice(0, 5).map((item) => (
