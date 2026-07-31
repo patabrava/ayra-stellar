@@ -6,7 +6,7 @@ import { AyraLogo } from "@/components/ayra/ui";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
 import { SiteFooter } from "@/components/ayra/site-footer";
 import { loadPublicAyraState } from "@/lib/ayra/data";
-import { getOptionalPublicWallProjection } from "@/lib/ayra/domain";
+import { getPublicWallProjection } from "@/lib/ayra/domain";
 
 type PageProps = {
   searchParams?: Promise<{ track?: string }>;
@@ -40,59 +40,20 @@ const projectImageBySlug = {
 export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams;
   const state = await loadPublicAyraState();
-  const wall = getOptionalPublicWallProjection(
-    state,
-    params?.track ?? "providencia",
-  );
-
-  if (!wall) {
-    return (
-      <main className="public-shell">
-        <nav className="public-nav" aria-label="Public wall">
-          <Link className="wordmark" href="#top">
-            <AyraLogo alt="" />
-            <span>AYRA</span>
-          </Link>
-          <div className="public-nav-actions flex flex-wrap justify-end gap-2">
-            <Link className="public-anchor" href="/apply">
-              Apply
-            </Link>
-            <Link className="public-anchor" href="/login">
-              Login
-            </Link>
-          </div>
-        </nav>
-
-        <section
-          id="top"
-          className="public-hero px-[var(--pad-page)] py-14 md:py-20"
-        >
-          <div className="relative z-10 max-w-6xl">
-            <div className="place-line">Mainnet launch · Ready</div>
-            <h1 className="hero-title mt-7">
-              A clean start,
-              <br />
-              ready for the first
-              <br />
-              initiative.
-            </h1>
-            <p className="public-muted mt-8 max-w-2xl text-xl leading-8">
-              There are no public projects or payments yet. Submit the first
-              application to begin a new, independently verifiable funding trail.
-            </p>
-            <Link
-              className="btn mt-8 inline-flex items-center gap-2"
-              href="/apply"
-            >
-              Start an application <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </section>
-
-        <SiteFooter />
-      </main>
+  const selectedTrack =
+    state.tracks.find((track) => track.slug === (params?.track ?? "providencia")) ??
+    state.tracks[0];
+  const hasPublicWallData =
+    selectedTrack &&
+    state.initiatives.some(
+      (initiative) => initiative.trackId === selectedTrack.id,
     );
+
+  if (!hasPublicWallData) {
+    return <EmptyPublicWall tracks={state.tracks} />;
   }
+
+  const wall = getPublicWallProjection(state, params?.track ?? "providencia");
   const leadInitiative =
     wall.initiatives.find((initiative) => initiative.slug === "reforestation") ??
     wall.initiatives[0];
@@ -239,6 +200,53 @@ export default async function Home({ searchParams }: PageProps) {
             </div>
           </div>
         ) : null}
+      </section>
+
+      <SiteFooter />
+    </main>
+  );
+}
+
+function EmptyPublicWall({ tracks }: { tracks: Array<{ id: string; slug: string; name: string }> }) {
+  return (
+    <main className="public-shell">
+      <nav className="public-nav" aria-label="Public wall">
+        <Link className="wordmark" href="#top">
+          <AyraLogo alt="" />
+          <span>AYRA</span>
+        </Link>
+        <div className="public-nav-actions flex flex-wrap justify-end gap-2">
+          {tracks.map((track) => (
+            <Link className="public-anchor" href={`/?track=${track.slug}`} key={track.id}>
+              {track.name}
+            </Link>
+          ))}
+          <Link className="public-anchor" href="/apply">
+            Apply
+          </Link>
+          <Link className="public-anchor" href="/login">
+            Login
+          </Link>
+        </div>
+      </nav>
+
+      <section
+        id="top"
+        className="public-hero px-[var(--pad-page)] py-14 md:py-20"
+      >
+        <div className="relative z-10 max-w-6xl">
+          <div className="place-line">Transparency wall</div>
+          <h1 className="hero-title mt-7">
+            AYRA proof data
+            <br />
+            is being prepared.
+          </h1>
+          <p className="public-muted mt-8 max-w-2xl text-xl leading-8">
+            The public wall is online, but no approved project rows are available
+            for this track yet. Admin treasury and payout readiness remain gated
+            separately.
+          </p>
+        </div>
       </section>
 
       <SiteFooter />

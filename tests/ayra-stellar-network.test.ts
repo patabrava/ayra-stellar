@@ -39,13 +39,31 @@ describe("AYRA Stellar network configuration", () => {
     );
   });
 
-  it("rejects Horizon and issuer overrides that cross the network boundary", () => {
+  it("keeps legacy testnet overrides from poisoning pubnet", () => {
+    const config = resolveStellarNetworkConfig("pubnet", {
+      STELLAR_HORIZON_URL: "https://horizon-testnet.stellar.org",
+      STELLAR_USDC_ISSUER: STELLAR_TESTNET_USDC_ISSUER,
+    });
+
+    assert.equal(config.horizonUrl, "https://horizon.stellar.org");
+    assert.equal(config.usdcIssuer, CIRCLE_STELLAR_MAINNET_USDC_ISSUER);
+  });
+
+  it("rejects network-specific Horizon and issuer overrides that cross the network boundary", () => {
     assert.throws(
       () =>
         resolveStellarNetworkConfig("pubnet", {
-          STELLAR_HORIZON_URL: "https://horizon-testnet.stellar.org",
+          STELLAR_MAINNET_HORIZON_URL:
+            "https://horizon-testnet.stellar.org",
         }),
-      /STELLAR_HORIZON_URL does not match pubnet/,
+      /STELLAR_MAINNET_HORIZON_URL does not match pubnet/,
+    );
+    assert.throws(
+      () =>
+        resolveStellarNetworkConfig("pubnet", {
+          STELLAR_MAINNET_USDC_ISSUER: STELLAR_TESTNET_USDC_ISSUER,
+        }),
+      /STELLAR_MAINNET_USDC_ISSUER does not match pubnet/,
     );
     assert.throws(
       () =>

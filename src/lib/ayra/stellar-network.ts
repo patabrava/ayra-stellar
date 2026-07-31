@@ -6,6 +6,10 @@ export const CIRCLE_STELLAR_MAINNET_USDC_ISSUER =
   "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN";
 
 type StellarEnvironment = Record<string, string | undefined>;
+type StellarNetworkOverride = {
+  horizonUrl: { key: string; value: string | undefined };
+  usdcIssuer: { key: string; value: string | undefined };
+};
 
 export type StellarNetworkConfig = {
   network: StellarNetwork;
@@ -55,14 +59,15 @@ export function resolveStellarNetworkConfig(
   env: StellarEnvironment = process.env,
 ): StellarNetworkConfig {
   const canonical = canonicalConfig[network];
-  const horizonOverride = normalizeUrl(env.STELLAR_HORIZON_URL);
-  const issuerOverride = env.STELLAR_USDC_ISSUER?.trim();
+  const override = getNetworkOverride(network, env);
+  const horizonOverride = normalizeUrl(override.horizonUrl.value);
+  const issuerOverride = override.usdcIssuer.value?.trim();
 
   if (horizonOverride && horizonOverride !== canonical.horizonUrl) {
-    throw new Error(`STELLAR_HORIZON_URL does not match ${network}.`);
+    throw new Error(`${override.horizonUrl.key} does not match ${network}.`);
   }
   if (issuerOverride && issuerOverride !== canonical.usdcIssuer) {
-    throw new Error(`STELLAR_USDC_ISSUER does not match ${network}.`);
+    throw new Error(`${override.usdcIssuer.key} does not match ${network}.`);
   }
 
   return { ...canonical };
@@ -88,4 +93,43 @@ export function requireMainnetPaymentsEnabled(
 
 function normalizeUrl(value: string | undefined) {
   return value?.trim().replace(/\/+$/, "");
+}
+
+function getNetworkOverride(
+  network: StellarNetwork,
+  env: StellarEnvironment,
+): StellarNetworkOverride {
+  if (network === "pubnet") {
+    return {
+      horizonUrl: {
+        key: "STELLAR_MAINNET_HORIZON_URL",
+        value: env.STELLAR_MAINNET_HORIZON_URL,
+      },
+      usdcIssuer: {
+        key: "STELLAR_MAINNET_USDC_ISSUER",
+        value: env.STELLAR_MAINNET_USDC_ISSUER,
+      },
+    };
+  }
+
+  return {
+    horizonUrl: env.STELLAR_TESTNET_HORIZON_URL
+      ? {
+          key: "STELLAR_TESTNET_HORIZON_URL",
+          value: env.STELLAR_TESTNET_HORIZON_URL,
+        }
+      : {
+          key: "STELLAR_HORIZON_URL",
+          value: env.STELLAR_HORIZON_URL,
+        },
+    usdcIssuer: env.STELLAR_TESTNET_USDC_ISSUER
+      ? {
+          key: "STELLAR_TESTNET_USDC_ISSUER",
+          value: env.STELLAR_TESTNET_USDC_ISSUER,
+        }
+      : {
+          key: "STELLAR_USDC_ISSUER",
+          value: env.STELLAR_USDC_ISSUER,
+        },
+  };
 }
