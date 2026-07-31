@@ -1916,6 +1916,19 @@ export function getPublicWallProjection(
   };
 }
 
+export function getOptionalPublicWallProjection(
+  state: AyraState,
+  trackSlug: string,
+): PublicWallProjection | null {
+  const track =
+    state.tracks.find((item) => item.slug === trackSlug) ?? state.tracks[0];
+  if (!track) return null;
+  if (!state.initiatives.some((initiative) => initiative.trackId === track.id)) {
+    return null;
+  }
+  return getPublicWallProjection(state, track.slug);
+}
+
 export function getProofPack(state: AyraState, batchId: string): ProofPack {
   const batch = state.batches.find((item) => item.id === batchId);
   if (!batch) throw new Error("Batch not found.");
