@@ -208,6 +208,7 @@ END_LLM_FRIENDLY_PLAN_CODE_DEBUG
 - Vercel deploys must preserve existing domain ownership: keep `ayra.haus`/`www.ayra.haus` on `AYRA LANDING/ayra-epoch-vision`, and deploy this transparency app only to `ayra-transparency`/`transparency.ayra.haus` unless explicitly replacing the landing.
 - Before Vercel production deploys, keep `.vercelignore` excluding `.env*`, build outputs, and browser artifacts; Vercel CLI can otherwise upload local env files despite `.gitignore`.
 - In zsh harness snippets, never assign scalar variables named `path`; it mutates command lookup and can make standard binaries unavailable.
+- In zsh harness snippets, never assign scalar variables named `status`; it is read-only and aborts the command before execution.
 
 3) Specific repo rules
 - Apply and verify production Supabase migrations before deploying code that selects new tables or columns; `/admin` fails closed when authenticated operator reads hit missing schema.
