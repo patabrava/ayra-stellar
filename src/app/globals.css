@@ -746,6 +746,19 @@ select {
   width: 9px;
 }
 
+.updates-timeline-media {
+  border: 1px solid var(--dark-rule);
+  margin-top: 18px;
+  max-width: 360px;
+  overflow: hidden;
+}
+
+.updates-timeline-image {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
 .ops-shell {
   min-height: 100vh;
   background: var(--surface-2);

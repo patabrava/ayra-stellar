@@ -183,3 +183,20 @@ describe("AYRA steward media upload field", () => {
     assert.match(css, /\.field input\[type="file"\]::file-selector-button/);
   });
 });
+
+describe("AYRA public update evidence", () => {
+  it("renders approved image evidence on the project timeline", () => {
+    const page = readFileSync(
+      new URL(
+        "../src/app/projects/[trackSlug]/[initiativeSlug]/page.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+
+    assert.match(page, /update\.media\.map/);
+    assert.match(page, /media\.kind === "image"/);
+    assert.match(page, /alt=\{media\.alt\}/);
+    assert.match(page, /className="updates-timeline-media"/);
+  });
+});

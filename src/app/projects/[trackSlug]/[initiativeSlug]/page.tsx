@@ -236,6 +236,21 @@ export default async function InitiativePage({ params }: PageProps) {
                     · {update.milestoneCode}
                   </div>
                   <p className="public-muted mt-4 leading-7">{update.caption}</p>
+                  {update.media.map((media) =>
+                    media.kind === "image" ? (
+                      <figure className="updates-timeline-media" key={media.url}>
+                        <Image
+                          alt={media.alt}
+                          className="updates-timeline-image"
+                          height={960}
+                          sizes="(min-width: 1024px) 36vw, 100vw"
+                          src={media.url}
+                          unoptimized
+                          width={720}
+                        />
+                      </figure>
+                    ) : null,
+                  )}
                 </article>
               ))}
             </div>
