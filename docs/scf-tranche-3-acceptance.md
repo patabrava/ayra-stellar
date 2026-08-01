@@ -1,16 +1,37 @@
 # SCF Tranche 3 Acceptance Record
 
-Updated: 2026-07-14
+Updated: 2026-08-01
 
 This record distinguishes repository completion, deployed verification, and evidence that must originate outside AYRA. A row is complete only when its listed evidence exists.
 
 | Deliverable | Acceptance evidence | Current state |
 | --- | --- | --- |
-| D3.1 Mainnet deployment and hardening | Separate pubnet SDP project; funded distribution account; pinned images; MFA; kill switch; runbook; web deployment and database migration | Partially complete: isolated pubnet pre-activation stack and web/database releases are live and verified; authorized funding, tenant/TSS activation, API credentials, and AYRA DNS cutover remain |
-| D3.2 First live Providencia batch | Partner-approved pubnet recipient; sponsor-funded line items; settled Horizon hashes; line-item statuses; immutable release | Blocked: production has zero verified payout addresses that exist on pubnet with Circle USDC |
-| D3.3 QA and proof operations | Unit/lint/build; wrong-network, issuer, amount, destination, trustline, hash, switch, attribution, and digest failures; live HTTP/browser checks | Automated and live infrastructure/proof checks complete; mainnet settlement E2E remains blocked by the D3.1/D3.2 external gates |
-| D3.4 Coordination and handoff | Versioned proof pack; mainnet runbook; rollback; next-track notes; acceptance record | Immutable historical testnet proof release v1, runbook, rollback, and acceptance record are live; final mainnet operator handoff follows activation |
-| D3.5 Local field execution | Dated partner activation, local verification, approved public media, impact report, named evidence owner | Externally blocked: no genuine partner-originated field package is present |
+| D3.1 Mainnet deployment and hardening | Separate pubnet SDP project; funded distribution account; pinned images; MFA; kill switch; runbook; web deployment and database migration | Complete for controlled validation: SDP API/dashboard, TSS settlement, Circle trustline, API credentials, admin treasury, and public deployment were exercised live; the kill switch is closed after settlement |
+| D3.2 First live Providencia batch | Partner-approved pubnet recipient; sponsor-funded line items; settled Horizon hashes; line-item statuses; immutable release | Complete for the 5 USDC validation scope: verified recipient and memo, settled pubnet payment, matched attribution, CSV, and immutable release v3; this does not represent the full EUR 750 A00 advance |
+| D3.3 QA and proof operations | Unit/lint/build; wrong-network, issuer, amount, destination, trustline, hash, switch, attribution, and digest failures; live HTTP/browser checks | Complete: 161 automated tests, lint, production build, live admin/public browser checks, independent Horizon readback, and independent release-digest verification passed |
+| D3.4 Coordination and handoff | Versioned proof pack; mainnet runbook; rollback; next-track notes; acceptance record | Complete for the validation release: mainnet proof v3, CSV, transaction/operation JSON, screenshots, runbook, rollback, and evidence manifest are present |
+| D3.5 Local field execution | Dated partner activation, local verification, approved public media, impact report, named evidence owner | Partially complete: a shop-construction photo and caption are approved and visible publicly; signed agreements, private receipt, media consent/capture metadata, and a named evidence owner are not present in the workspace |
+
+## 2026-08-01 live mainnet validation evidence
+
+- Batch: `A00-LUZMARINA-VALIDATION-20260801`; batch ID `b1cbe779-4aa2-4deb-b6a5-fb79ca15e0b6`
+- Payment: `5 USDC validation payment`; amount `5.0000000 USDC`; local snapshot `COP 16,003`
+- Recipient: `GB5CLRWUCBQ6DFK2LR5ZMWJ7QCVEB3XKMPTQUYCDIYB4DRZJBEW6M26D`; memo ID `4192883277`
+- Circle issuer: `GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN`
+- SDP disbursement: `4be3df92-c802-4c6e-9189-34681e6c7dfa`; SDP payment: `7a2240ad-16dd-4436-8832-c32441f242f7`
+- Successful Stellar transaction: `00ab066acacd36efeac21ab73ecd0f8cb47c7d26a8d47889deb6c2c3ae7d6fb8`; ledger `63741286`; `2026-08-01T00:21:14Z`
+- [Public proof](https://transparency.ayra.haus/proof/b1cbe779-4aa2-4deb-b6a5-fb79ca15e0b6)
+- [Proof CSV](https://transparency.ayra.haus/proof/b1cbe779-4aa2-4deb-b6a5-fb79ca15e0b6/export)
+- [Immutable release v3](https://transparency.ayra.haus/proof/b1cbe779-4aa2-4deb-b6a5-fb79ca15e0b6/release?version=3)
+- Release SHA-256: `0ce1c2c1250688dd389ca9be83e909804c418a9c15bb93f98ff2c28382581771`; independent canonical recomputation matched the stored database value
+- Application commit: `1d42a8b0285ffe3374ac89b0102fc8cb50ac4d60`; production deployment `dpl_3hPTTb27cLZ1wwbRXjnsMZXgNqie`
+- Live safety readback after settlement: `0.4852200 USDC`, `26.9040705 XLM`, Circle trustline ready, recipient ready, SDP endpoints `200`, and mainnet submissions disabled
+- Approved public field evidence: shop and nursery structure construction photo with privacy-safe caption and alt text
+- Evidence bundle: `outputs/scf-tranche-3-2026-08-01/`
+
+The recipient is a hosted deposit address. Horizon records the inbound 5 USDC payment with the requested memo, followed 50 seconds later by an automatic 5 USDC forwarding payment from the destination address. Hosted-wallet ledger credit must be confirmed by the recipient account holder.
+
+The admin reconciliation item remains `needs_receipt` because no genuine private receipt was supplied. The signed grant agreement, signed property-use agreement, and media consent/capture metadata are also absent from the workspace. These records must be added before claiming that the proposal's full A00 condition and full EUR 750 / COP 2.85m advance are complete.
 
 ## 2026-07-14 release evidence
 
