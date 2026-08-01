@@ -1,6 +1,4 @@
-import Link from "next/link";
-
-import { AyraLogo } from "@/components/ayra/ui";
+import { PublicNav } from "@/components/ayra/public-nav";
 import { SiteFooter } from "@/components/ayra/site-footer";
 import { PUBLIC_CONTACT_EMAIL } from "@/lib/ayra/contact";
 
@@ -30,15 +28,16 @@ const privacyPoints = [
 export default function PrivacyPage() {
   return (
     <main className="public-shell">
-      <nav className="public-nav" aria-label="Privacy page">
-        <Link className="wordmark" href="/">
-          <AyraLogo alt="" />
-          <span>AYRA</span>
-        </Link>
-        <Link className="public-anchor" href="/">
-          Back to home
-        </Link>
-      </nav>
+      <PublicNav
+        ariaLabel="Privacy page"
+        groups={[
+          {
+            label: "Navigation",
+            items: [{ href: "/", label: "Back to home" }],
+          },
+        ]}
+        homeHref="/"
+      />
 
       <section className="px-[var(--pad-page)] py-14 md:py-20">
         <div className="max-w-3xl">

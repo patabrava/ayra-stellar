@@ -6,7 +6,20 @@ const mobileViewport = { height: 844, width: 390 };
 async function expectCompactPublicNav(page: Page) {
   const nav = page.locator(".public-nav");
   const navBox = await nav.boundingBox();
-  expect(navBox?.height ?? 0).toBeLessThanOrEqual(104);
+  expect(navBox?.height ?? 0).toBeLessThanOrEqual(72);
+
+  const toggle = page.getByRole("button", { name: "Toggle navigation menu" });
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  const toggleBox = await toggle.boundingBox();
+  expect(toggleBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+  expect(toggleBox?.width ?? 0).toBeGreaterThanOrEqual(44);
+
+  const actions = page.locator(".public-nav-actions");
+  await expect(actions).toBeHidden();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(actions).toBeVisible();
 
   const anchors = page.locator(".public-nav .public-anchor");
   const count = await anchors.count();
@@ -24,8 +37,12 @@ async function expectCompactPublicNav(page: Page) {
 
   const login = page.getByRole("link", { name: "Login" });
   if (await login.count()) {
-    await expect(login).toBeInViewport();
+    await expect(login).toBeVisible();
   }
+
+  await page.keyboard.press("Escape");
+  await expect(actions).toBeHidden();
+  await expect(toggle).toBeFocused();
 }
 
 test.describe("public navigation mobile adaptation", () => {

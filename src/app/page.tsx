@@ -2,8 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, CheckCircle2 } from "lucide-react";
 
-import { AyraLogo } from "@/components/ayra/ui";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
+import { PublicNav } from "@/components/ayra/public-nav";
 import { PublicRichText } from "@/components/ayra/public-rich-text";
 import { SiteFooter } from "@/components/ayra/site-footer";
 import { loadPublicAyraState } from "@/lib/ayra/data";
@@ -124,39 +124,28 @@ export default async function Home({ searchParams }: PageProps) {
       <a className="public-skip-link" href="#dashboard-content">
         Skip to transparency records
       </a>
-      <nav className="public-nav" aria-label="Public wall">
-        <Link className="wordmark" href="#top">
-          <AyraLogo alt="" />
-          <span>AYRA</span>
-        </Link>
-        <div className="public-nav-actions">
-          <div className="public-track-links" aria-label="Transparency programs">
-            {state.tracks.map((track) => (
-              <Link
-                aria-current={track.slug === wall.track.slug ? "page" : undefined}
-                className={
-                  track.slug === wall.track.slug
-                    ? "public-anchor active"
-                    : "public-anchor"
-                }
-                href={`/?track=${track.slug}`}
-                key={track.id}
-                title={track.name}
-              >
-                {track.name}
-              </Link>
-            ))}
-          </div>
-          <div className="public-utility-links">
-            <Link className="public-anchor" href="/apply">
-              Apply
-            </Link>
-            <Link className="public-anchor" href="/login">
-              Login
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav
+        ariaLabel="Public wall"
+        groups={[
+          {
+            label: "Programs",
+            items: state.tracks.map((track) => ({
+              current: track.slug === wall.track.slug,
+              href: `/?track=${track.slug}`,
+              label: track.name,
+              title: track.name,
+            })),
+          },
+          {
+            label: "Access",
+            items: [
+              { href: "/apply", label: "Apply" },
+              { href: "/login", label: "Login" },
+            ],
+          },
+        ]}
+        homeHref="#top"
+      />
 
       <AdvisorPanel trackSlug={wall.track.slug} />
 
@@ -364,25 +353,26 @@ export default async function Home({ searchParams }: PageProps) {
 function EmptyPublicWall({ tracks }: { tracks: Array<{ id: string; slug: string; name: string }> }) {
   return (
     <main className="public-shell">
-      <nav className="public-nav" aria-label="Public wall">
-        <Link className="wordmark" href="#top">
-          <AyraLogo alt="" />
-          <span>AYRA</span>
-        </Link>
-        <div className="public-nav-actions flex flex-wrap justify-end gap-2">
-          {tracks.map((track) => (
-            <Link className="public-anchor" href={`/?track=${track.slug}`} key={track.id}>
-              {track.name}
-            </Link>
-          ))}
-          <Link className="public-anchor" href="/apply">
-            Apply
-          </Link>
-          <Link className="public-anchor" href="/login">
-            Login
-          </Link>
-        </div>
-      </nav>
+      <PublicNav
+        ariaLabel="Public wall"
+        groups={[
+          {
+            label: "Programs",
+            items: tracks.map((track) => ({
+              href: `/?track=${track.slug}`,
+              label: track.name,
+            })),
+          },
+          {
+            label: "Access",
+            items: [
+              { href: "/apply", label: "Apply" },
+              { href: "/login", label: "Login" },
+            ],
+          },
+        ]}
+        homeHref="#top"
+      />
 
       <section
         id="top"

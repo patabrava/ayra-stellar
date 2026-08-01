@@ -6,8 +6,9 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import { SiteFooter } from "@/components/ayra/site-footer";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
+import { PublicNav } from "@/components/ayra/public-nav";
 import { PublicRichText } from "@/components/ayra/public-rich-text";
-import { AyraLogo, Chip, Hash } from "@/components/ayra/ui";
+import { Chip, Hash } from "@/components/ayra/ui";
 import { ProjectGallery } from "@/components/ayra/project-gallery";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
@@ -79,33 +80,29 @@ export default async function InitiativePage({ params }: PageProps) {
 
   return (
     <main className="public-shell">
-      <nav className="public-nav" aria-label="Project page">
-        <Link className="wordmark" href={`/?track=${project.track.slug}`}>
-          <AyraLogo alt="" />
-          <span>AYRA</span>
-        </Link>
-        <div className="public-nav-actions flex flex-wrap justify-end gap-2">
-          {project.siblingInitiatives.map((initiative) => (
-            <Link
-              aria-current={
-                initiative.slug === project.initiative.slug ? "page" : undefined
-              }
-              className={
-                initiative.slug === project.initiative.slug
-                  ? "public-anchor active"
-                  : "public-anchor"
-              }
-              href={`/projects/${project.track.slug}/${initiative.slug}`}
-              key={initiative.id}
-            >
-              {initiative.name}
-            </Link>
-          ))}
-          <Link className="public-anchor" href={`/?track=${project.track.slug}`}>
-            Overview
-          </Link>
-        </div>
-      </nav>
+      <PublicNav
+        ariaLabel="Project page"
+        groups={[
+          {
+            label: "Projects",
+            items: project.siblingInitiatives.map((initiative) => ({
+              current: initiative.slug === project.initiative.slug,
+              href: `/projects/${project.track.slug}/${initiative.slug}`,
+              label: initiative.name,
+            })),
+          },
+          {
+            label: "Program",
+            items: [
+              {
+                href: `/?track=${project.track.slug}`,
+                label: "Overview",
+              },
+            ],
+          },
+        ]}
+        homeHref={`/?track=${project.track.slug}`}
+      />
 
       <AdvisorPanel
         initiativeSlug={project.initiative.slug}

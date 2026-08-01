@@ -363,12 +363,16 @@ select {
   min-width: 0;
 }
 
-.public-track-links,
-.public-utility-links {
+.public-nav-group {
   align-items: center;
   display: flex;
   gap: 8px;
   min-width: 0;
+}
+
+.public-menu-toggle,
+.public-menu-group-label {
+  display: none;
 }
 
 .wordmark {
@@ -2776,62 +2780,88 @@ a.hashish:hover {
   }
 
   .public-nav {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
     padding-block: 12px;
   }
 
-  .public-nav-actions {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: start;
-    max-width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
+  .public-menu-toggle {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--dark-rule);
+    color: var(--public-fg);
+    display: inline-flex;
+    height: 44px;
+    justify-content: center;
+    justify-self: end;
+    width: 44px;
   }
 
-  .public-nav-actions::-webkit-scrollbar {
+  .public-menu-toggle:hover,
+  .public-menu-toggle[aria-expanded="true"] {
+    background: var(--public-chip);
+    border-color: var(--public-leaf);
+  }
+
+  .public-menu-toggle svg {
+    height: 20px;
+    width: 20px;
+  }
+
+  .public-nav-actions {
+    background: color-mix(in oklab, var(--public-bg) 96%, black);
+    border-bottom: 1px solid var(--dark-rule);
+    box-shadow: 0 24px 48px color-mix(in oklab, black 42%, transparent);
     display: none;
+    gap: 0;
+    grid-column: 1 / -1;
+    inset: 100% 0 auto;
+    max-height: calc(100vh - 68px);
+    overflow-y: auto;
+    padding: 10px var(--pad-page) 18px;
+    position: absolute;
+  }
+
+  .public-nav[data-menu-open="true"] .public-nav-actions {
+    display: grid;
+  }
+
+  .public-nav-group {
+    align-items: stretch;
+    display: grid;
+    gap: 0;
+  }
+
+  .public-nav-group + .public-nav-group {
+    margin-top: 10px;
+  }
+
+  .public-menu-group-label {
+    color: var(--public-dim);
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 12px 4px 8px;
+    text-transform: uppercase;
   }
 
   .public-nav-actions .public-anchor {
-    flex: 0 0 auto;
-    white-space: nowrap;
+    border: 0;
+    border-bottom: 1px solid var(--dark-rule);
+    border-radius: 0;
+    justify-content: flex-start;
+    min-height: 52px;
+    overflow-wrap: anywhere;
+    padding: 13px 4px;
+    text-align: left;
+    white-space: normal;
+    width: 100%;
   }
 
-  .public-nav-actions:has(.public-track-links) {
-    display: grid;
-    gap: 8px;
-    grid-template-columns: minmax(0, 1fr) auto;
-    overflow: visible;
-  }
-
-  .public-track-links {
-    max-width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .public-track-links::-webkit-scrollbar {
-    display: none;
-  }
-
-  .public-track-links .public-anchor {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .public-utility-links {
-    flex: 0 0 auto;
-  }
-
-  .public-utility-links .public-anchor {
-    padding-inline: 12px;
+  .public-nav-actions .public-anchor.active {
+    background: color-mix(in oklab, var(--public-leaf) 18%, transparent);
+    border-bottom-color: color-mix(in oklab, var(--public-leaf) 55%, var(--dark-rule));
+    color: var(--public-leaf);
   }
 
   .public-hero {
@@ -3011,14 +3041,6 @@ a.hashish:hover {
 @media (max-width: 560px) {
   .public-nav {
     padding-inline: 18px;
-  }
-
-  .public-utility-links {
-    gap: 6px;
-  }
-
-  .public-utility-links .public-anchor {
-    padding-inline: 10px;
   }
 
   .hero-title {
