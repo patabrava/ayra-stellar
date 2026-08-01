@@ -948,6 +948,25 @@ export async function createBatchAction(formData: FormData) {
     .select("id")
     .single();
   if (lineItem.error || !lineItem.data) redirectWithStatus("/admin/batches", "line-item-error");
+  const lineItemId = lineItem.data.id;
+
+  const sourceRecord = await supabase.from("source_records").insert({
+    external_id: `AYRA-SOURCE-${parsed.data.code}`,
+    source_system: "ayra-admin",
+  }).select("id").single();
+  if (sourceRecord.error || !sourceRecord.data) {
+    redirectWithStatus("/admin/batches", "attribution-error");
+  }
+
+  const attribution = await supabase
+    .from("batch_line_items")
+    .update({
+      source_record_id: sourceRecord.data.id,
+      external_id: `AYRA-LI-${lineItemId}`,
+      recipient_category: "grantee",
+    })
+    .eq("id", lineItemId);
+  if (attribution.error) redirectWithStatus("/admin/batches", "attribution-error");
 
   const allocation = await supabase.from("funding_allocations").insert({
     initiative_id: parsed.data.initiativeId,
@@ -978,12 +997,14 @@ export async function createBatchAction(formData: FormData) {
 
   const reconciliation = await supabase.from("reconciliation_items").insert({
     batch_id: data.id,
-    line_item_id: lineItem.data.id,
+    line_item_id: lineItemId,
     status: privateReceiptPath ? "receipt_attached" : "needs_receipt",
     private_receipt_path: privateReceiptPath,
     note: privateReceiptPath
       ? "Private receipt attached at batch creation."
       : "Awaiting private receipt.",
+    attribution_match_status: "matched",
+    resolution_action: "Admin source record linked at payment creation.",
     created_by_profile_id: session.context.profile.id,
   });
   if (reconciliation.error) redirectWithStatus("/admin/batches", "reconciliation-error");

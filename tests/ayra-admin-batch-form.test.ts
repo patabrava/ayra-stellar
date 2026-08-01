@@ -106,6 +106,16 @@ describe("AYRA admin batch form", () => {
     assert.match(actionSource, /milestone-required/);
   });
 
+  it("links admin-created payments to a matched source record", () => {
+    const actionSource = readFileSync("src/lib/ayra/actions.ts", "utf8");
+
+    assert.match(actionSource, /from\("source_records"\)\.insert/);
+    assert.match(actionSource, /source_record_id: sourceRecord\.data\.id/);
+    assert.match(actionSource, /external_id: `AYRA-LI-\$\{lineItemId\}`/);
+    assert.match(actionSource, /attribution_match_status: "matched"/);
+    assert.match(actionSource, /source record linked at payment creation/i);
+  });
+
   it("does not block the payments page render on live SDP polling", () => {
     const pageSource = readFileSync("src/app/admin/batches/page.tsx", "utf8");
 
