@@ -110,6 +110,27 @@ describe("AYRA SDP gateway and CSV exports", () => {
     );
   });
 
+  it("keeps long SDP external payment IDs within the provider limit", () => {
+    const lineItemId = "929a3ba0-635d-4e05-a138-5a4a399914df";
+    const csv = buildSdpInstructionsCsv(
+      { id: "batch-1", code: "A00-LUZMARINA-VALIDATION-20260801" },
+      [
+        {
+          ...sdpLineItems[0],
+          id: lineItemId,
+          walletAddressMemo: "4192883277",
+        },
+      ],
+    );
+    const paymentId = csv.trim().split("\n")[1]?.split(",")[5];
+
+    assert.equal(paymentId?.length, 64);
+    assert.equal(
+      paymentId,
+      `a00-luzmarina-validation-20-${lineItemId}`,
+    );
+  });
+
   it("uses the Stellar SDP testnet API flow with separated create and start credentials", async () => {
     const calls: Array<{ url: string; init?: RequestInit; csv?: string }> = [];
     const fetchImpl: typeof fetch = async (input, init) => {

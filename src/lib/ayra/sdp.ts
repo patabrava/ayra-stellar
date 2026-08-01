@@ -128,7 +128,10 @@ function idCode(code: string) {
 }
 
 function paymentExternalId(batch: SdpBatchRef, lineItem: SdpLineItemRef) {
-  return `${idCode(batch.code)}-${lineItem.id}`;
+  const suffix =
+    lineItem.id.length >= 64 ? lineItem.id.slice(0, 64) : `-${lineItem.id}`;
+  const batchCode = idCode(batch.code).slice(0, 64 - suffix.length);
+  return `${batchCode}${suffix}`;
 }
 
 function csvValue(value: string | number | null | undefined) {
