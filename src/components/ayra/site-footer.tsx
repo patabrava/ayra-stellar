@@ -81,7 +81,7 @@ export function SiteFooter() {
         </p>
 
         <div className="flex items-center justify-center gap-2 md:justify-end">
-          <SocialLink href="https://x.com/ayra_haus" label="Twitter">
+          <SocialLink href="https://x.com/ayra_haus" label="X">
             <XIcon />
           </SocialLink>
           <SocialLink href="https://www.instagram.com/ayra_haus/" label="Instagram">

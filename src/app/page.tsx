@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, CheckCircle2 } from "lucide-react";
 
 import { AyraLogo } from "@/components/ayra/ui";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
@@ -101,35 +101,60 @@ export default async function Home({ searchParams }: PageProps) {
   const secondaryInitiatives = wall.initiatives.filter(
     (initiative) => initiative.id !== leadInitiative?.id,
   );
+  const publishedUsdc = wall.batches.reduce(
+    (total, batch) => total + batch.amountUsdc,
+    0,
+  );
+  const progress = leadInitiative
+    ? Math.min(
+        100,
+        Math.max(
+          0,
+          Math.round(
+            (leadInitiative.targetMetricCurrent /
+              Math.max(leadInitiative.targetMetricGoal, 1)) *
+              100,
+          ),
+        ),
+      )
+    : 0;
 
   return (
     <main className="public-shell">
+      <a className="public-skip-link" href="#dashboard-content">
+        Skip to transparency records
+      </a>
       <nav className="public-nav" aria-label="Public wall">
         <Link className="wordmark" href="#top">
           <AyraLogo alt="" />
           <span>AYRA</span>
         </Link>
-        <div className="public-nav-actions flex flex-wrap justify-end gap-2">
-          {state.tracks.map((track) => (
-            <Link
-              aria-current={track.slug === wall.track.slug ? "page" : undefined}
-              className={
-                track.slug === wall.track.slug
-                  ? "public-anchor active"
-                  : "public-anchor"
-              }
-              href={`/?track=${track.slug}`}
-              key={track.id}
-            >
-              {track.name}
+        <div className="public-nav-actions">
+          <div className="public-track-links" aria-label="Transparency programs">
+            {state.tracks.map((track) => (
+              <Link
+                aria-current={track.slug === wall.track.slug ? "page" : undefined}
+                className={
+                  track.slug === wall.track.slug
+                    ? "public-anchor active"
+                    : "public-anchor"
+                }
+                href={`/?track=${track.slug}`}
+                key={track.id}
+                title={track.name}
+              >
+                {track.name}
+              </Link>
+            ))}
+          </div>
+          <div className="public-utility-links">
+            <Link className="public-anchor" href="/apply">
+              Apply
             </Link>
-          ))}
-          <Link className="public-anchor" href="/apply">
-            Apply
-          </Link>
-          <Link className="public-anchor" href="/login">
-            Login
-          </Link>
+            <Link className="public-anchor" href="/login">
+              Login
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -137,40 +162,89 @@ export default async function Home({ searchParams }: PageProps) {
 
       <section
         id="top"
-        className="public-hero px-[var(--pad-page)] py-14 md:py-20"
+        className="public-hero"
       >
-        <div className="relative z-10 max-w-6xl">
-          <div className="place-line">{wall.track.name} · 2026</div>
-          <h1 className="hero-title mt-7">
-            {wall.track.name},
+        <div className="public-hero-copy">
+          <div className="place-line">{wall.track.name} · Public records</div>
+          <h1 className="hero-title">
+            Follow the work.
             <br />
-            lived in.
-            <br />
-            Funded by AYRA.
+            Verify the funding.
           </h1>
-          <p className="public-muted mt-8 max-w-2xl text-xl leading-8">
-            AYRA builds impact zones in places we care about. First zone:
-            Providencia, the Caribbean of Colombia where we are bringing the
-            island onto tech rails.
+          <p className="public-hero-summary">
+            Track approved milestones, field updates, and public funding records
+            for {wall.track.name}. Private participant data stays private.
           </p>
+          <a className="public-hero-link" href="#projects">
+            Explore public records <ArrowDown aria-hidden="true" className="h-4 w-4" />
+          </a>
         </div>
       </section>
 
-      <section className="project-wall" aria-label="Projects">
+      <div id="dashboard-content">
+        <section className="public-summary" aria-labelledby="public-summary-title">
+          <div className="public-summary-heading">
+            <div>
+              <div className="place-line">Live public view</div>
+              <h2 id="public-summary-title">What is documented now</h2>
+            </div>
+            <p>
+              Counts reflect approved public records for this program. Zero means
+              no record has been published yet.
+            </p>
+          </div>
+          <dl className="public-summary-grid">
+            <div>
+              <dt>Projects</dt>
+              <dd>{wall.initiatives.length}</dd>
+              <small>Publicly listed</small>
+            </div>
+            <div>
+              <dt>Field updates</dt>
+              <dd>{wall.updates.length}</dd>
+              <small>Approved for publication</small>
+            </div>
+            <div>
+              <dt>Funding releases</dt>
+              <dd>{wall.batches.length}</dd>
+              <small>With public proof</small>
+            </div>
+            <div>
+              <dt>USDC documented</dt>
+              <dd>{formatUsdc(publishedUsdc)}</dd>
+              <small>Across public releases</small>
+            </div>
+          </dl>
+        </section>
+
+      <section className="project-wall" id="projects" aria-labelledby="projects-title">
+        <div className="project-wall-heading">
+          <div>
+            <div className="place-line">Projects</div>
+            <h2 id="projects-title">Work you can inspect</h2>
+          </div>
+          <p>
+            Open a project to review its proposal, progress, approved media, and
+            available proof records.
+          </p>
+        </div>
         {leadInitiative ? (
           <div className="lead-project-frame">
-            <Link
-              aria-label={`Open ${leadInitiative.name}`}
-              className="lead-project"
-              href={`/projects/${wall.track.slug}/${leadInitiative.slug}`}
-            >
+            <article className="lead-project">
               <div className="lead-project-copy">
-                <div className="place-line">Field anchor</div>
-                <h2 className="display mt-5 text-5xl font-medium md:text-7xl">
+                <div className="lead-project-eyebrow">
+                  <span>Featured project</span>
+                  <span className="project-status">
+                    {formatStatus(leadInitiative.status)}
+                  </span>
+                </div>
+                <h3 className="lead-project-title">
                   {leadInitiative.name}
-                </h2>
-                <div className="public-muted mt-5 max-w-xl text-lg leading-8">
-                  <PublicRichText>{leadInitiative.headline}</PublicRichText>
+                </h3>
+                <div className="lead-project-summary">
+                  <PublicRichText>
+                    {summarize(leadInitiative.headline)}
+                  </PublicRichText>
                 </div>
                 <div className="lead-project-facts">
                   <span>
@@ -178,13 +252,31 @@ export default async function Home({ searchParams }: PageProps) {
                     {leadInitiative.targetMetricGoal.toLocaleString("en-US")}
                   </span>
                   <span>{leadInitiative.targetMetricLabel}</span>
-                  <span>{leadInitiative.leagueScore} score</span>
+                  <span>League score {leadInitiative.leagueScore}</span>
                 </div>
-                <div className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-[var(--public-fg)]">
+                <div
+                  aria-label={`${leadInitiative.targetMetricLabel}: ${progress}%`}
+                  aria-valuemax={100}
+                  aria-valuemin={0}
+                  aria-valuenow={progress}
+                  className="lead-project-progress"
+                  role="progressbar"
+                >
+                  <span style={{ width: `${progress}%` }} />
+                </div>
+                <Link
+                  aria-label={`Open project: ${leadInitiative.name}`}
+                  className="project-open-link"
+                  href={`/projects/${wall.track.slug}/${leadInitiative.slug}`}
+                >
                   Open project <ArrowRight className="h-4 w-4" />
-                </div>
+                </Link>
               </div>
-              <div className="lead-project-visual">
+              <Link
+                aria-label={`View ${leadInitiative.name}`}
+                className="lead-project-visual"
+                href={`/projects/${wall.track.slug}/${leadInitiative.slug}`}
+              >
                 <Image
                   alt={leadImage.alt}
                   className="project-visual-image"
@@ -196,8 +288,11 @@ export default async function Home({ searchParams }: PageProps) {
                   unoptimized={leadImage.remote}
                   width={leadImage.width ?? 928}
                 />
-              </div>
-            </Link>
+                <span className="lead-project-visual-label">
+                  View project <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                </span>
+              </Link>
+            </article>
           </div>
         ) : null}
 
@@ -235,6 +330,31 @@ export default async function Home({ searchParams }: PageProps) {
           </div>
         ) : null}
       </section>
+
+        <section className="public-proof-guide" aria-labelledby="proof-guide-title">
+          <div className="public-proof-guide-heading">
+            <div className="place-line">Publication standard</div>
+            <h2 id="proof-guide-title">Only approved records reach this wall</h2>
+          </div>
+          <div className="public-proof-guide-grid">
+            <article>
+              <CheckCircle2 aria-hidden="true" />
+              <h3>Milestones</h3>
+              <p>Project scope and progress are shown against named targets.</p>
+            </article>
+            <article>
+              <CheckCircle2 aria-hidden="true" />
+              <h3>Field updates</h3>
+              <p>Only reviewed captions and publication-ready media appear.</p>
+            </article>
+            <article>
+              <CheckCircle2 aria-hidden="true" />
+              <h3>Funding records</h3>
+              <p>Public releases can include amounts, categories, and transaction proof.</p>
+            </article>
+          </div>
+        </section>
+      </div>
 
       <SiteFooter />
     </main>
@@ -286,4 +406,21 @@ function EmptyPublicWall({ tracks }: { tracks: Array<{ id: string; slug: string;
       <SiteFooter />
     </main>
   );
+}
+
+function formatStatus(status: string) {
+  return status.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatUsdc(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  }).format(amount);
+}
+
+function summarize(value: string, maxLength = 360) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+  const boundary = normalized.lastIndexOf(" ", maxLength);
+  return `${normalized.slice(0, boundary > maxLength * 0.7 ? boundary : maxLength).trim()}…`;
 }

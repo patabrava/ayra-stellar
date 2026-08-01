@@ -21,15 +21,48 @@ async function expectCompactPublicNav(page: Page) {
     () => document.documentElement.scrollWidth > window.innerWidth + 1,
   );
   expect(hasPageOverflow).toBe(false);
+
+  const login = page.getByRole("link", { name: "Login" });
+  if (await login.count()) {
+    await expect(login).toBeInViewport();
+  }
 }
 
 test.describe("public navigation mobile adaptation", () => {
   test.use({ viewport: mobileViewport });
 
   test("keeps landing navigation compact and touch-safe", async ({ page }) => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") consoleErrors.push(message.text());
+    });
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+
     await page.goto("/");
     await expect(page.getByRole("navigation", { name: "Public wall" })).toBeVisible();
     await expectCompactPublicNav(page);
+    await expect(
+      page.getByRole("heading", { level: 1, name: /Follow the work.*Verify the funding/s }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "What is documented now" })).toBeVisible();
+    const progress = page.getByRole("progressbar");
+    await expect(progress).toHaveAttribute("aria-valuenow", /^\d+$/);
+    const progressValue = Number(await progress.getAttribute("aria-valuenow"));
+    expect(progressValue).toBeGreaterThanOrEqual(0);
+    expect(progressValue).toBeLessThanOrEqual(100);
+    await expect(page.getByRole("link", { name: /Open project:/ })).toBeVisible();
+    await expect(page.locator(".lead-project-visual img")).toHaveJSProperty("complete", true);
+
+    const advisor = page.getByRole("button", { name: "Ask AYRA public advisor" });
+    await advisor.click();
+    await expect(page.getByRole("dialog", { name: "Ask AYRA" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Close advisor" })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: "Ask AYRA" })).toHaveCount(0);
+    await expect(advisor).toBeFocused();
+    expect(consoleErrors).toEqual([]);
+    expect(pageErrors).toEqual([]);
   });
 
   test("keeps project navigation compact and touch-safe", async ({ page }) => {

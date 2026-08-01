@@ -212,6 +212,7 @@ export function AdvisorPanel({ className, initiativeSlug, trackSlug }: AdvisorPa
   return (
     <>
       <button
+        aria-label="Ask AYRA public advisor"
         aria-expanded={open}
         aria-haspopup="dialog"
         className={`advisor-launcher ${className ?? ""}`.trim()}
