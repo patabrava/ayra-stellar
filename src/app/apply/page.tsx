@@ -3,6 +3,7 @@ import { ArrowLeft, Send } from "lucide-react";
 
 import { AyraLogo } from "@/components/ayra/ui";
 import { ApplicationSubmitModal } from "@/components/ayra/application-submit-modal";
+import { ApplicationMediaField } from "@/components/ayra/application-media-field";
 import { submitApplicationAction } from "@/lib/ayra/actions";
 import {
   APPLICATION_FIELD_LIMITS,
@@ -109,6 +110,8 @@ export default async function ApplyPage({ searchParams }: PageProps) {
                 />
               </div>
 
+              <ApplicationMediaField />
+
               <div className="field">
                 <label htmlFor="operationalNotes">Operational details</label>
                 <textarea
@@ -147,8 +150,8 @@ export default async function ApplyPage({ searchParams }: PageProps) {
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
                 <p className="max-w-md text-sm text-ink-muted">
-                  Synthetic demo submissions redirect locally unless Supabase
-                  environment variables are configured.
+                  Your photos remain private during review. AYRA publishes only
+                  the main image and gallery photos selected by an admin.
                 </p>
                 <button className="btn primary" type="submit">
                   Submit for review <Send className="h-4 w-4" />

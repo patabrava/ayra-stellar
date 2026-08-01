@@ -200,3 +200,41 @@ describe("AYRA public update evidence", () => {
     assert.match(page, /className="updates-timeline-media"/);
   });
 });
+
+describe("AYRA public project responsive narrative", () => {
+  it("keeps the project identity, approved hero, and long copy inside a responsive layout", () => {
+    const page = readFileSync(
+      new URL(
+        "../src/app/projects/[trackSlug]/[initiativeSlug]/page.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    const css = readFileSync(
+      new URL("../src/app/globals.css", import.meta.url),
+      "utf8",
+    );
+
+    assert.match(page, /className="project-detail-layout"/);
+    assert.match(page, /className="display project-detail-title/);
+    assert.match(page, /\{project\.initiative\.name\}/);
+    assert.match(
+      page,
+      /<PublicRichText>\{project\.initiative\.headline\}<\/PublicRichText>/,
+    );
+    assert.match(
+      page,
+      /<PublicRichText>\{project\.initiative\.description\}<\/PublicRichText>/,
+    );
+    assert.match(page, /initiativeMediaFor\(state, project\.initiative\.id\)/);
+    assert.match(page, /approvedMedia\.main/);
+    assert.match(
+      css,
+      /\.project-detail-layout\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s,
+    );
+    assert.match(
+      css,
+      /@media\s*\(max-width:\s*900px\)[\s\S]*\.project-detail-layout[\s\S]*grid-template-columns:\s*1fr/,
+    );
+  });
+});

@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import WebSocket from "ws";
+import { publicProjectMediaUrl } from "@/lib/ayra/project-media";
 
 import { requireStellarNetwork } from "@/lib/ayra/stellar-network";
 
@@ -10,6 +11,7 @@ import {
 import {
   createDemoState,
   type Application,
+  type ApplicationMedia,
   type AuditLog,
   type AyraState,
   type Batch,
@@ -19,6 +21,7 @@ import {
   type Grantee,
   type GranteeContact,
   type Initiative,
+  type InitiativeMedia,
   type InitiativeUpdate,
   type Milestone,
   type MilestoneSubmission,
@@ -47,6 +50,7 @@ type PublicRows = {
   media: MediaRow[];
   batches: BatchRow[];
   receipts: ReceiptRow[];
+  initiativeMedia?: InitiativeMediaRow[];
 };
 
 type OperatorRows = PublicRows & {
@@ -63,6 +67,7 @@ type OperatorRows = PublicRows & {
   reconciliationItems: ReconciliationRow[];
   sdpSyncEvents: SdpSyncEventRow[];
   auditLogs: AuditLogRow[];
+  applicationMedia?: ApplicationMediaRow[];
 };
 
 type AyraSupabaseClient = Pick<SupabaseClient, "from">;
@@ -102,6 +107,15 @@ type InitiativeRow = {
   target_metric_current: number | string;
   target_metric_goal: number | string;
   status: string;
+};
+
+type InitiativeMediaRow = {
+  id: string; initiative_id: string; storage_path: string; role: string; mime_type: string;
+  width: number; height: number; alt: string; credit: string | null; sort_order: number; focal_position: string;
+};
+
+type ApplicationMediaRow = InitiativeMediaRow & {
+  application_id: string; original_name: string; selected_for_public: boolean;
 };
 
 type MilestoneRow = {
@@ -210,6 +224,7 @@ type ApplicationRow = {
   submitted_at: string;
   decided_at: string | null;
   decided_by_profile_id: string | null;
+  hero_image_rights_confirmed?: boolean;
 };
 
 type StewardProfileRow = {
@@ -422,6 +437,7 @@ async function loadPublicAyraStateFromClient(
     media,
     batches,
     receipts,
+    initiativeMedia,
   ] = await Promise.all([
     supabase
       .from("tracks")
@@ -464,6 +480,10 @@ async function loadPublicAyraStateFromClient(
       .select(
         "line_item_id,batch_id,batch_code,period_label,batch_status,stellar_network,initiative_name,sponsor_name,category,amount_usdc,local_amount,local_currency,line_item_status,transaction_hash,payment_asset_code,payment_asset_issuer,payment_asset_amount,source_record_external_id,line_item_external_id,node_code,track_code,milestone_code,recipient_category,attribution_match_status",
       ),
+    supabase
+      .from("initiative_media")
+      .select("id,initiative_id,storage_path,role,mime_type,width,height,alt,credit,sort_order,focal_position")
+      .order("sort_order"),
   ]);
 
   if (
@@ -475,6 +495,7 @@ async function loadPublicAyraStateFromClient(
     media.error ||
     batches.error ||
     receipts.error
+    || initiativeMedia.error
   ) {
     if (fallbackToDemo) {
       console.error(
@@ -495,6 +516,7 @@ async function loadPublicAyraStateFromClient(
     media: (media.data ?? []) as MediaRow[],
     batches: (batches.data ?? []) as BatchRow[],
     receipts: (receipts.data ?? []) as ReceiptRow[],
+    initiativeMedia: (initiativeMedia.data ?? []) as InitiativeMediaRow[],
   });
 }
 
@@ -527,6 +549,8 @@ async function loadOperatorAyraStateFromClient(
     reconciliationItems,
     sdpSyncEvents,
     auditLogs,
+    initiativeMedia,
+    applicationMedia,
   ] = await Promise.all([
     supabase.from("profiles").select("id,email,display_name,created_at"),
     supabase.from("user_roles").select("id,profile_id,role,initiative_id,grantee_id"),
@@ -540,7 +564,7 @@ async function loadOperatorAyraStateFromClient(
     supabase
       .from("applications")
       .select(
-        "id,applicant_profile_id,applicant_name,applicant_email,proposed_track_name,proposed_initiative_name,scope_summary,operational_notes,contact_signal,status,submitted_at,decided_at,decided_by_profile_id",
+        "id,applicant_profile_id,applicant_name,applicant_email,proposed_track_name,proposed_initiative_name,scope_summary,operational_notes,contact_signal,status,submitted_at,decided_at,decided_by_profile_id,hero_image_rights_confirmed",
       ),
     supabase
       .from("steward_profiles")
@@ -592,6 +616,14 @@ async function loadOperatorAyraStateFromClient(
     supabase
       .from("audit_logs")
       .select("id,actor_profile_id,action,entity_type,entity_id,before_summary,after_summary,created_at"),
+    supabase
+      .from("initiative_media")
+      .select("id,initiative_id,storage_path,role,mime_type,width,height,alt,credit,sort_order,focal_position")
+      .order("sort_order"),
+    supabase
+      .from("application_media")
+      .select("id,application_id,storage_path,role,original_name,mime_type,width,height,alt,credit,selected_for_public,sort_order,focal_position")
+      .order("sort_order"),
   ]);
 
   const results = [
@@ -615,6 +647,8 @@ async function loadOperatorAyraStateFromClient(
     reconciliationItems,
     sdpSyncEvents,
     auditLogs,
+    initiativeMedia,
+    applicationMedia,
   ];
   if (results.some((result) => result.error)) {
     console.error("Falling back to AYRA demo state after operator Supabase read failure.");
@@ -645,6 +679,8 @@ async function loadOperatorAyraStateFromClient(
     reconciliationItems: (reconciliationItems.data ?? []) as ReconciliationRow[],
     sdpSyncEvents: (sdpSyncEvents.data ?? []) as SdpSyncEventRow[],
     auditLogs: (auditLogs.data ?? []) as AuditLogRow[],
+    initiativeMedia: (initiativeMedia.data ?? []) as InitiativeMediaRow[],
+    applicationMedia: (applicationMedia.data ?? []) as ApplicationMediaRow[],
   });
 }
 
@@ -667,6 +703,8 @@ export function stateFromPublicRows(rows: PublicRows): AyraState {
     tracks: rows.tracks.map(mapTrack),
     initiatives: rows.initiatives.map(mapInitiative),
     applications: [],
+    initiativeMedia: (rows.initiativeMedia ?? []).map(mapInitiativeMedia),
+    applicationMedia: [],
     stewardProfiles: [],
     grantees: [],
     granteeContacts: [],
@@ -692,6 +730,7 @@ export function stateFromOperatorRows(rows: OperatorRows): AyraState {
     profiles: rows.profiles.map(mapProfile),
     userRoles: rows.userRoles.map(mapUserRole),
     applications: rows.applications.map(mapApplication),
+    applicationMedia: (rows.applicationMedia ?? []).map(mapApplicationMedia),
     stewardProfiles: rows.stewardProfiles.map(mapStewardProfile),
     grantees: rows.grantees.map(mapGrantee),
     granteeContacts: rows.granteeContacts.map(mapGranteeContact),
@@ -751,6 +790,34 @@ function mapInitiative(row: InitiativeRow): Initiative {
     targetMetricGoal: numeric(row.target_metric_goal),
     status:
       row.status === "live" || row.status === "draft" ? row.status : "funding",
+  };
+}
+
+function mapInitiativeMedia(row: InitiativeMediaRow): InitiativeMedia {
+  return {
+    id: row.id,
+    initiativeId: row.initiative_id,
+    storagePath: row.storage_path,
+    url: publicProjectMediaUrl(row.storage_path),
+    role: row.role === "main" ? "main" : "gallery",
+    mimeType: row.mime_type === "image/jpeg" || row.mime_type === "image/webp" ? row.mime_type : "image/png",
+    width: numeric(row.width),
+    height: numeric(row.height),
+    alt: row.alt,
+    credit: row.credit ?? undefined,
+    sortOrder: numeric(row.sort_order),
+    focalPosition: row.focal_position === "top" || row.focal_position === "bottom" || row.focal_position === "left" || row.focal_position === "right" ? row.focal_position : "center",
+  };
+}
+
+function mapApplicationMedia(row: ApplicationMediaRow): ApplicationMedia {
+  return {
+    ...mapInitiativeMedia({ ...row, initiative_id: row.application_id }),
+    applicationId: row.application_id,
+    originalName: row.original_name,
+    selectedForPublic: row.selected_for_public,
+    storagePath: row.storage_path,
+    id: row.id,
   };
 }
 
@@ -956,6 +1023,7 @@ function mapApplication(row: ApplicationRow): Application {
     submittedAt: row.submitted_at,
     decidedAt: row.decided_at ?? undefined,
     decidedByProfileId: row.decided_by_profile_id ?? undefined,
+    heroImageRightsConfirmed: row.hero_image_rights_confirmed ?? false,
   };
 }
 

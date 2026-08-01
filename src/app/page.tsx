@@ -4,9 +4,11 @@ import { ArrowRight } from "lucide-react";
 
 import { AyraLogo } from "@/components/ayra/ui";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
+import { PublicRichText } from "@/components/ayra/public-rich-text";
 import { SiteFooter } from "@/components/ayra/site-footer";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import { getPublicWallProjection } from "@/lib/ayra/domain";
+import { initiativeMediaFor } from "@/lib/ayra/public-project-media";
 
 type PageProps = {
   searchParams?: Promise<{ track?: string }>;
@@ -54,18 +56,48 @@ export default async function Home({ searchParams }: PageProps) {
   }
 
   const wall = getPublicWallProjection(state, params?.track ?? "providencia");
+  const allowMockupFallback =
+    process.env.AYRA_DEMO_MODE === "1" || !process.env.NEXT_PUBLIC_SUPABASE_URL;
   const leadInitiative =
-    wall.initiatives.find((initiative) => initiative.slug === "reforestation") ??
-    wall.initiatives[0];
+    wall.initiatives.find(
+      (initiative) => initiativeMediaFor(state, initiative.id).main,
+    ) ??
+    (allowMockupFallback
+      ? wall.initiatives.find((initiative) => initiative.slug === "reforestation") ??
+        wall.initiatives[0]
+      : undefined);
   const leadIndex = wall.initiatives.findIndex(
     (initiative) => initiative.id === leadInitiative?.id,
   );
-  const leadImage =
-    leadInitiative
-      ? projectImageBySlug[
-          leadInitiative.slug as keyof typeof projectImageBySlug
-        ] ?? projectImages[Math.max(leadIndex, 0) % projectImages.length]
-      : projectImages[0];
+  const approvedLeadImage = leadInitiative
+    ? initiativeMediaFor(state, leadInitiative.id).main
+    : undefined;
+  const leadImage = approvedLeadImage
+    ? {
+        alt: approvedLeadImage.alt,
+        src: approvedLeadImage.url,
+        focalPosition: approvedLeadImage.focalPosition,
+        height: approvedLeadImage.height,
+        remote: true,
+        width: approvedLeadImage.width,
+      }
+    : leadInitiative
+      ? {
+          ...(projectImageBySlug[
+            leadInitiative.slug as keyof typeof projectImageBySlug
+          ] ?? projectImages[Math.max(leadIndex, 0) % projectImages.length]),
+          focalPosition: "center",
+          height: undefined,
+          remote: false,
+          width: undefined,
+        }
+      : {
+          ...projectImages[0],
+          focalPosition: "center",
+          height: undefined,
+          remote: false,
+          width: undefined,
+        };
   const secondaryInitiatives = wall.initiatives.filter(
     (initiative) => initiative.id !== leadInitiative?.id,
   );
@@ -137,9 +169,9 @@ export default async function Home({ searchParams }: PageProps) {
                 <h2 className="display mt-5 text-5xl font-medium md:text-7xl">
                   {leadInitiative.name}
                 </h2>
-                <p className="public-muted mt-5 max-w-xl text-lg leading-8">
-                  {leadInitiative.description}
-                </p>
+                <div className="public-muted mt-5 max-w-xl text-lg leading-8">
+                  <PublicRichText>{leadInitiative.headline}</PublicRichText>
+                </div>
                 <div className="lead-project-facts">
                   <span>
                     {leadInitiative.targetMetricCurrent.toLocaleString("en-US")} /{" "}
@@ -156,11 +188,13 @@ export default async function Home({ searchParams }: PageProps) {
                 <Image
                   alt={leadImage.alt}
                   className="project-visual-image"
-                  height={1152}
+                  height={leadImage.height ?? 1152}
                   priority
                   sizes="(min-width: 1024px) 46vw, 100vw"
                   src={leadImage.src}
-                  width={928}
+                  style={{ objectPosition: leadImage.focalPosition }}
+                  unoptimized={leadImage.remote}
+                  width={leadImage.width ?? 928}
                 />
               </div>
             </Link>

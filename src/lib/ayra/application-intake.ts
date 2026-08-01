@@ -39,4 +39,7 @@ export const applicationSchema = z.object({
     .min(1)
     .max(6),
   contactSignal: z.string().trim().min(APPLICATION_FIELD_LIMITS.contactSignal),
+  mainImageAlt: z.string().trim().min(5).max(240),
+  mainImageCredit: z.string().trim().max(160).optional(),
+  heroImageRightsConfirmed: z.literal(true),
 });

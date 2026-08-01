@@ -45,6 +45,21 @@ export function getApplicationSubmitStatus(
         body:
           "Some required details were missing or too short. Check the email, use at least two characters for names, twenty for scope, ten for operational details, and five for Signal or phone.",
       };
+    case "media-missing":
+      return { tone: "err", title: "Choose a main project image.", body: "Add one landscape photo of at least 2000 × 1125 pixels before submitting." };
+    case "media-too-many":
+      return { tone: "err", title: "Too many gallery photos.", body: "Choose no more than eight additional photos and submit again." };
+    case "media-too-large":
+    case "media-total-too-large":
+      return { tone: "err", title: "The photo set is too large.", body: "Keep each photo at 10 MB or less and the complete set at 60 MB or less." };
+    case "media-unsupported":
+      return { tone: "err", title: "One photo format is not supported.", body: "Use genuine JPEG, PNG, or WebP files." };
+    case "media-dimensions":
+      return { tone: "err", title: "One photo is too small.", body: "Use a landscape main image of at least 2000 × 1125 pixels. Gallery photos need at least 1200 pixels on the long side and 800 on the short side." };
+    case "media-metadata":
+      return { tone: "err", title: "Describe every selected photo.", body: "Add a short, useful description for the main image and every gallery photo." };
+    case "media-error":
+      return { tone: "err", title: "AYRA could not save the photos.", body: "Nothing was published. Please try the complete submission again in a moment." };
     case "error":
       return {
         tone: "err",
@@ -171,6 +186,14 @@ export function getJourneyStatus(
   }
 
   switch (normalized) {
+    case "media-updated":
+      return { tone: "ok", label: "Selection saved", title: "Project photo selection updated.", body: "The application remains private until you approve it." };
+    case "initiative-media-updated":
+      return { tone: "ok", label: "Media published", title: "Project photography updated.", body: "The selected main image and gallery are now available on the public project pages." };
+    case "media-main-required":
+      return { tone: "err", label: "Main image required", title: "Choose one main project image.", body: "Approval cannot continue until exactly one selected image is marked as the main image." };
+    case "media-promotion-error":
+      return { tone: "err", label: "Publication failed", title: "The project photos were not published.", body: "The application is still pending. Review the photo set and try approval again." };
     case "application-approved":
       return {
         tone: "ok",

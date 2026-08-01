@@ -325,7 +325,7 @@ export function buildAdvisorSources(
       title: "AYRA application flow",
       href: "/apply",
       content:
-        "People apply to manage an AYRA track initiative from /apply. The application form asks for applicant name, email, track, initiative, scope, operational details, milestones, and Signal or phone. The applicant submits with Submit for review. AYRA then reviews the proposed track, initiative scope, and operational contact model before granting portal access. If approved, the steward portal asks for the first Stellar payout address before any funding payment can be created. Funding approval and payout execution remain separate admin-controlled steps.",
+        "People apply to manage an AYRA track initiative from /apply. The form asks for applicant name, email, proposal and contact details, one required main project image, and up to eight optional gallery photos. Applicants describe each photo, confirm publication rights, and choose Submit for review. Photos remain private during review. An AYRA admin selects, orders, or excludes gallery photos; approval publishes the selected main image and gallery automatically. If approved, the steward portal asks for the first Stellar payout address before any funding payment can be created.",
     }),
     publicSource({
       id: "ayra:login-flow",
@@ -720,7 +720,7 @@ export function fallbackAdvisorAnswer(
   if (asksApplication && applicationSource) {
     return {
       answer:
-        "To make an application, go to /apply and fill out the initiative intake: applicant name, email, track, initiative, scope, operational details, milestones, and Signal or phone. Submit it with Submit for review. AYRA then runs admin review on the track, initiative scope, and contact model before granting scoped portal access. If the application is approved, the steward portal asks for the first Stellar payout address before any payment can be created.",
+        "To make an application, go to /apply and complete the initiative and contact details. Add one required landscape main image and up to eight optional gallery photos, describe every photo, confirm that AYRA may publish them, and choose Submit for review. The photos stay private while an admin reviews and curates the set. Approval publishes the selected main image and gallery and grants the scoped portal access needed for the next payout-address step.",
       citations: [advisorCitation(applicationSource)],
       followups: [
         "What happens after I apply?",

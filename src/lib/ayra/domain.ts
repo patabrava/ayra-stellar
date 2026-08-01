@@ -66,6 +66,39 @@ export type Application = {
   submittedAt: string;
   decidedAt?: string;
   decidedByProfileId?: string;
+  heroImageRightsConfirmed?: boolean;
+};
+
+export type ApplicationMedia = {
+  id: string;
+  applicationId: string;
+  storagePath: string;
+  role: "main" | "gallery";
+  originalName: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+  width: number;
+  height: number;
+  alt: string;
+  credit?: string;
+  selectedForPublic: boolean;
+  sortOrder: number;
+  focalPosition: "center" | "top" | "bottom" | "left" | "right";
+  previewUrl?: string;
+};
+
+export type InitiativeMedia = {
+  id: string;
+  initiativeId: string;
+  storagePath: string;
+  url: string;
+  role: "main" | "gallery";
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+  width: number;
+  height: number;
+  alt: string;
+  credit?: string;
+  sortOrder: number;
+  focalPosition: "center" | "top" | "bottom" | "left" | "right";
 };
 
 export type StewardProfile = {
@@ -258,6 +291,8 @@ export type AyraState = {
   tracks: Track[];
   initiatives: Initiative[];
   applications: Application[];
+  applicationMedia?: ApplicationMedia[];
+  initiativeMedia?: InitiativeMedia[];
   stewardProfiles: StewardProfile[];
   grantees: Grantee[];
   granteeContacts: GranteeContact[];
@@ -421,6 +456,8 @@ function cloneState(state: AyraState): AyraState {
     tracks: [...state.tracks],
     initiatives: [...state.initiatives],
     applications: [...state.applications],
+    applicationMedia: [...(state.applicationMedia ?? [])],
+    initiativeMedia: [...(state.initiativeMedia ?? [])],
     stewardProfiles: [...state.stewardProfiles],
     grantees: [...state.grantees],
     granteeContacts: [...state.granteeContacts],
@@ -763,6 +800,36 @@ export function createDemoState(): AyraState {
     ],
     tracks,
     initiatives,
+    initiativeMedia: [
+      {
+        id: "media-reforest-main",
+        initiativeId: "initiative-reforest",
+        storagePath: "demo/reforestation/main.jpg",
+        url: "/mockups/reforest.jpg",
+        role: "main",
+        mimeType: "image/jpeg",
+        width: 2000,
+        height: 1125,
+        alt: "Community members restoring native vegetation in Providencia",
+        credit: "AYRA demo",
+        sortOrder: 0,
+        focalPosition: "center",
+      },
+      {
+        id: "media-reforest-gallery-1",
+        initiativeId: "initiative-reforest",
+        storagePath: "demo/reforestation/gallery-1.jpg",
+        url: "/mockups/reforest-panel.jpg",
+        role: "gallery",
+        mimeType: "image/jpeg",
+        width: 1600,
+        height: 1067,
+        alt: "Native seedlings prepared for the next planting round",
+        credit: "AYRA demo",
+        sortOrder: 1,
+        focalPosition: "center",
+      },
+    ],
     applications: [
       {
         id: "application-sterilization",

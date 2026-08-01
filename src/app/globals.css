@@ -435,7 +435,22 @@ select {
 
 .lead-project-copy {
   align-self: end;
+  min-width: 0;
   padding-bottom: clamp(12px, 4vw, 56px);
+}
+
+.lead-project-title,
+.project-detail-title {
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.lead-project-title {
+  font-size: clamp(40px, 5.2vw, 72px);
+}
+
+.lead-project-summary {
+  overflow: hidden;
 }
 
 .lead-project-facts {
@@ -605,6 +620,23 @@ select {
   transform: scale(1.025);
 }
 
+.project-gallery { margin-top: 3rem; }
+.project-gallery-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+.project-gallery-thumb { border: 1px solid var(--public-rule); background: transparent; color: inherit; padding: 0; text-align: left; }
+.project-gallery-thumb img { display: block; height: 18rem; width: 100%; object-fit: cover; }
+.project-gallery-thumb span { display: block; padding: .65rem .8rem; font-size: .75rem; color: var(--public-dim); }
+.project-gallery-dialog { width: min(96vw, 78rem); max-width: none; border: 1px solid rgba(255,255,255,.2); padding: 0; background: #10110f; color: white; }
+.project-gallery-dialog::backdrop { background: rgba(0,0,0,.82); }
+.project-gallery-dialog-inner { position: relative; display: grid; place-items: center; min-height: min(88vh, 56rem); padding: 3rem; }
+.project-gallery-dialog-inner img { max-height: 72vh; width: auto; object-fit: contain; }
+.project-gallery-close,.project-gallery-prev,.project-gallery-next { position: absolute; z-index: 2; border: 1px solid rgba(255,255,255,.45); background: rgba(0,0,0,.65); color: white; padding: .65rem; }
+.project-gallery-close { right: 1rem; top: 1rem; }
+.project-gallery-prev { left: 1rem; top: 50%; }
+.project-gallery-next { right: 1rem; top: 50%; }
+.project-gallery-caption { margin-top: 1rem; text-align: center; }
+.project-gallery-caption span { font-size: .75rem; color: rgba(255,255,255,.65); }
+@media (max-width: 640px) { .project-gallery-dialog-inner { padding: 3.5rem 1rem 5rem; } .project-gallery-thumb img { height: auto; } }
+
 .project-detail-visual {
   aspect-ratio: 16 / 11;
   border: 1px solid var(--dark-rule);
@@ -625,6 +657,192 @@ select {
   height: 100%;
   object-fit: cover;
   width: 100%;
+}
+
+.project-detail-layout {
+  display: grid;
+  gap: clamp(40px, 5vw, 72px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.58fr);
+}
+
+.project-detail-layout > *,
+.project-detail-heading > * {
+  min-width: 0;
+}
+
+.project-detail-title {
+  font-size: clamp(42px, 5vw, 72px);
+}
+
+.receipts-title {
+  font-size: clamp(28px, 4vw, 36px);
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.project-scope {
+  border-left: 1px solid var(--public-earth);
+  padding-left: clamp(16px, 2vw, 24px);
+}
+
+.proposal-details {
+  border-block: 1px solid var(--dark-rule);
+  margin-top: clamp(36px, 5vw, 64px);
+  padding-block: clamp(28px, 4vw, 48px);
+}
+
+.proposal-details .public-rich-text {
+  max-width: 72ch;
+}
+
+.public-rich-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: normal;
+}
+
+.public-rich-text > * + * {
+  margin-top: 1.25em;
+}
+
+.public-rich-link {
+  color: var(--public-leaf);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 55%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.public-rich-link:hover {
+  text-decoration-color: currentColor;
+}
+
+.project-gallery {
+  border-top: 1px solid var(--dark-rule);
+  margin-top: clamp(40px, 6vw, 72px);
+  padding-top: clamp(28px, 4vw, 44px);
+}
+
+.project-gallery-heading {
+  align-items: end;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.project-gallery-grid {
+  columns: 2;
+  column-gap: 16px;
+}
+
+.project-gallery-thumb {
+  background: transparent;
+  border: 0;
+  break-inside: avoid;
+  color: var(--public-muted);
+  cursor: pointer;
+  display: inline-grid;
+  margin: 0 0 20px;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.project-gallery-thumb img {
+  border: 1px solid var(--dark-rule);
+  height: auto;
+  transition: border-color 180ms, opacity 180ms;
+  width: 100%;
+}
+
+.project-gallery-thumb:hover img,
+.project-gallery-thumb:focus-visible img {
+  border-color: var(--public-leaf);
+  opacity: 0.86;
+}
+
+.project-gallery-thumb span {
+  line-height: 1.5;
+  margin-top: 9px;
+}
+
+.project-gallery-thumb small {
+  color: var(--public-dim);
+  margin-top: 3px;
+}
+
+.project-gallery-dialog {
+  background: var(--public-bg);
+  border: 1px solid var(--public-rule);
+  color: var(--public-fg);
+  height: min(88vh, 920px);
+  max-height: none;
+  max-width: none;
+  padding: 0;
+  width: min(90vw, 1120px);
+}
+
+.project-gallery-dialog::backdrop {
+  background: oklch(4% 0.01 84 / 0.88);
+}
+
+.project-gallery-dialog-inner {
+  display: grid;
+  height: 100%;
+  place-items: center;
+  position: relative;
+}
+
+.project-gallery-dialog-inner > img {
+  height: min(72vh, 760px);
+  object-fit: contain;
+  width: calc(100% - 96px);
+}
+
+.project-gallery-close {
+  background: var(--public-bg);
+  border: 1px solid var(--public-rule);
+  color: var(--public-fg);
+  cursor: pointer;
+  display: grid;
+  padding: 10px;
+  place-items: center;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  z-index: 2;
+}
+
+.project-gallery-dialog-caption {
+  bottom: 18px;
+  left: 24px;
+  max-width: 60ch;
+  position: absolute;
+}
+
+.project-gallery-dialog-caption small {
+  color: var(--public-dim);
+}
+
+.project-gallery-controls {
+  align-items: center;
+  bottom: 16px;
+  display: flex;
+  gap: 12px;
+  position: absolute;
+  right: 20px;
+}
+
+.project-gallery-controls button {
+  background: transparent;
+  border: 1px solid var(--public-rule);
+  color: var(--public-fg);
+  cursor: pointer;
+  display: grid;
+  padding: 9px;
+  place-items: center;
 }
 
 .score {
@@ -757,6 +975,13 @@ select {
   display: block;
   height: auto;
   width: 100%;
+}
+
+.updates-timeline-empty {
+  border-bottom: 1px solid var(--dark-rule);
+  color: var(--public-dim);
+  line-height: 1.7;
+  padding: 2px 0 24px 22px;
 }
 
 .ops-shell {
@@ -2347,7 +2572,8 @@ a.hashish:hover {
 
   .lead-project,
   .project-index,
-  .project-dossier {
+  .project-dossier,
+  .project-detail-layout {
     grid-template-columns: 1fr;
   }
 
@@ -2384,6 +2610,14 @@ a.hashish:hover {
 
   .updates-timeline {
     position: static;
+  }
+
+  .project-detail-heading {
+    flex-direction: column;
+  }
+
+  .project-gallery-grid {
+    columns: 1;
   }
 
   .public-hero::after {
