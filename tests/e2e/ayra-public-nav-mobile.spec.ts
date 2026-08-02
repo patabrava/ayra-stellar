@@ -60,15 +60,10 @@ test.describe("public navigation mobile adaptation", () => {
     await expect(page.getByRole("navigation", { name: "Public wall" })).toBeVisible();
     await expectCompactPublicNav(page);
     await expect(
-      page.getByRole("heading", { level: 1, name: /Follow the work.*Verify the funding/s }),
+      page.getByRole("heading", { level: 1, name: /Providencia.*lived in.*Funded by AYRA/s }),
     ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "What is documented now" })).toBeVisible();
-    const progress = page.getByRole("progressbar");
-    await expect(progress).toHaveAttribute("aria-valuenow", /^\d+$/);
-    const progressValue = Number(await progress.getAttribute("aria-valuenow"));
-    expect(progressValue).toBeGreaterThanOrEqual(0);
-    expect(progressValue).toBeLessThanOrEqual(100);
-    await expect(page.getByRole("link", { name: /Open project:/ })).toBeVisible();
+    await expect(page.getByText(/AYRA builds impact zones in places we care about/)).toBeVisible();
+    await expect(page.getByRole("link", { name: /Open Reforestation/i })).toBeVisible();
     await expect(page.locator(".lead-project-visual img")).toHaveJSProperty("complete", true);
 
     const advisor = page.getByRole("button", { name: "Ask AYRA public advisor" });

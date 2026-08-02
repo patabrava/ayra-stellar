@@ -315,11 +315,7 @@ select {
 }
 
 .public-hero {
-  display: grid;
-  min-height: clamp(500px, 66vh, 680px);
   overflow: hidden;
-  padding: clamp(72px, 10vw, 136px) var(--pad-page);
-  place-items: center start;
   position: relative;
 }
 
@@ -434,12 +430,10 @@ select {
 
 .hero-title {
   font-family: var(--font-display), ui-sans-serif;
-  font-size: clamp(3.8rem, 7.4vw, 7rem);
+  font-size: 3.75rem;
   font-weight: 500;
   letter-spacing: 0;
-  line-height: 0.9;
-  margin-top: clamp(24px, 3vw, 40px);
-  max-width: 11ch;
+  line-height: 0.96;
   text-wrap: balance;
 }
 
@@ -493,7 +487,7 @@ select {
 .project-wall {
   display: grid;
   gap: clamp(28px, 5vw, 72px);
-  padding: clamp(72px, 9vw, 118px) var(--pad-page);
+  padding: 0 var(--pad-page) clamp(72px, 10vw, 128px);
 }
 
 .public-summary {
@@ -2864,11 +2858,6 @@ a.hashish:hover {
     color: var(--public-leaf);
   }
 
-  .public-hero {
-    min-height: 0;
-    padding-block: clamp(64px, 16vw, 96px);
-  }
-
   .public-summary-heading,
   .project-wall-heading {
     align-items: start;
@@ -3045,7 +3034,6 @@ a.hashish:hover {
 
   .hero-title {
     font-size: clamp(3.2rem, 15vw, 4.5rem);
-    max-width: 9ch;
   }
 
   .public-hero-summary {
@@ -3053,7 +3041,6 @@ a.hashish:hover {
   }
 
   .public-summary,
-  .project-wall,
   .public-proof-guide {
     padding-block: 64px;
   }

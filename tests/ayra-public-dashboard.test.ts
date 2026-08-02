@@ -8,20 +8,21 @@ describe("AYRA public transparency dashboard", () => {
   const advisor = readFileSync("src/components/ayra/advisor-panel.tsx", "utf8");
   const publicNav = readFileSync("src/components/ayra/public-nav.tsx", "utf8");
 
-  it("leads with proof context and honest live-record counts", () => {
-    assert.match(page, /Follow the work\./);
-    assert.match(page, /Verify the funding\./);
-    assert.match(page, /wall\.initiatives\.length/);
-    assert.match(page, /wall\.updates\.length/);
-    assert.match(page, /wall\.batches\.length/);
-    assert.match(page, /formatUsdc\(publishedUsdc\)/);
+  it("preserves the original place-led landing message", () => {
+    assert.match(page, /\{wall\.track\.name\},/);
+    assert.match(page, /lived in\./);
+    assert.match(page, /Funded by AYRA\./);
+    assert.match(page, /AYRA builds impact zones in places we care about\./);
+    assert.doesNotMatch(page, /Follow the work\./);
+    assert.doesNotMatch(page, /What is documented now/);
+    assert.match(css, /padding: 0 var\(--pad-page\) clamp\(72px, 10vw, 128px\)/);
+    assert.doesNotMatch(css, /max-width: 11ch/);
+    assert.doesNotMatch(css, /min-height: clamp\(500px, 66vh, 680px\)/);
   });
 
-  it("keeps dashboard navigation and project progress accessible", () => {
-    assert.match(page, /Skip to transparency records/);
+  it("keeps the restored landing navigation and project links accessible", () => {
     assert.match(page, /<PublicNav/);
-    assert.match(page, /role="progressbar"/);
-    assert.match(page, /aria-valuenow=\{progress\}/);
+    assert.match(page, /aria-label=\{`Open \$\{leadInitiative\.name\}`\}/);
     assert.match(css, /\.public-menu-toggle/);
     assert.match(publicNav, /aria-expanded=\{open\}/);
     assert.match(publicNav, /event\.key !== "Escape"/);
