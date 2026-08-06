@@ -1,0 +1,125 @@
+<style>
+  #ayra-partner-placements .preview {
+    background: #0f0e0b;
+    color: #eee9de;
+    min-height: 210px;
+    padding: 20px;
+  }
+  #ayra-partner-placements .hero-line {
+    color: #8f8a80;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  #ayra-partner-placements .hero-copy {
+    font-size: 29px;
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    margin: 14px 0 12px;
+  }
+  #ayra-partner-placements .apply {
+    background: #72b867;
+    color: #10120e;
+    display: inline-block;
+    font-size: 11px;
+    margin-top: 12px;
+    padding: 9px 18px;
+  }
+  #ayra-partner-placements .partners {
+    align-items: center;
+    border-top: 1px solid #37342d;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 18px;
+    padding-top: 14px;
+  }
+  #ayra-partner-placements .partners strong {
+    color: #8f8a80;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    margin-right: auto;
+    text-transform: uppercase;
+  }
+  #ayra-partner-placements .partners span {
+    font-size: 10px;
+    font-weight: 500;
+  }
+  #ayra-partner-placements .partners .climate { color: #9bc58f; }
+  #ayra-partner-placements .partners .spark { color: #ffee35; }
+  #ayra-partner-placements .trust-bridge {
+    margin-left: -20px;
+    margin-right: -20px;
+    padding: 15px 20px;
+  }
+  #ayra-partner-placements .project-label {
+    color: #8f8a80;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    margin-top: 18px;
+    text-transform: uppercase;
+  }
+  #ayra-partner-placements .closing-preview {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+</style>
+
+<div id="ayra-partner-placements">
+  <h2>Choose the partner-logo placement</h2>
+  <p class="subtitle">Click one option. The final section will use the real logo files.</p>
+  <div class="cards">
+    <div class="card" data-choice="a" onclick="toggleSelect(this)">
+      <div class="card-image preview">
+        <div class="hero-line">Providencia Sustainable Enterprise · 2026</div>
+        <div class="hero-copy">Providencia,<br>lived in.</div>
+        <span class="apply">Apply</span>
+        <div class="partners trust-bridge">
+          <strong>In partnership with</strong>
+          <span>Stellar Development Foundation</span>
+          <span class="climate">Climate Future</span>
+          <span class="spark">✦ sparkclub</span>
+        </div>
+        <div class="project-label">Featured project ↓</div>
+      </div>
+      <div class="card-body">
+        <h3>A · Trust bridge</h3>
+        <p>A thin strip between the hero and projects. Clear and calm. Recommended.</p>
+      </div>
+    </div>
+    <div class="card" data-choice="b" onclick="toggleSelect(this)">
+      <div class="card-image preview">
+        <div class="hero-line">Providencia Sustainable Enterprise · 2026</div>
+        <div class="hero-copy">Providencia,<br>lived in.</div>
+        <span class="apply">Apply</span>
+        <div class="partners">
+          <strong>With</strong>
+          <span>Stellar</span>
+          <span class="climate">Climate Future</span>
+          <span class="spark">✦ sparkclub</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>B · Hero accreditation</h3>
+        <p>Partners sit with the CTA. Visible, but the hero becomes busier.</p>
+      </div>
+    </div>
+    <div class="card" data-choice="c" onclick="toggleSelect(this)">
+      <div class="card-image preview closing-preview">
+        <div class="hero-line">A living public record</div>
+        <div class="partners">
+          <strong>Project partners</strong>
+          <span>Stellar Development Foundation</span>
+          <span class="climate">Climate Future</span>
+          <span class="spark">✦ sparkclub</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>C · Closing credits</h3>
+        <p>Quietest placement near the footer, but easiest for visitors to miss.</p>
+      </div>
+    </div>
+  </div>
+</div>

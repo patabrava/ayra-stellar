@@ -3,8 +3,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
+import { PartnerLogoRail } from "@/components/ayra/partner-logo-rail";
 import { PublicNav } from "@/components/ayra/public-nav";
-import { PublicRichText } from "@/components/ayra/public-rich-text";
 import { SiteFooter } from "@/components/ayra/site-footer";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import { getPublicWallProjection } from "@/lib/ayra/domain";
@@ -38,6 +38,21 @@ const projectImageBySlug = {
   "dog-sterilization": projectImages[1],
   reef: projectImages[2],
 } as const;
+
+function projectPreview(headline: string) {
+  const normalized = headline.replace(/\s+/g, " ").trim();
+  if (normalized.length <= 220) return normalized;
+
+  const shortened = normalized.slice(0, 221);
+  const lastWord = shortened.lastIndexOf(" ");
+  return `${shortened.slice(0, lastWord > 160 ? lastWord : 220).trim()}…`;
+}
+
+function formatStatus(status: "live" | "funding" | "draft") {
+  if (status === "live") return "In progress";
+  if (status === "funding") return "Preparing to start";
+  return "In preparation";
+}
 
 export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -101,6 +116,21 @@ export default async function Home({ searchParams }: PageProps) {
   const secondaryInitiatives = wall.initiatives.filter(
     (initiative) => initiative.id !== leadInitiative?.id,
   );
+  const nextMilestone = leadInitiative
+    ? state.milestones.find(
+        (milestone) =>
+          milestone.initiativeId === leadInitiative.id &&
+          milestone.status === "active",
+      ) ??
+      state.milestones.find(
+        (milestone) =>
+          milestone.initiativeId === leadInitiative.id &&
+          milestone.status === "planned",
+      )
+    : undefined;
+  const leadProjectHref = leadInitiative
+    ? `/projects/${wall.track.slug}/${leadInitiative.slug}`
+    : "#projects";
 
   return (
     <main className="public-shell">
@@ -117,6 +147,13 @@ export default async function Home({ searchParams }: PageProps) {
             })),
           },
           {
+            label: "Explore",
+            items: [
+              { href: "#projects", label: "Projects" },
+              { href: "https://www.ayra.haus", label: "About AYRA" },
+            ],
+          },
+          {
             label: "Access",
             items: [
               { href: "/apply", label: "Apply" },
@@ -131,7 +168,7 @@ export default async function Home({ searchParams }: PageProps) {
 
       <section
         id="top"
-        className="public-hero px-[var(--pad-page)] py-14 md:py-20"
+        className="public-hero px-[var(--pad-page)] py-8 md:py-20"
       >
         <div className="relative z-10 max-w-6xl">
           <div className="place-line">{wall.track.name} · 2026</div>
@@ -147,35 +184,54 @@ export default async function Home({ searchParams }: PageProps) {
             Providencia, the Caribbean of Colombia where we are bringing the
             island onto tech rails.
           </p>
+          <div className="public-hero-actions">
+            <Link className="public-action public-action-primary" href="/apply">
+              Apply
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section className="project-wall" aria-label="Projects">
+      <section className="project-wall" id="projects" aria-label="Projects">
         {leadInitiative ? (
           <div className="lead-project-frame">
             <Link
               aria-label={`Open ${leadInitiative.name}`}
               className="lead-project"
-              href={`/projects/${wall.track.slug}/${leadInitiative.slug}`}
+              href={leadProjectHref}
             >
               <div className="lead-project-copy">
-                <div className="place-line">Field anchor</div>
-                <h2 className="display mt-5 text-5xl font-medium md:text-7xl">
+                <div className="lead-project-eyebrow">
+                  <span>Featured project</span>
+                  <span className="project-status">
+                    {formatStatus(leadInitiative.status)}
+                  </span>
+                </div>
+                <h2 className="lead-project-title">
                   {leadInitiative.name}
                 </h2>
-                <div className="public-muted mt-5 max-w-xl text-lg leading-8">
-                  <PublicRichText>{leadInitiative.headline}</PublicRichText>
-                </div>
+                <p className="lead-project-summary">
+                  {projectPreview(leadInitiative.headline)}
+                </p>
                 <div className="lead-project-facts">
                   <span>
-                    {leadInitiative.targetMetricCurrent.toLocaleString("en-US")} /{" "}
-                    {leadInitiative.targetMetricGoal.toLocaleString("en-US")}
+                    <small>Progress</small>
+                    <strong>
+                      {leadInitiative.targetMetricCurrent.toLocaleString("en-US")} /{" "}
+                      {leadInitiative.targetMetricGoal.toLocaleString("en-US")}
+                    </strong>
                   </span>
-                  <span>{leadInitiative.targetMetricLabel}</span>
-                  <span>{leadInitiative.leagueScore} score</span>
+                  <span>
+                    <small>Current stage</small>
+                    <strong>{formatStatus(leadInitiative.status)}</strong>
+                  </span>
+                  <span>
+                    <small>Next milestone</small>
+                    <strong>{nextMilestone?.title ?? "First update"}</strong>
+                  </span>
                 </div>
-                <div className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-[var(--public-fg)]">
-                  Open project <ArrowRight className="h-4 w-4" />
+                <div className="project-open-link">
+                  View project and proof <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </div>
               </div>
               <div className="lead-project-visual">
@@ -228,8 +284,10 @@ export default async function Home({ searchParams }: PageProps) {
             </div>
           </div>
         ) : null}
+
       </section>
 
+      <PartnerLogoRail />
       <SiteFooter />
     </main>
   );

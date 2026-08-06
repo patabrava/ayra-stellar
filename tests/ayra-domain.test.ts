@@ -321,6 +321,39 @@ describe("AYRA Stellar domain smoke path", () => {
     assert.equal(fallbackView.proof?.batchId, "batch-reforest-may26");
   });
 
+  it("selects the newest submitted batch for admin payment line items", async () => {
+    const state = createDemoState();
+    const cultureBatch = {
+      ...state.batches[0]!,
+      id: "batch-culture-001",
+      initiativeId: state.initiatives[0]!.id,
+      code: "PV-Culture-001",
+      periodLabel: "May 2026",
+      status: "submitted" as const,
+      createdAt: "2026-06-07T09:38:15.505Z",
+      submittedAt: "2026-06-07T09:38:40.606Z",
+      settledAt: undefined,
+      sdpBatchId: "004cfd6e-df24-48a4-b33a-0c26f63343dd",
+    };
+    const staleBatch = {
+      ...state.batches[0]!,
+      id: "batch-reforest-ui620004",
+      code: "PV-REFOREST-UI620004",
+      status: "submitted" as const,
+      createdAt: "2026-05-19T15:46:43.585Z",
+      submittedAt: "2026-05-19T15:47:50.498Z",
+      settledAt: undefined,
+      sdpBatchId: "69ad2aed-53ea-49b3-bbbf-3c129d5d21d6",
+    };
+
+    const view = await buildAdminViewModel({
+      ...state,
+      batches: [staleBatch, cultureBatch, ...state.batches],
+    });
+
+    assert.equal(view.lineItemBatch.code, "PV-Culture-001");
+  });
+
   it("runs application approval, update moderation, verified payout, mock SDP, and proof visibility", async () => {
     let state = createDemoState();
 

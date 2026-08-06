@@ -1,0 +1,222 @@
+<style>
+  #ayra-partner-options {
+    --ayra-bg: #0f0e0b;
+    --ayra-fg: #eee9de;
+    --ayra-muted: #9d978c;
+    --ayra-rule: #37342d;
+    --ayra-green: #72b867;
+    --ayra-yellow: #ffee35;
+  }
+  #ayra-partner-options .ayra-preview {
+    background:
+      linear-gradient(rgba(238, 233, 222, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(238, 233, 222, 0.04) 1px, transparent 1px),
+      var(--ayra-bg);
+    background-size: 28px 28px;
+    color: var(--ayra-fg);
+    min-height: 230px;
+    overflow: hidden;
+  }
+  #ayra-partner-options .ayra-hero-mini {
+    padding: 22px 24px 20px;
+  }
+  #ayra-partner-options .ayra-kicker {
+    color: var(--ayra-muted);
+    font-size: 10px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+  #ayra-partner-options .ayra-heading {
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    margin-top: 12px;
+  }
+  #ayra-partner-options .ayra-copy {
+    color: var(--ayra-muted);
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  #ayra-partner-options .ayra-cta {
+    background: var(--ayra-green);
+    color: #10120e;
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 14px;
+    padding: 9px 18px;
+  }
+  #ayra-partner-options .ayra-strip {
+    align-items: center;
+    border-bottom: 1px solid var(--ayra-rule);
+    border-top: 1px solid var(--ayra-rule);
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 0.65fr 2fr;
+    padding: 16px 24px;
+  }
+  #ayra-partner-options .ayra-strip-label {
+    color: var(--ayra-muted);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  #ayra-partner-options .ayra-logos {
+    align-items: center;
+    display: flex;
+    gap: 22px;
+    justify-content: space-between;
+  }
+  #ayra-partner-options .ayra-logo {
+    color: var(--ayra-fg);
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  #ayra-partner-options .ayra-logo-stellar::before {
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    content: "↗";
+    display: inline-grid;
+    height: 15px;
+    margin-right: 5px;
+    place-items: center;
+    width: 15px;
+  }
+  #ayra-partner-options .ayra-logo-climate {
+    color: #9bc58f;
+  }
+  #ayra-partner-options .ayra-logo-spark {
+    color: var(--ayra-yellow);
+    font-size: 12px;
+  }
+  #ayra-partner-options .ayra-project-hint {
+    color: var(--ayra-muted);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 18px 24px;
+    text-transform: uppercase;
+  }
+  #ayra-partner-options .ayra-inline-partners {
+    align-items: center;
+    display: flex;
+    gap: 14px;
+    margin-top: 18px;
+  }
+  #ayra-partner-options .ayra-inline-partners .ayra-logos {
+    gap: 14px;
+    justify-content: flex-start;
+  }
+  #ayra-partner-options .ayra-footer-preview {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  #ayra-partner-options .ayra-record-note {
+    border-top: 1px solid var(--ayra-rule);
+    color: var(--ayra-muted);
+    display: grid;
+    font-size: 10px;
+    gap: 18px;
+    grid-template-columns: 0.8fr 1.6fr;
+    margin: 0 24px;
+    padding: 18px 0;
+  }
+  #ayra-partner-options .ayra-footer-strip {
+    border-top: 1px solid var(--ayra-rule);
+    padding: 18px 24px;
+  }
+  #ayra-partner-options .ayra-footer-strip .ayra-logos {
+    margin-top: 13px;
+  }
+  @media (max-width: 600px) {
+    #ayra-partner-options .ayra-strip,
+    #ayra-partner-options .ayra-record-note {
+      grid-template-columns: 1fr;
+    }
+    #ayra-partner-options .ayra-logos {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 10px;
+    }
+  }
+</style>
+
+<div id="ayra-partner-options">
+  <h2>Where should the partner logos live?</h2>
+  <p class="subtitle">All three versions stay minimal. Click the treatment that feels most natural for AYRA.</p>
+
+  <div class="cards">
+    <div class="card" data-choice="a" onclick="toggleSelect(this)">
+      <div class="card-image ayra-preview">
+        <div class="ayra-hero-mini">
+          <div class="ayra-kicker">Providencia Sustainable Enterprise · 2026</div>
+          <div class="ayra-heading">Providencia,<br>lived in.</div>
+          <div class="ayra-copy">AYRA builds impact zones in places we care about.</div>
+          <span class="ayra-cta">Apply</span>
+        </div>
+        <div class="ayra-strip">
+          <span class="ayra-strip-label">In partnership with</span>
+          <div class="ayra-logos">
+            <span class="ayra-logo ayra-logo-stellar">Stellar Development Foundation</span>
+            <span class="ayra-logo ayra-logo-climate">Climate Future</span>
+            <span class="ayra-logo ayra-logo-spark">✦ sparkclub</span>
+          </div>
+        </div>
+        <div class="ayra-project-hint">Featured project ↓</div>
+      </div>
+      <div class="card-body">
+        <h3>A · Trust bridge</h3>
+        <p>A thin strip between the hero and projects. Strongest trust signal with no hero clutter. Recommended.</p>
+      </div>
+    </div>
+
+    <div class="card" data-choice="b" onclick="toggleSelect(this)">
+      <div class="card-image ayra-preview">
+        <div class="ayra-hero-mini">
+          <div class="ayra-kicker">Providencia Sustainable Enterprise · 2026</div>
+          <div class="ayra-heading">Providencia,<br>lived in.</div>
+          <div class="ayra-copy">AYRA builds impact zones in places we care about.</div>
+          <span class="ayra-cta">Apply</span>
+          <div class="ayra-inline-partners">
+            <span class="ayra-strip-label">With</span>
+            <div class="ayra-logos">
+              <span class="ayra-logo ayra-logo-stellar">Stellar</span>
+              <span class="ayra-logo ayra-logo-climate">Climate Future</span>
+              <span class="ayra-logo ayra-logo-spark">✦ sparkclub</span>
+            </div>
+          </div>
+        </div>
+        <div class="ayra-project-hint">Featured project ↓</div>
+      </div>
+      <div class="card-body">
+        <h3>B · Hero accreditation</h3>
+        <p>Places partners directly beside the primary message. Compact, but it makes the hero busier and more promotional.</p>
+      </div>
+    </div>
+
+    <div class="card" data-choice="c" onclick="toggleSelect(this)">
+      <div class="card-image ayra-preview ayra-footer-preview">
+        <div>
+          <div class="ayra-project-hint">Projects · updates · proof</div>
+          <div class="ayra-record-note">
+            <span>A living public record</span>
+            <span>Approved milestones and funding releases appear here as the work progresses.</span>
+          </div>
+        </div>
+        <div class="ayra-footer-strip">
+          <span class="ayra-strip-label">Project partners</span>
+          <div class="ayra-logos">
+            <span class="ayra-logo ayra-logo-stellar">Stellar Development Foundation</span>
+            <span class="ayra-logo ayra-logo-climate">Climate Future</span>
+            <span class="ayra-logo ayra-logo-spark">✦ sparkclub</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>C · Closing credits</h3>
+        <p>Quietest placement near the living-record note and footer. Elegant, but many visitors will miss the trust signal.</p>
+      </div>
+    </div>
+  </div>
+</div>

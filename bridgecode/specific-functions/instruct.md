@@ -1,92 +1,112 @@
-# INSTRUCT — Expert-Guided Instruction Stabilizer
+# INSTRUCT — Expert-Guided Contract Stabilizer
 
-INSTRUCT turns expert, opinionated, or constraint-rich user intent into a buildable low-entropy contract before LIRA or EYE acts. Use it when a small batch of high-value user answers will materially improve correctness.
+INSTRUCT turns expert, opinionated, or constraint-rich user intent into a buildable low-entropy contract before LIRA or EYE acts. Use it when the task signal shows that a small batch of high-value user answers will materially improve correctness.
 
-INSTRUCT does not research by default, does not architect fully, and does not code. It asks, compresses, offers implementation paths, stabilizes the contract, then hands off.
+INSTRUCT does not research by default, does not architect fully, and does not code. When the router selects INSTRUCT or the user explicitly invokes it, INSTRUCT always pauses execution for an in-depth human exchange. It asks the questions that change the build contract, supplies useful options and Best-Answer recommendations, compresses the answers, produces the final stabilized plan, and hands that plan to the next route.
 
-Hard rules:
+## Hard Rules
+
 - Treat `/AGENTS.md` as binding.
+- Use the task signal selected by `/AGENTS.md`.
 - Apply `LLM_FRIENDLY_PLAN_CODE_DEBUG`.
-- Apply backend/frontend constitutions when relevant.
+- Apply backend and frontend constitutions when relevant.
 - Do not write implementation code inside INSTRUCT.
 - Do not produce architecture artifacts that belong to LIRA unless the handoff contract requires a compact inline summary.
-- Ask only questions whose answers change the build contract.
-- Ask one question batch only. No branching interview trees.
-- Generated artifacts are allowed only when useful; if created, place them in `agentic/`.
+- When INSTRUCT is active, always ask a decision-changing question batch and wait for the user's answers before stabilization.
+- Include concrete answer options, tradeoffs, and recommendations wherever they help the user decide.
+- Build questions and suggestions with Best-Answer logic: target the real goal, test only material assumptions, import outside-domain principles only when useful, and pre-correct predictable gaps.
+- Use repo inspection, RESEARCH, direct inference, or harness tools before asking when they can supply evidence; use that evidence to remove low-value questions and strengthen the mandatory decision batch.
+- Use `agentic/analysis.md` as the default temporary contract whiteboard when a file is useful.
+- Create persistent instruction artifacts only when the user asks for them or when durability clearly reduces future context cost.
+- Finish INSTRUCT with a final stabilized plan inline or in `agentic/analysis.md`, then hand off to LIRA, EYE, or RESEARCH according to the stabilized task signal.
 
 ## 0) When To Use INSTRUCT
 
-Use INSTRUCT when:
-- the user is expert or has clear preferences;
-- the user has strong constraints, taste, stack opinions, product intent, or domain knowledge;
-- the task is buildable but important choices remain user-dependent;
-- the user explicitly asks to be questioned or guided;
-- implementation options should be chosen with user input;
-- RESEARCH has produced vocabulary and now the user can make meaningful decisions.
+Use INSTRUCT when the user is expert, opinionated, or has strong constraints and their answers would materially change the build, or when the user explicitly asks to use INSTRUCT. The user may have taste, stack preferences, product intent, domain knowledge, privacy requirements, deployment constraints, budget constraints, dependency tolerance, quality standards, or evidence requirements that the agent cannot safely infer.
 
-Do not use INSTRUCT when:
-- the user is vague because they lack vocabulary → use RESEARCH first;
-- the task needs architecture/audit/design definition → use LIRA;
-- the task is ready to implement/debug → use EYE;
-- the missing information can be inferred, inspected, researched, or tested without bothering the user;
-- the question would only satisfy curiosity and not change the contract.
+Use INSTRUCT when the task is buildable but important choices remain user-dependent. Use it when the user explicitly asks to be questioned or guided. Use it when implementation options should be chosen with user input. Use it after RESEARCH when research has produced the vocabulary needed for the user to make a meaningful decision.
 
-## 1) Best-Answer Question Judgment
+Use INSTRUCT when the cost of asking precise questions is lower than the cost of implementing the wrong contract. Once activated, the questioning exchange is mandatory even when inspection or inference already supplies a likely answer; that evidence should improve the questions, options, and recommendations rather than eliminate the exchange.
 
-Before asking, silently resolve:
+A question is valuable when the answer changes architecture, scope, UX, data contracts, validation, dependency tolerance, deployment, security, privacy, evidence requirements, or definition of done. A question is noise when repo inspection, research, inference, or a small probe can answer it.
+
+## 1) INSTRUCT Task-Signal Judgment
+
+Before asking, silently resolve the active task signal through Best-Agent judgment. INSTRUCT is appropriate when user answers determine the next route's contract or when the user explicitly requests the INSTRUCT program.
+
+A vague request caused by missing vocabulary often routes to RESEARCH first. A task needing architecture but not user choice routes to LIRA. A stable implementation task routes to EYE. A prompt or router correction routes to GENERAL/EYE. A user-dependent choice routes to INSTRUCT.
+
+Before asking, answer these questions:
+
 1. What is the user actually trying to achieve?
-2. What part of the request is already stable?
-3. What assumption would break the build if false?
-4. What choices are truly user-dependent?
-5. What can be inferred or researched instead of asked?
-6. What is the minimum question batch that will stabilize the contract?
+2. What task signal triggered INSTRUCT?
+3. What parts of the request are already stable?
+4. What assumption would break the build if false?
+5. Which choices are truly user-dependent?
+6. What can be inferred, inspected, researched, or tested instead of asked?
+7. What is the smallest question batch that stabilizes the contract?
+8. Which route should receive the stabilized contract?
 
-Questions are expensive. Use them only when they reduce implementation entropy more than autonomous work would.
+Questions are deliberate INSTRUCT work. Ask them in one rich, efficient batch that reduces implementation entropy and gives the user meaningful suggestions rather than making them invent the option space alone.
+
+The stabilized contract should make the next route more executable, not merely more descriptive.
 
 ## 2) Diagnose
 
-Classify the request:
+Classify the request as CLEAR, DETAIL, or SPLIT.
 
-- CLEAR: enough signal exists; only minimal confirmation or contract sharpening is needed.
-- DETAIL: missing contracts would change correctness.
-- SPLIT: conflicting goals, multiple products, incompatible constraints, or priorities that cannot coexist.
+### CLEAR
+
+CLEAR means enough signal exists and only confirmation or contract sharpening is needed. The user's intent, deliverable, constraints, and success criteria are mostly stable.
+
+In CLEAR cases, ask a short mandatory batch that confirms the controlling interpretation, recommended option, and definition of done. Do not proceed directly from INSTRUCT without user answers.
+
+### DETAIL
+
+DETAIL means missing contract elements would change correctness. The goal may be clear, but platform, user type, input shape, output shape, quality gate, privacy boundary, dependency tolerance, or UX stance remains unresolved.
+
+In DETAIL cases, ask a compact batch that converts the request into buildable instructions.
+
+### SPLIT
+
+SPLIT means the request contains conflicting goals, multiple products, incompatible constraints, or priorities that cannot coexist without a decision.
+
+In SPLIT cases, ask questions that force the tradeoff into the open. The goal is to choose a coherent contract, not to satisfy every incompatible branch at once.
 
 Extract the spine:
+
 - central goal;
 - primary actor;
 - primary action;
-- primary output/deliverable;
+- primary output or deliverable;
 - minimal input → output pipeline;
 - must-keep constraints;
-- likely non-goals/backlog;
+- likely non-goals or backlog;
 - evidence or quality requirements;
 - production boundary.
 
 Identify entropy:
+
 - undefined terms;
 - mixed abstraction levels;
 - extra features;
 - premature stack commitments;
 - unsupported claims;
 - unclear success criteria;
-- styling or narrative that does not affect correctness;
-- dependency, permission, privacy, runtime, or platform ambiguity.
+- styling or narrative that affects implementation;
+- dependency ambiguity;
+- permission ambiguity;
+- privacy/security ambiguity;
+- runtime/platform ambiguity;
+- deployment ambiguity;
+- quality-gate ambiguity.
 
 ## 3) Ask
 
-Ask one compact batch of high-leverage questions.
-
-Rules:
-- Average 3-4 questions.
-- Maximum 8 questions.
-- Use multiple-choice when possible.
-- Avoid combined questions.
-- Avoid implementation trivia unless it changes the contract.
-- Use the user’s vocabulary when it is precise; replace vague vocabulary with sharper choices.
-- Do not ask questions RESEARCH, repo inspection, or harness tools can answer.
-- Stop after the batch and wait for answers.
+Ask one high-leverage batch. Use at least two questions, average four to six, and use up to eight when the contract genuinely requires it. Supply two or three concrete answer options when choices exist, state the consequence of each option, and mark the recommended option with its mechanism. Keep each question tied to a concrete implementation consequence.
 
 Question targets:
+
 - goal interpretation;
 - deliverable boundary;
 - primary users and use moments;
@@ -96,25 +116,31 @@ Question targets:
 - visual/UX stance when user taste matters;
 - evidence/quality gates;
 - dependency tolerance;
+- deployment constraints;
 - definition of done.
+- prompt/skill mono-task and intended reuse context when the user asks for reusable instruction text;
+- desired output contract for prompt, rule, workflow, or skill generation;
+- design language mode when code-only vs code-plus-assets materially changes frontend scope;
+- asset need when bespoke visual assets would change product identity, implementation cost, or delivery scope.
 
-Bad questions:
-- “Any preferences?”
-- “What tech stack do you want?” when the user does not know.
-- “Should it be scalable?” without a concrete scale decision.
-- “Do you want it modern?” without a mechanism.
-- implementation internals that LIRA/EYE should decide.
+Each question should earn its place. A strong question changes what the next route will build, define, validate, or preserve. Use Best-Answer mechanics for every question: aim at the user's underlying outcome, avoid manufactured assumptions, bring in an outside principle only when it improves the decision, and include the correction the user would predictably make if the option set were incomplete.
+
+Use the user’s vocabulary when it is precise. Replace vague vocabulary with sharper choices when doing so helps the user answer. Ask in a way that makes the implementation consequence visible.
+
+After asking, wait for answers. General authorization for autonomous work does not bypass an active INSTRUCT exchange; the user can select the recommendations when they want a fast path.
 
 ## 4) Offer Implementation Options
 
-After the user answers, provide exactly 3 implementation options unless the task clearly requires fewer.
+Offer implementation options when the user needs to choose a path and the choice affects the build contract. Provide exactly three options unless the task clearly requires fewer.
 
-Mandatory shape:
-- Option A: 0 deps / 0 frameworks.
-- Option B: minimal deps / 0 frameworks.
-- Option C: minimal-moderate deps / framework.
+The usual option shape is:
 
-Each option must state:
+- **Option A:** 0 dependencies / 0 frameworks.
+- **Option B:** minimal dependencies / 0 frameworks.
+- **Option C:** minimal to moderate dependencies / framework.
+
+Each option should state:
+
 - `{files, LOC/file, deps}`;
 - what it optimizes for;
 - what it gives up;
@@ -122,46 +148,34 @@ Each option must state:
 - validation path;
 - best fit.
 
-Then recommend one option. Do not give neutral option-sprawl.
+Then recommend one option. The recommendation should explain the mechanism: why this option best matches the user’s constraints, repo state, task signal, risk profile, and future EYE execution.
 
-Option standard:
-- locality over abstraction;
-- explicitness over cleverness;
-- vertical slices over global sweeps;
-- fewest dependencies that satisfy the real constraints;
-- easiest path for EYE to implement and debug.
-
-Stop and wait for the user’s selection unless the user authorized autonomous selection.
+Use options to reduce entropy, not to avoid deciding. Recommend the best option in the question batch; when the user selects that recommendation, stabilize it and hand off.
 
 ## 5) Stabilize
 
-After option selection, produce one cleaned build contract.
+After the user answers or selects the recommendations, produce one cleaned build contract and final plan. Keep it inline when small. Use `agentic/analysis.md` when a temporary contract and plan file will help the next route. Create a persistent contract artifact only when the user asks for one or when durability clearly reduces future context cost.
 
-Create `agentic/negentropized_instructions.md` only when a persistent artifact is useful for downstream LIRA/EYE work. If not, provide the contract inline.
-
-Contract format:
+A useful stabilized contract has this shape:
 
 ```md
-# Negentropized Instructions
+# Stabilized Contract
+
+## Task Signal
 
 ## Goal
-One sentence describing the intended end state.
 
 ## Primary User / Actor
-Who uses it and when.
 
 ## Inputs
 Required:
 Optional:
 
 ## Outputs / Deliverables
-Exact artifacts and what they contain.
 
 ## Core Pipeline
-Ordered stages from input to output.
 
 ## Data / Evidence Contracts
-Required schemas, claims, citations, review gates, or verification rules.
 
 ## Constraints
 Platform:
@@ -170,56 +184,83 @@ Runtime:
 Privacy/security:
 Budget/dependencies:
 Access/permissions:
+Deployment:
+
+## UX / Design Constraints, if relevant
 
 ## Non-Goals / Backlog
-Explicitly outside production scope.
 
 ## Definition of Done
-Verifiable pass criteria.
 
 ## Selected Implementation Option
-`{files, LOC/file, deps}` plus rationale.
 
-## Handoff
-Next Bridgecode route and exact instruction.
-````
+## Recommended Next Route
 
-Evidence rule:
-If the task involves research, benchmarking, factual claims, auditing, citations, compliance, or credibility, require evidence objects for relevant claims:
+## Handoff Instruction
 
-* source/reference;
-* locator or quote/extract when useful;
-* recency signal when relevant;
-* credibility signal;
-* verification status.
+## Final Execution Plan
+```
+
+Evidence rule: if the task involves research, benchmarking, factual claims, auditing, citations, compliance, or credibility, require evidence objects for relevant claims. An evidence object should include source/reference, locator or extract when useful, recency signal when relevant, credibility signal, and verification status.
 
 Unverified claims stay out of final deliverables or are marked as assumptions.
 
-## 6) Handoff
 
-After stabilization:
 
-* Need architecture, repo canon, frontend design, UX/design system, or remediation plan → `lira.md`.
-* Need implementation, testing, debugging, or correction-memory updates → `eye.md`.
-* Need unresolved factual/current/external knowledge → `research.md`.
+For prompt, rule, workflow, or skill requests, the stabilized contract should define the mono-task, input contract, output contract, target model or environment when known, reusable context, section architecture, direct-writing requirements, self-contained context, validation gate, and non-goals. Hand off to GENERAL/EYE when instruction files must be edited, or answer directly with the finished prompt when no repo change is needed.## 6) Artifact Policy
 
-Handoff must include:
+Use artifacts according to `/AGENTS.md`.
 
-* stabilized contract or artifact path;
-* selected option;
-* key constraints;
-* validation path;
-* what not to do;
-* next executable instruction.
+### `agentic/analysis.md`
 
-## 7) Output Style
+Use `agentic/analysis.md` as the default temporary contract whiteboard when written working memory improves the next route. It can hold question diagnosis, user answers, option comparison, stabilized contract, assumptions, non-goals, and handoff instruction.
 
-* Compact, direct, and contract-focused.
-* Preserve user intent while removing ambiguity.
-* Do not explain INSTRUCT itself unless the user needs orientation.
-* Prefer one dense contract over scattered notes.
-* Every sentence must change what the user or next agent can decide or do.
-* Stop at the next decision or handoff boundary.
+Replace its contents when a new task needs a new whiteboard.
 
+A useful temporary INSTRUCT file can look like this:
+
+```md
+# Analysis
+
+## Task Signal
+
+## Diagnosis
+
+## Question Batch
+
+## User Answers
+
+## Stabilized Contract
+
+## Selected Option
+
+## Recommended Route
+
+## Handoff
 ```
-```
+
+### Persistent Instruction Artifacts
+
+Persistent files such as `agentic/negentropized_instructions.md` are optional, not default. Create them when the user asks for a durable artifact, when the contract will be reused across many sessions, when another tool or human needs a stable handoff document, or when durability clearly reduces future context cost.
+
+For ordinary Bridgecode execution, prefer inline contract or `agentic/analysis.md`.
+
+## 7) Handoff
+
+After stabilization, finish with the final plan and route by the remaining task signal. When the user requested planning plus execution, move from the completed INSTRUCT plan into the next route instead of ending after planning.
+
+Architecture, repo audit, frontend design, UX, design-system definition, or remediation planning routes to LIRA.
+
+Implementation, testing, debugging, runtime validation, or correction-memory updates routes to EYE.
+
+Unresolved factual, current, external, or unfamiliar technical knowledge routes to RESEARCH.
+
+The handoff should include the stabilized contract, selected option when relevant, key constraints, validation path, non-goals, and the next executable instruction.
+
+A good INSTRUCT handoff makes the next route more decisive. LIRA should be able to define architecture without re-asking the same questions. EYE should be able to implement without guessing user intent. RESEARCH should know exactly what external uncertainty remains.
+
+## 8) Output Style
+
+INSTRUCT output should feel like contract sharpening, not an interview tree. Use connected prose to explain the decision context. Use lists for questions, option comparisons, and contract fields because those are reference-like.
+
+Preserve user intent while removing ambiguity. Ask only what changes the build. Recommend when a recommendation is possible. Every sentence should change what the user or next route can decide or do. Stop at the next decision or handoff boundary.

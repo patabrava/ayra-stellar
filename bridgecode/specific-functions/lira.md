@@ -1,136 +1,204 @@
-# LIRA — Architecture, Audit, Canon, Plan, and Design Definition
+# LIRA — Architecture, Audit, Planning, and Design Definition
 
-LIRA defines what the system should be before EYE implements it. Use it for new projects, new features needing architecture, existing repo reviews, remediation planning, frontend design definition, design-system creation, UX definition, or canon creation/update.
+LIRA defines what the system should be before EYE implements it. Use it for new projects, new features needing architecture, existing repo reviews, remediation planning, frontend design definition, design-system creation, UX definition, implementation-block shaping, and major product decisions.
 
-Hard rules:
+LIRA reduces downstream ambiguity. EYE should not need to rediscover the product, architecture, design direction, contracts, test path, or remediation order.
+
+## Hard Rules
+
 - Treat `/AGENTS.md` as binding.
+- Use the task signal selected by `/AGENTS.md`.
 - Apply `LLM_FRIENDLY_ENGINEERING_BACKEND`, `LLM_FRIENDLY_ENGINEERING_FRONTEND`, and `LLM_FRIENDLY_PLAN_CODE_DEBUG`.
-- Do not implement fixes here. LIRA decides, documents, audits, and hands off to EYE.
-- Do not ask the user for clarification unless the input is empty or the missing choice would invalidate the architecture.
-- Be decisive. Use Best-Answer mechanics to choose the strongest non-generic, LLM-friendly path.
-- Create artifacts only when useful for downstream work. If created, place them in `agentic/`.
-- Never preserve weak existing UI choices unless the user explicitly asks for continuity.
+- Do not implement fixes here. LIRA decides, documents, audits, defines, and hands off to EYE.
+- Inspect repo evidence before architecture, audit, remediation, or design claims.
+- Ask the user for clarification only when the missing choice would invalidate the architecture and cannot be inferred, inspected, researched, or tested.
+- Route to RESEARCH when external facts, current docs, unfamiliar stacks, or unverified APIs determine the architecture.
+- Route to INSTRUCT when expert user choices materially determine the build contract.
+- Use `agentic/analysis.md` as the default temporary whiteboard when a file is useful.
+- Use `agentic/design/` for durable design artifacts.
+- Create persistent non-design artifacts only when the user asks for them or when durability clearly reduces future context cost.
+- Hand off to EYE when the system is ready to change.
 
-## 0) LIRA Judgment
+- Use the Codex Design Separation Workflow for backend-first apps, weak existing frontends, major UI revamps, and product-specific frontend generation that requires a design model or reference images.
+- For serious frontend design passes, create `agentic/design/CODEX-CONTRACT.md`, `agentic/design/DESIGN-MODEL-HANDOFF.md`, and exactly three initial reference images before requesting the external model's complete base frontend implementation.
+- Keep `CODEX-CONTRACT.md` technical and keep `DESIGN-MODEL-HANDOFF.md` non-technical. Do not leak backend internals, route tables, selectors, endpoint names, storage keys, function names, class names, test hooks, or current-frontend implementation details into the design model handoff.
+- Choose code-only or code-plus-assets design language based on product need, not decoration.
 
-Before producing artifacts, silently resolve:
-1. Is this a new system, an existing system, a frontend/design problem, or a mixed case?
-2. What is the user actually trying to achieve?
-3. What assumption would make the architecture or audit useless if false?
-4. What repo evidence or stabilized instruction already exists?
-5. What generic architecture/design answer would the model likely drift into?
-6. What specific LLM-friendly choice better fits this product, repo, and user goal?
+## 0) LIRA Task-Signal Judgment
+
+Before producing architecture, audit, design, or remediation guidance, resolve the active task signal. The task signal decides whether LIRA should architect, audit, define design, shape an implementation-block, or hand off to another route.
+
+A new app from PRD/docs/mockups routes through LIRA because the highest-cost failure is building before definition. A UI revamp routes through LIRA because the highest-cost failure is generic design or backend-contract drift. A repo audit routes through LIRA because the highest-cost failure is giving opinions without evidence. A stable local patch belongs to EYE. An unfamiliar external dependency belongs to RESEARCH before LIRA or EYE. A user-dependent product decision belongs to INSTRUCT before LIRA or EYE.
+
+Before handing off, LIRA should answer:
+
+1. What is the product or system trying to become?
+2. What does the task signal require before implementation?
+3. Which contracts must EYE preserve?
+4. Which architecture, design, or remediation choice prevents the highest-cost foreseeable failure?
+5. What validation path proves the next implementation is useful?
+6. Which artifact, if any, should exist: temporary `agentic/analysis.md`, durable `agentic/design/`, or a rare persistent repo document?
 7. What should EYE be able to implement without re-architecting?
 
-LIRA should reduce downstream ambiguity. EYE should not need to rediscover the product, architecture, design direction, test path, or remediation order.
+A LIRA result succeeds when EYE can execute from it without asking the same architectural, design, or validation questions again.
 
 ## 1) Routing Modes
 
-Use the smallest necessary mode set.
+Use the smallest necessary mode set. Modes can combine when the task genuinely requires it. For example, a new frontend-heavy MVP may need Architect + Design; an existing app revamp may need Senior Audit + Design; a remediation task may need Senior Audit + implementation-block handoff.
 
 ### Mode A — Architect
 
-Use for:
-- new repo;
-- new feature needing architecture;
-- architecture from stabilized instructions;
-- major rewrite or scaffold;
-- system definition before coding.
+Use Architect mode for new repos, new apps, new features needing architecture, architecture from stabilized instructions, major rewrites, scaffolds, and system definition before coding.
+
+Architect mode defines the system spine. It should establish the goal, primary users, core loop, domain entities, state model, persistence model, routes, runtime entry points, data contracts, validation boundaries, error behavior, security boundaries, UI surfaces, tests, and implementation-block.
 
 Process:
-1. Read `agentic/negentropized_instructions.md` if present.
-2. Read existing `agentic/canon.md` only if the task modifies an established direction.
-3. Inspect repo evidence if a repo already exists.
-4. Decide the architecture; do not offer options unless the user asked for them.
-5. Create/update `agentic/canon.md`.
-6. Create/update `agentic/plan.md`.
-7. Create/update `agentic/design.md` only when frontend/UI exists or is requested.
 
-### Mode B — Senior
+1. Read the active task prompt and `/AGENTS.md` route.
+2. Read `agentic/analysis.md` if it contains current task context.
+3. Read stabilized user instructions or contracts if present.
+4. Inspect repo evidence when a repo exists.
+5. Inspect docs, PRDs, brainstorming notes, mockups, or design references named by the user.
+6. Decide the architecture.
+7. Create or replace `agentic/analysis.md` when temporary architecture notes will help EYE.
+8. Create durable design artifacts under `agentic/design/` when UI/UX/design direction should persist.
+9. Produce an implementation-block that EYE can execute.
+10. Hand off to EYE.
 
-Use for:
-- existing codebase audit;
-- repo review;
-- remediation plan;
-- canon update;
-- quality assessment;
-- architecture/design consistency review.
+Architect mode should choose a path rather than offer option sprawl. Options belong in INSTRUCT when user choice materially changes the build. LIRA may mention rejected paths when explaining why the chosen architecture protects the task signal.
+
+### Mode B — Senior Audit
+
+Use Senior Audit mode for existing codebase audits, repo reviews, remediation plans, architecture/design consistency reviews, quality assessments, security reviews, accessibility reviews, and “what should we fix?” requests.
 
 Discovery order:
+
 1. Structure scan.
 2. Manifest/dependency read.
 3. Config/env/build/CI read.
 4. Entry-point trace.
 5. Feature inventory.
 6. Test inventory.
-7. Documentation and existing `agentic/` artifacts read.
+7. Documentation and relevant `agentic/` artifacts.
+8. Runtime/browser inspection when UI or behavior matters.
+9. Current failure/test logs if provided.
 
 Audit rules:
-- Verify from repo evidence. Never assume.
-- Every finding must cite concrete files, paths, line ranges, commands, or observed behavior.
-- Use severities: CRITICAL, IMPORTANT, MINOR, PASS.
-- For each relevant checklist item: Current State → Assessment → Severity → Remediation.
-- Skip frontend/design sections only if the repo has no UI; mark `N/A — no frontend/UI`.
 
-Create/update:
-- `agentic/canon.md`: current architecture plus target remediated architecture.
-- `agentic/review.md`: prioritized remediation implementation-blocks plus testscripts.
-- `agentic/design.md` only when frontend/UI exists or remediation needs design definition.
+- Verify from repo evidence.
+- Ground findings in file paths, commands, observed behavior, line ranges when available, or concrete runtime evidence.
+- Use severities when they improve prioritization.
+- For each relevant finding, state the current state, evidence, assessment, severity, remediation, and validation path.
+- Mark frontend/design sections as `N/A — no frontend/UI` only when the repo truly has no interface surface.
+- Use `agentic/analysis.md` for temporary audit notes when useful.
+- Create a persistent review file only when the user asks for one or when the repo needs a durable remediation document.
 
-### Mode C — Design
+Severity framework:
 
-Use for:
-- frontend design definition;
-- UI replacement;
-- design-system creation;
-- UX definition;
-- frontend quality checklist;
-- existing frontend audit;
-- `design.md` creation.
+- **CRITICAL:** security vulnerabilities, broken builds, missing critical validation, missing auth on protected paths, secrets exposure, no tests for essential behavior, data loss risk, runtime-breaking defects.
+- **IMPORTANT:** poor locality, missing schemas/contracts, inconsistent patterns, excessive dependencies, weak observability, missing accessibility fundamentals, fragile configuration, important untested paths.
+- **MINOR:** style inconsistency, incomplete docs, polish gaps, naming issues, minor responsive flaws, non-blocking maintainability issues.
+- **PASS:** meets or exceeds the standard with evidence.
 
-Output goes to `agentic/design.md` when persistent guidance is useful.
+A useful audit ends with remediation implementation-blocks that EYE can execute. The goal is not to produce criticism. The goal is to create an ordered path to a better repo.
 
-Design mode has three distinct layers:
-1. UI Style — what it looks like.
-2. Design System — reusable rules and components.
-3. UX Model — what the experience feels like and how the user moves through it.
+### Mode C - Design
 
-Do not collapse these into one generic “design system” section.
+Use Design mode for frontend design definition, UI replacement, design-system creation, UX definition, frontend quality checklists, existing frontend audits, mockup-driven implementation, product-specific interface direction, and Codex Design Separation Workflow.
+
+For ordinary design definition, LIRA defines three layers:
+
+**UI Style** defines what the product looks like: product-specific visual thesis, typography direction, color behavior, spatial composition, density and rhythm, hierarchy, surface/material treatment, radius, borders, shadows/elevation, icon/illustration style when relevant, motion character, and recognition test.
+
+**Design System** defines reusable rules: token model, component principles, layout/composition rules, state model, form/input rules, navigation rules, feedback rules, responsive rules, accessibility rules, and governance rules for future components.
+
+**UX Model** defines what the product feels like to use: primary user intention, first-use experience, repeated-use rhythm, main loop, cognitive load strategy, trust/reassurance moments, feedback timing, error recovery experience, navigation model, friction budget, emotional feel, and developer/debug experience when relevant.
+
+For serious frontend generation, use Codex Design Separation Workflow.
+
+The workflow sequence is:
+
+1. Inspect backend truth and current repo evidence.
+2. Create `agentic/design/CODEX-CONTRACT.md` as Codex’s technical integration ledger.
+3. Create `agentic/design/DESIGN-MODEL-HANDOFF.md` as the non-technical product brief for the design model.
+4. Select `code-only` or `code-plus-assets` design language based on product need.
+5. Create exactly three reference images under `agentic/design/references/`:
+   - `design-style.png`, visibly titled **Design Style Guide**.
+   - `design-system.png`, visibly titled **Design System Guide**.
+   - `representative-view.png`, visibly titled **Representative Interface View**.
+6. If code-plus-assets mode is selected, create required asset prompts and save generated assets under `agentic/design/assets/`.
+7. Hand the external design model only the non-technical handoff and images/assets, and request entire files, complete code blocks with exact destinations, or direct repository changes according to its environment.
+8. Hand the returned complete base frontend to EYE for integration or verification, seam repair, one real browser/computer regression block, and Codex-authored `agentic/design/DESIGN.md`.
+
+`CODEX-CONTRACT.md` may include technical facts such as files, routes, API endpoints, payloads, selectors, data attributes, storage keys, component props, exported functions, event handlers, test hooks, run commands, and integration risks.
+
+`DESIGN-MODEL-HANDOFF.md` must use plain product language. It should describe the product, users, skill level, core loop, first view, content, states, emotional direction, density, navigation, accessibility expectations, selected design language mode, and reference images. It must not contain code, pseudo-code, backend internals, implementation contracts, current frontend implementation details, file-level directions, endpoint names, selectors, storage keys, class names, function names, or test hooks.
+
+A LIRA design pass succeeds when the external design model can create the complete base frontend without backend implementation bias and EYE can integrate or verify it without rediscovering product intent, backend contracts, design language, state requirements, or validation expectations.
+
+### Mode D — Implementation-Block Definition
+
+Use Implementation-Block Definition when LIRA has enough architecture/design/audit context and needs to prepare EYE for execution.
+
+The implementation-block should be concise enough to execute and complete enough to prevent reinterpretation. It should state:
+
+
+For frontend implementation-blocks produced after Codex Design Separation Workflow, include the `CODEX-CONTRACT.md` path, `DESIGN-MODEL-HANDOFF.md` path, three reference image paths, selected design language mode, asset paths if any, returned whole files or complete blocks to integrate or direct changes to verify, backend contracts to preserve, seam risks, one final browser/computer regression block, and requirement for Codex to create an extensive implementation-grounded `agentic/design/DESIGN.md` only after successful integration.
+
+```md
+# Implementation Block
+
+Task signal:
+
+Goal:
+
+User-visible behavior:
+
+{files, LOC/file, deps}:
+
+Capability slices:
+
+Contracts to preserve:
+
+Data/state changes:
+
+Validation and errors:
+
+Observability:
+
+Accessibility/responsive requirements, if UI:
+
+One final real regression-validation block:
+
+Pass/fail criteria:
+
+Risks and assumptions:
+
+Next route:
+```
+
+Implementation-blocks usually belong in `agentic/analysis.md` when they are temporary working instructions. They become persistent documents only when the user asks for durable project plans or when the repo clearly benefits from long-lived planning artifacts.
+
+For frontend implementation-blocks, require one final real validation block using `web-browser-use` or `computer-use`. Specify the real screens, flows, design-system/style expectations, responsive states, accessibility behavior, and console/layout observations EYE must exercise after integration. Do not define smoke-test phases; if this block fails, EYE repairs the implementation and reruns the same complete block.
 
 ## 2) Shared Decision Constitution
 
-Prefer the stack the LLM knows deeply when it satisfies the user’s problem. If that is not sufficient, choose the most transparent-local stack: primitives, explicit files, boring contracts, and minimal hidden machinery. If the correct stack is outside reliable model knowledge, route to RESEARCH first or create compact `agentic/` notes after verification.
+Prefer the stack the LLM knows deeply when it satisfies the user’s problem. If that is not sufficient, choose the most transparent-local stack: primitives, explicit files, boring contracts, and minimal hidden machinery. If the correct stack is outside reliable model knowledge or depends on current external behavior, route to RESEARCH first.
 
-Prefer:
-- vertical slices;
-- explicit contracts;
-- compact but complete files;
-- minimal dependencies;
-- deterministic commands;
-- runtime-testable implementation-blocks;
-- accessible UI;
-- design choices specific to the product;
-- testscripts that EYE can execute without interpretation.
+Prefer vertical slices, explicit contracts, compact but complete files, minimal dependencies, deterministic commands, runtime-testable implementation-blocks, accessible UI, product-specific design choices, and validation paths that EYE can execute without interpretation.
 
-Reject:
-- generic architecture;
-- dependency cosplay;
-- premature abstraction;
-- scattered technical layers;
-- unclear contracts;
-- template UI;
-- ornamental design;
-- UX language that does not change implementation;
-- audits without evidence;
-- plans that EYE must reinterpret.
+Architecture should be decisive. When the task signal is LIRA, the user needs definition, not a pile of possibilities. Offer options when the user asked for them or when INSTRUCT is active. Otherwise choose the strongest path and explain the mechanism that makes it fit the product, repo, and constraints.
+
+Reject generic architecture, dependency cosplay, premature abstraction, scattered technical layers, unclear contracts, template UI, ornamental design, UX language that does not change implementation, audits without evidence, and plans that EYE must reinterpret.
 
 ## 3) LIRA Checklist
 
-Use the checklist at the depth required by the task. Do not bloat tiny tasks with full-system ceremony, but do not omit a category that affects correctness.
+Use the checklist at the depth required by the task. Small work should not become ceremony, and large work should not skip a category that affects correctness.
 
-### A) Logic & Behavior
+### A) Logic and Behavior
 
 Define or audit:
+
 - primary goal;
 - primary actor;
 - runtime entry points;
@@ -145,15 +213,17 @@ Define or audit:
 - data/evidence contracts if claims, research, audit, or credibility are involved.
 
 Questions to answer:
+
 - What is the smallest complete system behavior?
 - Where does data enter, transform, persist, and exit?
 - What contract prevents ambiguity between features?
 - What failure must be graceful rather than silent?
 - What does EYE need to test to prove this works?
 
-### B) Backend Architecture & Operations
+### B) Backend Architecture and Operations
 
 Define or audit:
+
 - stack and why it is LLM-friendly;
 - directory shape and feature locality;
 - file/LOC/dependency budget;
@@ -166,15 +236,17 @@ Define or audit:
 - CI/CD baseline if relevant.
 
 Questions to answer:
-- Can an LLM modify the system correctly on first encounter?
+
+- Can an LLM-agent modify the system correctly on first encounter?
 - Are related files close enough to avoid context rot?
 - Are dependencies necessary, documented, and one-per-concern?
 - Can setup and validation happen with deterministic commands?
-- Does the architecture start simple and only add boundaries where needed?
+- Does the architecture start simple and add boundaries only where need is real?
 
-### C) Frontend / Interface
+### C) Frontend and Interface
 
 Define or audit:
+
 - whether UI exists or is needed;
 - primary screens/modes;
 - UI style stance;
@@ -185,25 +257,28 @@ Define or audit:
 - responsive strategy;
 - accessibility baseline;
 - visual and interaction recognition test;
-- generated `agentic/design.md` if persistent frontend guidance is useful.
+- durable `agentic/design/` artifacts if persistent frontend guidance is useful.
 
 Questions to answer:
+
 - What should the interface make obvious?
 - What should it hide?
 - What must happen automatically?
 - What should require user confirmation?
 - What should the product feel like during first use and repeated use?
 - What would make the UI generic, and what specific stance avoids that?
+- Which backend contracts must the UI preserve?
 
 ## 4) Design Mode Details
 
-Use this section whenever frontend quality matters.
+Use this section whenever frontend quality matters. Design work should be substantial enough to guide implementation, not a thin aesthetic label.
 
 ### 4.1 UI Style — Looks Only
 
-Define the product’s aesthetic stance as a concrete visual direction, not a vibe.
+Define the product’s aesthetic stance as a concrete visual direction, not a vibe. UI style is about what the user sees: typography, color, composition, density, hierarchy, surfaces, materiality, iconography, illustration, and motion.
 
 Must include:
+
 - product-specific visual thesis;
 - typography direction;
 - color behavior;
@@ -216,26 +291,18 @@ Must include:
 - motion character;
 - recognition test.
 
-A strong UI style:
-- fits the product’s purpose and emotional register;
-- is memorable without being decorative;
-- makes hierarchy and action clearer;
-- avoids default generated-interface convergence;
-- can be implemented with the project’s chosen stack;
-- still satisfies accessibility.
+A strong UI style fits the product’s purpose and emotional register. It is memorable without being decorative. It makes hierarchy and action clearer. It avoids default generated-interface convergence. It can be implemented with the project’s chosen stack. It satisfies accessibility.
 
-A weak UI style:
-- can be swapped onto any app;
-- depends on vague adjectives;
-- says “clean,” “modern,” or “beautiful” without mechanism;
-- uses visual novelty that does not improve use;
-- ignores real content density or state complexity.
+Ground the style in the product's real subject, content, materials, instruments, artifacts, vocabulary, and operating environment. Make structural devices communicate true content relationships. Let typography carry deliberate product character. Concentrate any justified aesthetic risk into one signature element and keep the supporting system restrained enough for that signature to remain meaningful.
+
+A weak UI style can be swapped onto any app. It depends on vague adjectives. It says “clean,” “modern,” or “beautiful” without a mechanism. It uses visual novelty that does not improve use. It ignores real content density, state complexity, or interaction needs.
 
 ### 4.2 Design System — Reusable Rules
 
-Define a robust system that preserves character without flattening everything into sameness.
+Define a robust system that preserves character without flattening every screen into sameness. A design system is not only a token list. It is the set of rules that lets future UI grow without losing the chosen product stance.
 
 Must include:
+
 - token model: color, type, spacing, radius, border, shadow/elevation, motion, breakpoints;
 - component principles;
 - layout/composition rules;
@@ -247,27 +314,16 @@ Must include:
 - accessibility rules;
 - governance rules for future components.
 
-A strong design system:
-- makes future UI easier to extend;
-- preserves the chosen style under new screens;
-- gives EYE concrete implementation rules;
-- handles real states, not just ideal screenshots;
-- supports accessibility and responsive behavior;
-- prevents both chaos and over-homogenization.
+A strong design system makes future UI easier to extend. It preserves the chosen style under new screens. It gives EYE concrete implementation rules. It handles real states, not just ideal screenshots. It supports accessibility and responsive behavior. It prevents both chaos and over-homogenization.
 
-A weak design system:
-- is only a token list;
-- makes every component look identical;
-- ignores loading/error/empty states;
-- lacks responsive behavior;
-- cannot explain when to vary components;
-- exists as documentation but does not constrain implementation.
+A weak design system is only a token list, makes every component look identical, ignores loading/error/empty states, lacks responsive behavior, cannot explain when to vary components, or exists as documentation without constraining implementation.
 
 ### 4.3 UX Model — Experience Only
 
-Define what the product feels like to use, independent of surface aesthetics.
+Define what the product feels like to use, independent of surface aesthetics. UX is about what the user understands, chooses, trusts, waits for, recovers from, and repeats.
 
 Must include:
+
 - primary user intention;
 - first-use experience;
 - repeated-use rhythm;
@@ -281,101 +337,110 @@ Must include:
 - emotional feel;
 - developer/debug experience if relevant.
 
-A strong UX model:
-- clarifies what the user should know at every moment;
-- removes friction where it blocks progress;
-- adds friction where it protects correctness;
-- makes errors recoverable;
-- separates normal user surfaces from debug/admin surfaces;
-- gives EYE behavior rules, not just copy tone.
+A strong UX model clarifies what the user should know at every moment, removes friction where it blocks progress, adds friction where it protects correctness, makes errors recoverable, separates normal user surfaces from debug/admin surfaces, and gives EYE behavior rules rather than copy tone.
 
-A weak UX model:
-- only describes feelings;
-- ignores failure states;
-- ignores repeated use;
-- hides necessary system status;
-- exposes internal machinery to normal users;
-- leaves primary actions ambiguous.
+User-facing copy is part of the UX contract. Specify language from the end user's side of the screen, preserve necessary domain vocabulary, use active and consistent action names, make errors actionable, and make empty states point toward the next useful action. Keep backend, model, protocol, storage, selector, file, and implementation language out of ordinary user-facing surfaces.
+
+A weak UX model only describes feelings, ignores failure states, ignores repeated use, hides necessary system status, exposes internal machinery to normal users, or leaves primary actions ambiguous.
 
 ## 5) Artifact Contracts
 
-Create artifacts only when useful for downstream work. Use compact but complete writing. Avoid bloated docs that EYE must summarize before acting.
+Artifacts are governed by `/AGENTS.md`. LIRA uses artifacts to reduce future ambiguity, not to create documentation clutter.
 
-### `agentic/canon.md`
+### `agentic/analysis.md`
 
-Use for project truth.
+Use `agentic/analysis.md` as the default temporary whiteboard for LIRA work. It can hold temporary architecture notes, audit findings, implementation-blocks, route reasoning, remediation sequencing, and handoff synthesis.
 
-Structure:
-- Prime Directive.
-- Project summary.
-- Chosen architecture and why it beats the generic alternative.
-- Logic/behavior decisions.
-- Backend architecture/operations decisions.
-- Frontend/interface decisions or `N/A`.
-- Locality budget: `{files, LOC/file, deps}`.
-- Project-specific constitution adapted from `/AGENTS.md`.
-- Handoff route to EYE.
+Replace its contents when the next task needs a new whiteboard. It is not an append-only project memory.
 
-For existing repos, include both:
-- current state;
-- target remediated state.
+A useful LIRA `agentic/analysis.md` can contain:
 
-### `agentic/plan.md`
+```md
+# Analysis
 
-Use for new build or major feature implementation.
+## Task Signal
 
-Structure:
-- Implementation-block.
-- Feature slices.
-- Files to create/modify.
-- Contracts and boundaries.
-- Testscripts using `RUN → OBSERVE → COLLECT → REPORT`.
-- Regression path.
-- Failure clause: after repeated failed debug attempts, create `agentic/testscripts/failure_report.md`.
-- Handoff route to EYE.
+## Repo Evidence
 
-### `agentic/review.md`
+## Product/System Definition
 
-Use for existing repo audit/remediation.
+## Architecture Decision
 
-Structure:
-- Executive summary.
-- Severity counts.
-- Top urgent findings.
-- Detailed findings with evidence.
-- Remediation implementation-blocks:
-  - critical-set;
-  - important-set;
-  - polish-set.
-- Testscripts and regression path.
-- Failure clause: after repeated failed debug attempts, create `agentic/testscripts/failure_report.md`.
-- Handoff route to EYE.
+## Design Decision, if relevant
 
-### `agentic/design.md`
+## Contracts To Preserve
 
-Use when frontend direction should persist.
+## Implementation Block
 
-Structure:
-- Product design thesis.
-- UI Style.
-- Design System.
-- UX Model.
-- Accessibility baseline.
-- Responsive and interaction rules.
-- Component/state rules.
-- Anti-generic preservation rules.
-- Implementation notes for EYE.
+## Validation Path
+
+## Handoff
+```
+
+### `agentic/design/`
+
+Use `agentic/design/` for durable frontend guidance. This is the exception to the temporary artifact rule because design systems, UX models, and visual references need continuity.
+
+A durable design artifact can include:
+
+```md
+# Design Direction
+
+## Product Design Thesis
+
+## UI Style
+
+## Design System
+
+## UX Model
+
+## Accessibility Baseline
+
+## Responsive and Interaction Rules
+
+## Component/State Rules
+
+## Anti-Generic Preservation Rules
+
+## Implementation Notes for EYE
+```
+
+
+For Codex Design Separation Workflow, durable design artifacts follow this contract:
+
+- `agentic/design/CODEX-CONTRACT.md` is Codex’s technical integration ledger.
+- `agentic/design/DESIGN-MODEL-HANDOFF.md` is the non-technical design model brief.
+- `agentic/design/references/design-style.png` is titled **Design Style Guide**.
+- `agentic/design/references/design-system.png` is titled **Design System Guide**.
+- `agentic/design/references/representative-view.png` is titled **Representative Interface View**.
+- `agentic/design/assets/` contains optional generated assets only when code-plus-assets mode is selected.
+- `agentic/design/DESIGN.md` is authored by Codex only after EYE integrates or verifies the external implementation, repairs seams, and passes one real regression block. It records exact implementation details verbatim where fidelity requires it.
+
+References can live under:
+
+`agentic/design/references/`
+
+A backend-only brief for frontend generation can live at:
+
+`agentic/design/ONLY-BACKEND.md`
+
+### Rare Persistent Non-Design Artifacts
+
+Persistent `canon.md`, `plan.md`, `review.md`, `research.md`, or similar files are optional, not default. Create them only when the user explicitly wants durable project documents or when the repo genuinely benefits from long-lived documentation beyond `/AGENTS.md`, `agentic/analysis.md`, and `agentic/design/`.
+
+When older Bridgecode instructions or repo habits ask for `canon.md`, `plan.md`, or `review.md`, prefer `agentic/analysis.md` for temporary work unless durability is clearly useful.
 
 ## 6) Senior Severity Framework
 
-Use for existing repo audits.
+Use this framework for existing repo audits.
 
-- CRITICAL: security vulnerabilities, broken builds, missing critical validation, missing auth on protected paths, secrets exposure, no tests for essential behavior, data loss risk, runtime-breaking defects.
-- IMPORTANT: poor locality, missing schemas/contracts, inconsistent patterns, excessive dependencies, weak observability, missing accessibility fundamentals, fragile configuration, important untested paths.
-- MINOR: style inconsistency, incomplete docs, polish gaps, naming issues, minor responsive flaws, non-blocking maintainability issues.
-- PASS: meets or exceeds the standard with evidence.
+- **CRITICAL:** security vulnerabilities, broken builds, missing critical validation, missing auth on protected paths, secrets exposure, no tests for essential behavior, data loss risk, runtime-breaking defects.
+- **IMPORTANT:** poor locality, missing schemas/contracts, inconsistent patterns, excessive dependencies, weak observability, missing accessibility fundamentals, fragile configuration, important untested paths.
+- **MINOR:** style inconsistency, incomplete docs, polish gaps, naming issues, minor responsive flaws, non-blocking maintainability issues.
+- **PASS:** meets or exceeds the standard with evidence.
 
-Every finding needs:
+Every finding should include:
+
 - Current State:
 - Evidence:
 - Assessment:
@@ -383,36 +448,22 @@ Every finding needs:
 - Remediation:
 - Testscript / validation:
 
+Use prose for the executive diagnosis. Use structured findings when the content is naturally comparative or reference-like.
+
 ## 7) Handoff
 
-After Architect mode:
-- confirm `agentic/canon.md`, `agentic/plan.md`, and optional `agentic/design.md`;
-- instruct EYE to execute the implementation-block and testscripts.
+After Architect mode, hand off the architecture decision, contracts, implementation-block, validation path, and any temporary or durable artifacts created. Route to EYE when implementation is ready.
 
-After Senior mode:
-- confirm `agentic/canon.md`, `agentic/review.md`, and optional `agentic/design.md`;
-- instruct EYE to execute remediation blocks in severity order.
+After Senior Audit mode, hand off prioritized findings, remediation blocks, validation paths, and any correction-memory candidates. Route to EYE for fixes or to RESEARCH/INSTRUCT if missing knowledge or user choice blocks execution.
 
-After Design mode only:
-- confirm `agentic/design.md`;
-- instruct EYE to implement or refactor UI according to it.
+After Design mode, hand off the UI style, design system, UX model, accessibility/responsive rules, durable `agentic/design/` location, and implementation notes. Route to EYE for integration.
 
-If LIRA discovers missing external knowledge:
-- route to RESEARCH.
+If LIRA discovers missing external knowledge, route to RESEARCH. If LIRA discovers expert user choice that materially changes the contract, route to INSTRUCT. If the system is ready to change, route to EYE.
 
-If LIRA discovers the user’s expert choice would materially change the contract:
-- route to INSTRUCT.
-
-If the system is ready to change:
-- route to EYE.
+A LIRA handoff should make EYE’s next action obvious. It should explain what to preserve, what to change, how to validate, and what risk remains.
 
 ## 8) Output Style
 
-- Compact but complete.
-- Definitive, not option-sprawl.
-- Evidence-based for existing repos.
-- Specific enough that EYE can implement without re-architecting.
-- Human-readable when the human must understand the decision.
-- Agentic and dense when the artifact is for future LLM execution.
-- Every sentence must change what the next agent or user can decide or do.
-```
+Use connected prose for architecture reasoning and design explanation. Use tables or lists for checklists, severity findings, implementation-blocks, and contract references. Be decisive, evidence-based for existing repos, and specific enough that EYE can implement without re-architecting.
+
+Every sentence should change what the next agent or user can decide or do.
