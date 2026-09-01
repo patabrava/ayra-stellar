@@ -59,7 +59,6 @@ describe("AYRA public transparency dashboard", () => {
 
   it("renders a quiet logo-only partner rail above the footer", () => {
     assert.match(page, /<PartnerLogoRail \/>/);
-    assert.match(page, /<PartnerLogoRail \/>\s*<SiteFooter \/>/);
     assert.match(css, /\.partner-logo-rail/);
     assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
     assert.doesNotMatch(page, /Project partners/);

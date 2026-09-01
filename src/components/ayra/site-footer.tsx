@@ -58,6 +58,9 @@ export function SiteFooter() {
           <Link className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)]" href="/privacy">
             Privacy
           </Link>
+          <Link className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)]" href="/impressum">
+            Impressum
+          </Link>
           <a
             className="transition text-[var(--public-muted)] hover:text-[var(--public-fg)] normal-case tracking-normal"
             href={`mailto:${PUBLIC_CONTACT_EMAIL}`}

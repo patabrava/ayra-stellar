@@ -4,7 +4,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
-import { SiteFooter } from "@/components/ayra/site-footer";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
 import { PublicNav } from "@/components/ayra/public-nav";
 import { PublicRichText } from "@/components/ayra/public-rich-text";
@@ -334,7 +333,6 @@ export default async function InitiativePage({ params }: PageProps) {
         </p>
       </section>
 
-      <SiteFooter />
     </main>
   );
 }

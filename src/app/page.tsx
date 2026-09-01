@@ -5,7 +5,6 @@ import { ArrowRight } from "lucide-react";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
 import { PartnerLogoRail } from "@/components/ayra/partner-logo-rail";
 import { PublicNav } from "@/components/ayra/public-nav";
-import { SiteFooter } from "@/components/ayra/site-footer";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import { getPublicWallProjection } from "@/lib/ayra/domain";
 import { initiativeMediaFor } from "@/lib/ayra/public-project-media";
@@ -288,7 +287,6 @@ export default async function Home({ searchParams }: PageProps) {
       </section>
 
       <PartnerLogoRail />
-      <SiteFooter />
     </main>
   );
 }
@@ -336,7 +334,6 @@ function EmptyPublicWall({ tracks }: { tracks: Array<{ id: string; slug: string;
         </div>
       </section>
 
-      <SiteFooter />
     </main>
   );
 }

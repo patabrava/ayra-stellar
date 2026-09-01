@@ -1,5 +1,4 @@
 import { PublicNav } from "@/components/ayra/public-nav";
-import { SiteFooter } from "@/components/ayra/site-footer";
 import { PUBLIC_CONTACT_EMAIL } from "@/lib/ayra/contact";
 
 export const metadata = {
@@ -83,7 +82,6 @@ export default function PrivacyPage() {
         </div>
       </section>
 
-      <SiteFooter />
     </main>
   );
 }
