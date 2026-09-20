@@ -50,3 +50,17 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Internal planning and agent working files are not part of the public repo.
+/AGENTS.md
+/CLAUDE.md
+/.impeccable.md
+/.superpowers/
+/agentic/
+/bridgecode/
+/docs/superpowers/
+/mockups/
+/artifacts/
+**/AGENTS.md
+**/CLAUDE.md
+**/.impeccable.md
