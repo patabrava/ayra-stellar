@@ -1,111 +1,95 @@
-# Providencia Onchain AYRA x Climate Future
+# Providencia Payment Rails on Stellar
 
 Providencia Onchain is the AYRA transparency and payment-rail application for
-the AYRA x Climate Future programme in Providencia. The code is owned and
-operated by CREADOR LABS UG (haftungsbeschränkt), which contracts and invoices
-the technical work. Camilo Echeverri leads the implementation through the
-[`patabrava` GitHub account](https://github.com/patabrava), with specialist
-freelancers engaged by CREADOR LABS UG when needed. Camilo remains responsible
-for the technical delivery and review of the funded scope. His public LinkedIn
+Providencia, a Colombian Caribbean island. The code is owned and operated by
+CREADOR LABS UG (haftungsbeschränkt), Germany, which builds and operates AYRA
+and is the award recipient and contracting entity for the SCF Build Awards.
+Camilo Echeverri, CTO, leads and builds the implementation through the
+[`patabrava` GitHub account](https://github.com/patabrava). His LinkedIn
 profile is [linkedin.com/in/caem2017](https://de.linkedin.com/in/caem2017).
+If a specialist contributor is added, they commit under their own GitHub
+account and are named in the tranche report.
 
-AYRA provides the technical platform. Climate Future sources and coordinates
-projects and field activity. Marketing, go-to-market work, broad onboarding,
-events, incentives, and other programme operations are outside this technical
-grant and are funded separately.
+Climate Future e.V. runs the field program on the island with AYRA (local
+relationships, merchant visits, training). VIIO supports ground operations in
+Colombia. Neither has an engineering role and neither is paid from the SCF
+technical budget.
 
-## Current evidence status
+## What exists today (SCF #42, Integration Track, completed August 2026)
 
-The live transparency site is [transparency.ayra.haus](https://transparency.ayra.haus/).
-This repository contains the award-1 application and transparency workflow,
-Stellar Disbursement Platform integration, testnet verification, public proof
-surfaces, and the separately gated mainnet release path.
+- A Stellar Disbursement Platform (SDP) instance in production, with its
+  distribution account on mainnet.
+- The public transparency dashboard at
+  [transparency.ayra.haus](https://transparency.ayra.haus/). Each published
+  disbursement links to its transaction on Stellar Expert.
+- Reconciliation keyed by transaction hash, joining each payment to its
+  project, milestone and tranche, and a versioned proof export with a SHA-256
+  checksum (see [`schema/v1`](schema/v1/)).
+- CI/CD with tagged releases, automated tests and verification scripts for the
+  application and the Stellar integration.
+- The first mainnet disbursement, and the only one so far: a 5 USDC
+  validation payment to the first incubated project on 31 July 2026
+  ([transaction](https://stellar.expert/explorer/public/tx/00ab066acacd36efeac21ab73ecd0f8cb47c7d26a8d47889deb6c2c3ae7d6fb8)).
 
-The live deployment shows mainnet payment records from the existing project and
-does not use simulated records. The SCF #46 proposal does not claim that its
-new merchant-adoption gate has already been met: live merchant rollout follows
-completion of the new technical development and separately funded go-to-market
-execution. Mainnet release controls, recipient checks, funding, operator review
-and public-proof requirements remain part of the production process.
+The live deployment shows mainnet records only and uses no simulated records.
+No merchant payments or merchant network exist yet; that is what the SCF #46
+scope builds and what its Tranche 3 metric measures.
 
-The SCF #46 technical scope will add the wallet request and receipt flow, SDP
-activation integration, COP off-ramp adapter, attribution and reconciliation,
-monitoring, threat-model support, mainnet hardening, runbook, and an
-integration-neutral openly licensed schema and export surface.
+## What the SCF #46 scope adds (Integration Track, resubmission of SCF #45)
 
-## Ownership and project identity
+The grant funds Stellar-integrated development only, 400 hours in three
+tranches:
 
-- Project: **Providencia Onchain (AYRA x Climate Future)**
-- Legal entity: **CREADOR LABS UG (haftungsbeschränkt)**
-- Technical lead: **Camilo Echeverri**
-- Platform operator: **AYRA**
-- Field and project sourcing partner: **Climate Future**
-- Engineering partner paid from this grant: **CREADOR LABS UG and its named
-  development work; VIIO receives nothing from this budget**
-- Repository owner: **CREADOR LABS UG**
+1. SDP embedded wallet for residents, Stellar Wallets Kit for merchants, SDP
+   activation disbursements, the WhatsApp request and receipt flow, the COP
+   exit port, and CI/CD for the new services.
+2. COP withdrawal hardening, the merchant registry, attribution and
+   reconciliation, the monitoring plan and threat model, an end-to-end
+   testnet run with failure injection, and validation sessions on testnet.
+3. Mainnet deployment and runbook, the onchain reconciliation views and
+   Tranche 3 metric (Dashboard v2), merchant production enablement, mainnet
+   QA, mainnet validation sessions, and the acceptance query, schema and
+   evidence bundle.
 
-Merchant-level records remain access-controlled. Public surfaces show
-aggregates and authorised programme payments only.
+AYRA never holds user funds, COP or cash. Nothing in the flow signs or
+approves a payment automatically.
 
-## What exists today
+### Tranche 3 onchain metric
 
-- Next.js and Supabase application for project intake, moderation, stewardship,
-  grantee-linked updates, payment batching, reconciliation, and public proof.
-- Stellar Disbursement Platform integration with preserved testnet history.
-- Separate, disabled-by-default mainnet configuration and release runbook.
-- Public proof pages and transparency surfaces at the live dashboard.
-- Automated tests and verification scripts for the application and Stellar
-  integration.
+- Metric: active merchant accounts on Stellar mainnet, with floors on distinct payers and on volume.
+- Threshold: at least 25 active merchants, at least 75 distinct payer accounts, and at least 1,000 USDC of qualifying payment volume.
+- Window: any 30 consecutive days after the new features go live on mainnet, ending before the Tranche 3 submission.
+- Active merchant: a merchant in the registry whose registered Stellar address receives at least 10 qualifying payments from at least 3 distinct payer accounts on at least 5 different days in the window. One merchant counts once, even if their registered address changes during the window.
+- Qualifying payment: a mainnet USDC (Circle) payment to a registered merchant address, worth at least COP 5,000 at the time of the transaction.
+- Excluded: payments from registered merchants or from accounts controlled by CREADOR LABS, AYRA, VIIO, Climate Future or team members; SDP disbursements; testnet activity; self-payments; and repeated round trips between the same two accounts.
+- Verification: the acceptance query in the repository runs against Horizon or Stellar RPC and reproduces the result. We share the registered merchant addresses and the addresses controlled by the team and partners with SCF reviewers privately; the public dashboard shows the aggregate counts.
+- Where payer USDC comes from: separately funded activation balances through SDP, residents' and visitors' own USDC, or provider on-ramps. None of it comes from this budget, and the disbursements themselves never count.
+- Scale: 25 merchants is about 5% of the more than 500 businesses in our island catalogue.
 
-## What the SCF #46 technical grant will deliver
+The metric text is identical in the SCF submission, in the technical
+architecture document (section 9.2) and in
+[`docs/scf-tranche-3-metric.md`](docs/scf-tranche-3-metric.md).
 
-The grant is solely for development of Stellar-integrated technical components:
+## Rate basis
 
-1. Wallet path, WhatsApp request and receipt primitive, SDP activation
-   integration, and COP off-ramp adapter.
-2. Attribution, reconciliation, monitoring, threat-model support, Dashboard v2
-   aggregates, and a mainnet hardening/runbook package.
-3. Narrow structured validation sessions with initial merchants and residents;
-   broad real-user acquisition and on-island facilitation remain separately
-   funded.
-4. An integration-neutral schema and exports under the openly licensed
-   [`schema/v1`](schema/v1/) path.
-
-Tranche 3 is intended to be verified by onchain activity after the new mainnet
-features launch: 25 active merchant accounts and at least 75 distinct payer
-accounts in one 30-consecutive-day window. An active merchant account is one
-registered merchant address on the transparency dashboard that receives at
-least 10 qualifying onchain USDC payments of at least COP 1,000 from at least 3
-distinct payer accounts during the window. One merchant equals one registered
-address. Testnet payments and payments controlled by AYRA, CREADOR LABS, VIIO,
-Climate Future, Camilo, or their related wallets are excluded. The COP value is
-calculated at transaction time. The final SCF submission and acceptance query
-are the authoritative metric definition. See
-[`docs/scf-tranche-3-metric.md`](docs/scf-tranche-3-metric.md) for the current
-reproducibility specification.
-
-## German development-rate basis
-
-The proposal uses a USD 100/hour technical implementation rate. The work is
-developed in Germany by CREADOR LABS UG and is budgeted as technical
-implementation time, not marketing or field operations. This rate is consistent
-with current German senior and lead freelance-development ranges: freelance.de
-reports a 2026 average freelancer rate of EUR 102/hour, while current German
-rate references place senior developers around EUR 85–120/hour and lead or
-architect work around EUR 110–150/hour. The proposal cites these German
-benchmarks alongside the budget’s exact hours and deliverables.
+The budget uses USD 100 per hour for technical implementation. The work is
+done in Germany, where the 2026 freelance.de study (more than 3,300
+respondents) reports an average IT freelancer rate of EUR 101.98 per hour
+([source](https://www.freelance.de/blog/freelancer-studie-2026-alle-ergebnisse-der-neuen-studie-auf-einen-blick/)).
+Every budgeted hour is implementation or validation work tied to a named
+deliverable.
 
 ## What is outside this grant
 
-The following are funded separately and are not part of this repository’s SCF
-technical budget:
+Funded separately and not part of this repository's SCF technical budget:
+merchant recruitment, marketing, events, incentives, activation balances,
+field staff and field operations, and the case study film and editorial work.
 
-- Marketing, go-to-market, campaigns, education, events, incentives, and broad
-  merchant or resident acquisition.
-- Sourcing and selecting projects, Studios, founder support, and programme
-  operations.
-- Live-volume provider fees and operational reporting during the field Season.
-- Evidence reporting, case study, and Proof Pack production.
+## License
+
+The repository is licensed under the Apache License 2.0 (see
+[`LICENSE`](LICENSE)). The reusable schema lives under
+[`schema/v1`](schema/v1/).
 
 ## Development setup
 
@@ -120,19 +104,6 @@ technical budget:
 - A Stellar testnet receiver wallet address for verification
 
 Mainnet deployment is intentionally separate from local and testnet setup. See
-[`docs/ayra-stellar-sdp-mainnet-runbook.md`](docs/ayra-stellar-sdp-mainnet-runbook.md)
-before provisioning or funding the public-network rail.
-
-### Local and SDP setup
-
-- Node.js 20+
-- npm
-- Docker Desktop running
-- The sibling SDP backend repo at `../SDP/stellar-disbursement-platform-backend`
-- Supabase project credentials for AYRA
-- A Stellar testnet receiver wallet address for verification
-
-Mainnet deployment is intentionally separate from local/testnet setup. See
 [`docs/ayra-stellar-sdp-mainnet-runbook.md`](docs/ayra-stellar-sdp-mainnet-runbook.md)
 before provisioning or funding the public-network rail.
 

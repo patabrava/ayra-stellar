@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://transparency.ayra.haus/schema/v1/proof-release.schema.json",
+  "title": "Providencia Onchain proof release",
+  "description": "Immutable proof release of one settled disbursement batch. The SHA-256 checksum published with the release is computed over the canonical JSON of this payload: object keys sorted, fields without a value omitted, no whitespace.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "releaseVersion",
+    "appCommit",
+    "deploymentId",
+    "batchId",
+    "batchCode",
+    "initiativeName",
+    "initiativeSlug",
+    "trackSlug",
+    "periodLabel",
+    "stellarNetwork",
+    "publicLabel",
+    "receipts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "releaseVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "appCommit": {
+      "type": "string",
+      "minLength": 7,
+      "description": "Git commit of the application that produced the release"
+    },
+    "deploymentId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Hosting deployment identifier, if any"
+    },
+    "batchId": {
+      "type": "string"
+    },
+    "batchCode": {
+      "type": "string"
+    },
+    "initiativeName": {
+      "type": "string"
+    },
+    "initiativeSlug": {
+      "type": "string"
+    },
+    "trackSlug": {
+      "type": "string"
+    },
+    "sponsorName": {
+      "type": "string"
+    },
+    "periodLabel": {
+      "type": "string"
+    },
+    "stellarNetwork": {
+      "type": "string",
+      "enum": [
+        "testnet",
+        "pubnet"
+      ],
+      "description": "Stellar network of every receipt; pubnet is Stellar mainnet"
+    },
+    "publicLabel": {
+      "type": "string",
+      "enum": [
+        "In flight",
+        "Cleared"
+      ]
+    },
+    "receipts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "category",
+          "amountUsdc",
+          "localAmount",
+          "localCurrency",
+          "transactionHash",
+          "assetCode",
+          "assetIssuer",
+          "assetAmount",
+          "attributionMatchStatus"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "amountUsdc": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "localAmount": {
+            "type": "number"
+          },
+          "localCurrency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "transactionHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "assetCode": {
+            "const": "USDC"
+          },
+          "assetIssuer": {
+            "type": "string",
+            "pattern": "^G[A-Z2-7]{55}$"
+          },
+          "assetAmount": {
+            "type": "number"
+          },
+          "sourceRecordExternalId": {
+            "type": "string"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "nodeCode": {
+            "type": "string"
+          },
+          "trackCode": {
+            "type": "string"
+          },
+          "milestoneCode": {
+            "type": "string"
+          },
+          "recipientCategory": {
+            "type": "string"
+          },
+          "attributionMatchStatus": {
+            "type": "string",
+            "enum": [
+              "matched",
+              "unmatched"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

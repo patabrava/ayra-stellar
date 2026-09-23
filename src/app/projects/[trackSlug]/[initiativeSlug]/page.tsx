@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
+import { MetricTooltip } from "@/components/ayra/metric-tooltip";
 import { PublicNav } from "@/components/ayra/public-nav";
 import { PublicRichText } from "@/components/ayra/public-rich-text";
 import { Chip, Hash } from "@/components/ayra/ui";
@@ -13,6 +14,7 @@ import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
   formatLocal,
   formatUsdc,
+  getPublicInitiativeLeagueScore,
   getProofPack,
   getPublicInitiativeProjection,
   getPublicInitiativeSummary,
@@ -63,6 +65,7 @@ export default async function InitiativePage({ params }: PageProps) {
   );
   const maxSpend = Math.max(...project.spending.map((item) => item.amountUsdc), 1);
   const summary = getPublicInitiativeSummary(state, project.initiative);
+  const leagueScore = getPublicInitiativeLeagueScore(state, project.initiative);
   const proofBatch =
     project.batches.find((batch) => batch.status === "settled") ??
     project.batches[0];
@@ -132,7 +135,11 @@ export default async function InitiativePage({ params }: PageProps) {
               <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase">
                 <span className="project-status">{summary.stage}</span>
                 <span className="score">
-                  League score <strong>{project.initiative.leagueScore}</strong> / 99
+                  League score <strong>{leagueScore.score}</strong> / 99{" "}
+                  <MetricTooltip
+                    label="League score"
+                    description="A 0–99 project score combining delivery, speed, reliability, transparency, and funding discipline. The weighting adapts to the project's outcome type."
+                  />
                 </span>
               </div>
             </div>
@@ -167,7 +174,11 @@ export default async function InitiativePage({ params }: PageProps) {
               <section className="progress-rail" aria-label="Project progress">
                 <div>
                   <div className="public-muted text-sm">
-                    {project.initiative.targetMetricLabel}
+                    {project.initiative.targetMetricLabel}{" "}
+                    <MetricTooltip
+                      label="Milestone progress"
+                      description="Progress against this project's configured outcome target. It updates when verified project results are recorded."
+                    />
                   </div>
                   <div className="display mt-4 text-5xl font-medium">
                     {progress}%

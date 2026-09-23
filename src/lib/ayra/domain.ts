@@ -2106,6 +2106,134 @@ export type PublicInitiativeStage =
   | "Preparing to start"
   | "In preparation";
 
+type LeagueScoringWeights = {
+  delivery: number;
+  speed: number;
+  reliability: number;
+  transparency: number;
+  funding: number;
+};
+
+export type PublicLeagueScore = {
+  score: number;
+  profile: "outcome-led" | "service-delivery";
+  components: {
+    delivery: number;
+    speed: number;
+    reliability: number;
+    transparency: number;
+    funding: number;
+  };
+};
+
+const OUTCOME_LED_WEIGHTS: LeagueScoringWeights = {
+  delivery: 0.45,
+  speed: 0.15,
+  reliability: 0.2,
+  transparency: 0.1,
+  funding: 0.1,
+};
+
+const SERVICE_DELIVERY_WEIGHTS: LeagueScoringWeights = {
+  delivery: 0.35,
+  speed: 0.25,
+  reliability: 0.2,
+  transparency: 0.1,
+  funding: 0.1,
+};
+
+function clampScore(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function leagueScoreWeights(initiative: Pick<Initiative, "targetMetricLabel">) {
+  const label = initiative.targetMetricLabel.toLowerCase();
+  const serviceMetric = /clinic|slot|merchant|wallet|participant|student|household|case/.test(label);
+  return serviceMetric
+    ? { profile: "service-delivery" as const, weights: SERVICE_DELIVERY_WEIGHTS }
+    : { profile: "outcome-led" as const, weights: OUTCOME_LED_WEIGHTS };
+}
+
+function daysBetween(start: string, end: string) {
+  const days = (Date.parse(end) - Date.parse(start)) / 86_400_000;
+  return Math.max(1, Math.ceil(days));
+}
+
+export function getPublicInitiativeLeagueScore(
+  state: AyraState,
+  initiative: Initiative,
+): PublicLeagueScore {
+  const milestones = state.milestones.filter((item) => item.initiativeId === initiative.id);
+  const submissions = state.milestoneSubmissions.filter((item) => item.initiativeId === initiative.id);
+  const updates = state.updates.filter((item) => item.initiativeId === initiative.id);
+  const batches = state.batches.filter((item) => item.initiativeId === initiative.id);
+  const { profile, weights } = leagueScoreWeights(initiative);
+
+  const delivery = clampScore(
+    initiative.targetMetricGoal > 0
+      ? (initiative.targetMetricCurrent / initiative.targetMetricGoal) * 100
+      : milestones.length
+        ? milestones.reduce((sum, item) => sum + item.percentComplete, 0) / milestones.length
+        : 0,
+  );
+
+  const datedEvidence = [...submissions, ...updates]
+    .map((item) => item.submittedAt)
+    .filter(Boolean)
+    .sort();
+  const completedMilestones = milestones.filter(
+    (item) => item.status === "done" || item.percentComplete >= 100,
+  ).length;
+  const elapsedDays = datedEvidence.length
+    ? daysBetween(datedEvidence[0]!, datedEvidence[datedEvidence.length - 1]!)
+    : 0;
+  const expectedMilestones = elapsedDays ? Math.max(1, elapsedDays / 30) : 0;
+  const speed = clampScore(
+    expectedMilestones ? (completedMilestones / expectedMilestones) * 100 : 0,
+  );
+
+  const reviewedSubmissions = submissions.filter(
+    (item) => item.status === "approved" || item.status === "rejected",
+  );
+  const reliability = clampScore(
+    reviewedSubmissions.length
+      ? (reviewedSubmissions.filter((item) => item.status === "approved").length /
+          reviewedSubmissions.length) *
+          100
+      : 0,
+  );
+
+  const approvedUpdates = updates.filter(
+    (item) => item.status === "approved" && Boolean(item.publishedAt),
+  );
+  const latestUpdate = approvedUpdates
+    .map((item) => item.publishedAt ?? item.submittedAt)
+    .sort()
+    .at(-1);
+  const transparency = latestUpdate
+    ? clampScore(
+        Math.min(1, approvedUpdates.length / 4) * 70 +
+          Math.max(0, 1 - daysBetween(latestUpdate, new Date().toISOString()) / 90) * 30,
+      )
+    : 0;
+
+  const funding = clampScore(
+    batches.length
+      ? (batches.filter((item) => item.status === "settled").length / batches.length) * 100
+      : 0,
+  );
+
+  const score = clampScore(
+    delivery * weights.delivery +
+      speed * weights.speed +
+      reliability * weights.reliability +
+      transparency * weights.transparency +
+      funding * weights.funding,
+  );
+
+  return { score, profile, components: { delivery, speed, reliability, transparency, funding } };
+}
+
 // Approval stores status "funding" and nothing advances it, so the public stage
 // also counts verified USDC payouts as the project having started.
 export function getPublicInitiativeSummary(

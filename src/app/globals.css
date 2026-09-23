@@ -1025,6 +1025,57 @@ select {
   padding-block: clamp(28px, 4vw, 48px);
 }
 
+.metric-tooltip {
+  display: inline-flex;
+  position: relative;
+  vertical-align: middle;
+}
+
+.metric-tooltip-trigger {
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: inherit;
+  display: inline-flex;
+  height: 1.15rem;
+  justify-content: center;
+  opacity: 0.7;
+  width: 1.15rem;
+}
+
+.metric-tooltip-trigger:focus-visible,
+.metric-tooltip-trigger:hover {
+  opacity: 1;
+}
+
+.metric-tooltip-content {
+  background: var(--ink);
+  border: 1px solid var(--dark-rule);
+  bottom: calc(100% + 0.5rem);
+  color: var(--paper);
+  font-size: 0.75rem;
+  font-weight: 400;
+  left: 50%;
+  line-height: 1.45;
+  max-width: min(22rem, 75vw);
+  opacity: 0;
+  padding: 0.65rem 0.75rem;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-50%, 0.25rem);
+  transition: opacity 140ms ease, transform 140ms ease;
+  visibility: hidden;
+  width: max-content;
+  z-index: 20;
+}
+
+.metric-tooltip:hover .metric-tooltip-content,
+.metric-tooltip:focus-within .metric-tooltip-content {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
+
 .proposal-details .public-rich-text {
   max-width: 72ch;
 }

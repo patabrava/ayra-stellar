@@ -5,9 +5,11 @@ import { ArrowRight } from "lucide-react";
 import { AdvisorPanel } from "@/components/ayra/advisor-panel";
 import { PartnerLogoRail } from "@/components/ayra/partner-logo-rail";
 import { PublicNav } from "@/components/ayra/public-nav";
+import { MetricTooltip } from "@/components/ayra/metric-tooltip";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
   formatUsdc,
+  getPublicInitiativeLeagueScore,
   getPublicInitiativeSummary,
   getPublicWallProjection,
 } from "@/lib/ayra/domain";
@@ -213,7 +215,13 @@ export default async function Home({ searchParams }: PageProps) {
                 </p>
                 <div className="lead-project-facts">
                   <span>
-                    <small>{leadInitiative.targetMetricLabel}</small>
+                    <small>
+                      {leadInitiative.targetMetricLabel}{" "}
+                      <MetricTooltip
+                        label="Milestone progress"
+                        description="Progress against this project's configured outcome target. It updates when verified project results are recorded."
+                      />
+                    </small>
                     <strong>
                       {leadInitiative.targetMetricCurrent.toLocaleString("en-US")} /{" "}
                       {leadInitiative.targetMetricGoal.toLocaleString("en-US")}
@@ -274,7 +282,11 @@ export default async function Home({ searchParams }: PageProps) {
                     <small>{initiative.headline}</small>
                   </span>
                   <span className="project-index-metric">
-                    League {initiative.leagueScore} / 99
+                    League {getPublicInitiativeLeagueScore(state, initiative).score} / 99{" "}
+                    <MetricTooltip
+                      label="League score"
+                      description="A 0–99 project score combining delivery, speed, reliability, transparency, and funding discipline. The weighting adapts to the project's outcome type."
+                    />
                   </span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>

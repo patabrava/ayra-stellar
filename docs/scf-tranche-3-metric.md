@@ -1,55 +1,43 @@
 # SCF Tranche 3 metric
 
-This document defines the proposed Tranche 3 adoption metric for Providencia
-Onchain. It is a technical release gate for the new mainnet features. It is not
-a marketing, go-to-market, resident-acquisition, or field-programme target.
+This document defines the Tranche 3 release condition for the SCF #46 Build
+Award scope (Integration Track). It is a technical release gate for the new
+mainnet features, not a marketing or field-program target. The text below is
+identical to the Tranche 3 field of the SCF submission and to section 9.2 of
+the technical architecture document.
 
-## Gate
+## Definition
 
-The gate is satisfied when both conditions are true during any 30 consecutive
-days after the new mainnet features launch and before the Tranche 3 submission:
+- Metric: active merchant accounts on Stellar mainnet, with floors on distinct payers and on volume.
+- Threshold: at least 25 active merchants, at least 75 distinct payer accounts, and at least 1,000 USDC of qualifying payment volume.
+- Window: any 30 consecutive days after the new features go live on mainnet, ending before the Tranche 3 submission.
+- Active merchant: a merchant in the registry whose registered Stellar address receives at least 10 qualifying payments from at least 3 distinct payer accounts on at least 5 different days in the window. One merchant counts once, even if their registered address changes during the window.
+- Qualifying payment: a mainnet USDC (Circle) payment to a registered merchant address, worth at least COP 5,000 at the time of the transaction.
+- Excluded: payments from registered merchants or from accounts controlled by CREADOR LABS, AYRA, VIIO, Climate Future or team members; SDP disbursements; testnet activity; self-payments; and repeated round trips between the same two accounts.
+- Verification: the acceptance query in the repository runs against Horizon or Stellar RPC and reproduces the result. We share the registered merchant addresses and the addresses controlled by the team and partners with SCF reviewers privately; the public dashboard shows the aggregate counts.
+- Where payer USDC comes from: separately funded activation balances through SDP, residents' and visitors' own USDC, or provider on-ramps. None of it comes from this budget, and the disbursements themselves never count.
+- Scale: 25 merchants is about 5% of the more than 500 businesses in our island catalogue.
 
-1. At least 25 active merchant accounts are counted.
-2. At least 75 distinct payer accounts are counted across those merchants.
+## What the acceptance query does
 
-The measurement window must close within the SCF timing rule for Tranche 3.
+1. Reads the merchant registry: merchant id, registered receiving address and
+   the history of address changes, with the registration date.
+2. Reads the list of excluded accounts: registered merchant addresses and the
+   addresses controlled by CREADOR LABS, AYRA, VIIO, Climate Future and team
+   members. Both lists are shared privately with SCF reviewers.
+3. Reads USDC payment operations on Stellar mainnet for the chosen 30-day
+   window from Horizon or Stellar RPC, checking the asset code and the Circle
+   issuer.
+4. Drops excluded payers, SDP disbursements, self-payments and repeated round
+   trips between the same two accounts.
+5. Converts each payment to COP at the transaction time using the declared
+   reference rate and keeps payments of COP 5,000 or more.
+6. Groups by merchant id (not by address) and counts, per merchant, the
+   qualifying payments, the distinct payer accounts and the distinct days.
+7. Reports the number of active merchants, the number of distinct payer
+   accounts across all active merchants (each payer counted once) and the
+   total qualifying volume in USDC.
 
-## Active merchant account
-
-One merchant equals one registered merchant address on the public transparency
-dashboard. A registered merchant address is counted as active when it receives
-at least 10 qualifying onchain USDC payments from at least 3 distinct payer
-accounts inside the measurement window.
-
-Each qualifying payment must meet the minimum value of COP 1,000, calculated at
-the transaction time using the proposal’s declared conversion method. The same
-payer account counts once in the distinct-payer total even if it pays multiple
-merchants.
-
-## Exclusions
-
-- Testnet payments.
-- SDP activation or funding disbursements.
-- Payments controlled by AYRA, CREADOR LABS UG, VIIO, Climate Future, Camilo,
-  or their related wallets.
-- Obvious self-payments, refunds, reversals, and repeated circular transfers
-  between the same accounts.
-
-The exclusions are intended to remove non-adoption activity without imposing a
-broader restriction on ordinary independent merchant payments.
-
-## Verification
-
-The acceptance query should:
-
-1. Read the registered merchant-address list from the transparency dashboard.
-2. Read Stellar mainnet payment operations for the selected 30-day window.
-3. Verify the asset issuer and USDC asset.
-4. Apply the COP 1,000 transaction-time minimum.
-5. Remove excluded accounts and non-qualifying operation types.
-6. Group by merchant address and count payments and distinct payer accounts.
-7. Report the active-merchant count and the distinct-payer count.
-
-The query and its input assumptions should be committed with the final proposal
-package. The merchant-address list may be provided privately to SCF reviewers;
-the public dashboard exposes aggregate results only.
+The query, its input assumptions and the reference rate source are committed
+with the Tranche 3 evidence bundle. The public dashboard shows the aggregate
+counts only.

@@ -8,6 +8,7 @@ import {
 } from "@/lib/ayra/data";
 import {
   formatUsdc,
+  getPublicInitiativeLeagueScore,
   getPublicInitiativeProjection,
   getPublicInitiativeSummary,
   getPublicWallProjection,
@@ -409,7 +410,7 @@ export function buildAdvisorSources(
           href: `/projects/${track.slug}/${initiative.slug}`,
           trackSlug: track.slug,
           initiativeSlug: initiative.slug,
-          content: `${initiative.name} is an AYRA project in ${track.name}. Headline: ${initiative.headline}. Description: ${initiative.description}. Public steward name: ${initiative.stewardName ?? "not published"}. Progress: ${plainNumber(initiative.targetMetricCurrent)} of ${plainNumber(initiative.targetMetricGoal)} ${initiative.targetMetricLabel}. League score: ${initiative.leagueScore} of 99. Stage: ${getPublicInitiativeSummary(state, initiative).stage}.`,
+          content: `${initiative.name} is an AYRA project in ${track.name}. Headline: ${initiative.headline}. Description: ${initiative.description}. Public steward name: ${initiative.stewardName ?? "not published"}. Progress: ${plainNumber(initiative.targetMetricCurrent)} of ${plainNumber(initiative.targetMetricGoal)} ${initiative.targetMetricLabel}. League score: ${getPublicInitiativeLeagueScore(state, initiative).score} of 99. Stage: ${getPublicInitiativeSummary(state, initiative).stage}.`,
         }),
         publicSource({
           id: `funding:${track.slug}:${initiative.slug}`,

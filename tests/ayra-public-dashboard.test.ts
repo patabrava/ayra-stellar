@@ -48,17 +48,19 @@ describe("AYRA public transparency dashboard", () => {
     );
 
     assert.match(page, /getPublicInitiativeSummary\(state, leadInitiative\)/);
-    assert.match(page, /<small>\{leadInitiative\.targetMetricLabel\}<\/small>/);
+    assert.match(page, /\{leadInitiative\.targetMetricLabel\}/);
     assert.match(page, /<small>Funds disbursed<\/small>/);
     assert.match(page, /formatUsdc\(leadSummary\.disbursedUsdc\)/);
     assert.doesNotMatch(page, /initiative\.status === "funding"/);
-    assert.match(page, /League \{initiative\.leagueScore\} \/ 99/);
+    assert.match(page, /getPublicInitiativeLeagueScore\(state, initiative\)\.score/);
 
     assert.match(project, /getPublicInitiativeSummary\(state, project\.initiative\)/);
     assert.match(project, /\{summary\.stage\}/);
-    assert.match(project, /League score <strong>\{project\.initiative\.leagueScore\}<\/strong> \/ 99/);
+    assert.match(project, /League score <strong>\{leagueScore\.score\}<\/strong> \/ 99/);
     assert.match(project, />Funds disbursed</);
     assert.match(project, /formatUsdc\(summary\.disbursedUsdc\)/);
+    assert.match(page, /<MetricTooltip/);
+    assert.match(project, /<MetricTooltip/);
   });
 
   it("adds public wayfinding without a redundant closing record note", () => {

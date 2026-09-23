@@ -11,6 +11,7 @@ import {
   createFundingBatch,
   getCurrentProofBatch,
   getPublicInitiativeProjection,
+  getPublicInitiativeLeagueScore,
   getPublicInitiativeSummary,
   getProofPack,
   getPublicWallProjection,
@@ -260,6 +261,21 @@ describe("AYRA Stellar domain smoke path", () => {
       stage: "Preparing to start",
       disbursedUsdc: 0,
     });
+  });
+
+  it("derives a type-aware public league score from delivery evidence", () => {
+    const state = createDemoState();
+    const outcome = state.initiatives.find((initiative) => initiative.slug === "reforestation")!;
+    const service = state.initiatives.find((initiative) => initiative.slug === "dog-sterilization")!;
+
+    const outcomeScore = getPublicInitiativeLeagueScore(state, outcome);
+    const serviceScore = getPublicInitiativeLeagueScore(state, service);
+
+    assert.equal(outcomeScore.profile, "outcome-led");
+    assert.equal(serviceScore.profile, "service-delivery");
+    assert.ok(outcomeScore.score >= 0 && outcomeScore.score <= 99);
+    assert.ok(serviceScore.score >= 0 && serviceScore.score <= 99);
+    assert.ok(outcomeScore.components.delivery > serviceScore.components.delivery);
   });
 
   it("does not publish hash-only receipts without verified USDC metadata", () => {
