@@ -37,8 +37,28 @@ describe("AYRA public transparency dashboard", () => {
   it("keeps the featured project preview concise and meaningful", () => {
     assert.match(page, /projectPreview\(leadInitiative\.headline\)/);
     assert.match(page, /Next milestone/);
-    assert.match(page, /formatStatus\(leadInitiative\.status\)/);
+    assert.match(page, /\{leadSummary\.stage\}/);
     assert.doesNotMatch(page, /\{leadInitiative\.leagueScore\} score/);
+  });
+
+  it("labels the featured card numbers the same way as the project page", () => {
+    const project = readFileSync(
+      "src/app/projects/[trackSlug]/[initiativeSlug]/page.tsx",
+      "utf8",
+    );
+
+    assert.match(page, /getPublicInitiativeSummary\(state, leadInitiative\)/);
+    assert.match(page, /<small>\{leadInitiative\.targetMetricLabel\}<\/small>/);
+    assert.match(page, /<small>Funds disbursed<\/small>/);
+    assert.match(page, /formatUsdc\(leadSummary\.disbursedUsdc\)/);
+    assert.doesNotMatch(page, /initiative\.status === "funding"/);
+    assert.match(page, /League \{initiative\.leagueScore\} \/ 99/);
+
+    assert.match(project, /getPublicInitiativeSummary\(state, project\.initiative\)/);
+    assert.match(project, /\{summary\.stage\}/);
+    assert.match(project, /League score <strong>\{project\.initiative\.leagueScore\}<\/strong> \/ 99/);
+    assert.match(project, />Funds disbursed</);
+    assert.match(project, /formatUsdc\(summary\.disbursedUsdc\)/);
   });
 
   it("adds public wayfinding without a redundant closing record note", () => {

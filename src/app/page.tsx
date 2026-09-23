@@ -6,7 +6,11 @@ import { AdvisorPanel } from "@/components/ayra/advisor-panel";
 import { PartnerLogoRail } from "@/components/ayra/partner-logo-rail";
 import { PublicNav } from "@/components/ayra/public-nav";
 import { loadPublicAyraState } from "@/lib/ayra/data";
-import { getPublicWallProjection } from "@/lib/ayra/domain";
+import {
+  formatUsdc,
+  getPublicInitiativeSummary,
+  getPublicWallProjection,
+} from "@/lib/ayra/domain";
 import { initiativeMediaFor } from "@/lib/ayra/public-project-media";
 
 type PageProps = {
@@ -45,12 +49,6 @@ function projectPreview(headline: string) {
   const shortened = normalized.slice(0, 221);
   const lastWord = shortened.lastIndexOf(" ");
   return `${shortened.slice(0, lastWord > 160 ? lastWord : 220).trim()}…`;
-}
-
-function formatStatus(status: "live" | "funding" | "draft") {
-  if (status === "live") return "In progress";
-  if (status === "funding") return "Preparing to start";
-  return "In preparation";
 }
 
 export default async function Home({ searchParams }: PageProps) {
@@ -127,6 +125,9 @@ export default async function Home({ searchParams }: PageProps) {
           milestone.status === "planned",
       )
     : undefined;
+  const leadSummary = leadInitiative
+    ? getPublicInitiativeSummary(state, leadInitiative)
+    : undefined;
   const leadProjectHref = leadInitiative
     ? `/projects/${wall.track.slug}/${leadInitiative.slug}`
     : "#projects";
@@ -192,7 +193,7 @@ export default async function Home({ searchParams }: PageProps) {
       </section>
 
       <section className="project-wall" id="projects" aria-label="Projects">
-        {leadInitiative ? (
+        {leadInitiative && leadSummary ? (
           <div className="lead-project-frame">
             <Link
               aria-label={`Open ${leadInitiative.name}`}
@@ -202,9 +203,7 @@ export default async function Home({ searchParams }: PageProps) {
               <div className="lead-project-copy">
                 <div className="lead-project-eyebrow">
                   <span>Featured project</span>
-                  <span className="project-status">
-                    {formatStatus(leadInitiative.status)}
-                  </span>
+                  <span className="project-status">{leadSummary.stage}</span>
                 </div>
                 <h2 className="lead-project-title">
                   {leadInitiative.name}
@@ -214,15 +213,15 @@ export default async function Home({ searchParams }: PageProps) {
                 </p>
                 <div className="lead-project-facts">
                   <span>
-                    <small>Progress</small>
+                    <small>{leadInitiative.targetMetricLabel}</small>
                     <strong>
                       {leadInitiative.targetMetricCurrent.toLocaleString("en-US")} /{" "}
                       {leadInitiative.targetMetricGoal.toLocaleString("en-US")}
                     </strong>
                   </span>
                   <span>
-                    <small>Current stage</small>
-                    <strong>{formatStatus(leadInitiative.status)}</strong>
+                    <small>Funds disbursed</small>
+                    <strong>{formatUsdc(leadSummary.disbursedUsdc)}</strong>
                   </span>
                   <span>
                     <small>Next milestone</small>
@@ -275,7 +274,7 @@ export default async function Home({ searchParams }: PageProps) {
                     <small>{initiative.headline}</small>
                   </span>
                   <span className="project-index-metric">
-                    {initiative.leagueScore}
+                    League {initiative.leagueScore} / 99
                   </span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>

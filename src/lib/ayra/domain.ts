@@ -2101,6 +2101,35 @@ export function getPublicInitiativeProjection(
   };
 }
 
+export type PublicInitiativeStage =
+  | "In progress"
+  | "Preparing to start"
+  | "In preparation";
+
+// Approval stores status "funding" and nothing advances it, so the public stage
+// also counts verified USDC payouts as the project having started.
+export function getPublicInitiativeSummary(
+  state: AyraState,
+  initiative: Pick<Initiative, "id" | "status">,
+): { stage: PublicInitiativeStage; disbursedUsdc: number } {
+  const disbursedUsdc = state.batches
+    .filter(
+      (batch) =>
+        batch.initiativeId === initiative.id &&
+        (batch.status === "submitted" || batch.status === "settled"),
+    )
+    .reduce((sum, batch) => sum + sumPublicProofLineItems(state, batch.id), 0);
+
+  const stage: PublicInitiativeStage =
+    initiative.status === "draft"
+      ? "In preparation"
+      : initiative.status === "live" || disbursedUsdc > 0
+        ? "In progress"
+        : "Preparing to start";
+
+  return { stage, disbursedUsdc };
+}
+
 function isPublicTransactionHash(value?: string) {
   return Boolean(value && /^[a-f0-9]{64}$/i.test(value) && !value.startsWith("mock-"));
 }

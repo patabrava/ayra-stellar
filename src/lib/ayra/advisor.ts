@@ -9,6 +9,7 @@ import {
 import {
   formatUsdc,
   getPublicInitiativeProjection,
+  getPublicInitiativeSummary,
   getPublicWallProjection,
   type Initiative,
   type AyraState,
@@ -408,7 +409,7 @@ export function buildAdvisorSources(
           href: `/projects/${track.slug}/${initiative.slug}`,
           trackSlug: track.slug,
           initiativeSlug: initiative.slug,
-          content: `${initiative.name} is an AYRA project in ${track.name}. Headline: ${initiative.headline}. Description: ${initiative.description}. Public steward name: ${initiative.stewardName ?? "not published"}. Progress: ${plainNumber(initiative.targetMetricCurrent)} of ${plainNumber(initiative.targetMetricGoal)} ${initiative.targetMetricLabel}. League score: ${initiative.leagueScore} of 99. Status: ${initiative.status}.`,
+          content: `${initiative.name} is an AYRA project in ${track.name}. Headline: ${initiative.headline}. Description: ${initiative.description}. Public steward name: ${initiative.stewardName ?? "not published"}. Progress: ${plainNumber(initiative.targetMetricCurrent)} of ${plainNumber(initiative.targetMetricGoal)} ${initiative.targetMetricLabel}. League score: ${initiative.leagueScore} of 99. Stage: ${getPublicInitiativeSummary(state, initiative).stage}.`,
         }),
         publicSource({
           id: `funding:${track.slug}:${initiative.slug}`,

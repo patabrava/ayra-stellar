@@ -15,6 +15,7 @@ import {
   formatUsdc,
   getProofPack,
   getPublicInitiativeProjection,
+  getPublicInitiativeSummary,
 } from "@/lib/ayra/domain";
 import { initiativeMediaFor } from "@/lib/ayra/public-project-media";
 
@@ -61,10 +62,7 @@ export default async function InitiativePage({ params }: PageProps) {
     project.initiative.targetMetricGoal,
   );
   const maxSpend = Math.max(...project.spending.map((item) => item.amountUsdc), 1);
-  const totalSubmitted = project.batches.reduce(
-    (sum, batch) => sum + batch.amountUsdc,
-    0,
-  );
+  const summary = getPublicInitiativeSummary(state, project.initiative);
   const proofBatch =
     project.batches.find((batch) => batch.status === "settled") ??
     project.batches[0];
@@ -131,9 +129,12 @@ export default async function InitiativePage({ params }: PageProps) {
                   </div>
                 </div>
               </div>
-              <span className="score">
-                <strong>{project.initiative.leagueScore}</strong> / 99
-              </span>
+              <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase">
+                <span className="project-status">{summary.stage}</span>
+                <span className="score">
+                  League score <strong>{project.initiative.leagueScore}</strong> / 99
+                </span>
+              </div>
             </div>
             <div className="project-detail-visual">
               <Image
@@ -206,12 +207,12 @@ export default async function InitiativePage({ params }: PageProps) {
                 </p>
               </section>
 
-              <section className="batch-volume" aria-label="Visible payment volume">
-                <span className="public-muted text-sm">Visible payment volume</span>
-                <strong>{formatUsdc(totalSubmitted)}</strong>
+              <section className="batch-volume" aria-label="Funds disbursed">
+                <span className="public-muted text-sm">Funds disbursed</span>
+                <strong>{formatUsdc(summary.disbursedUsdc)}</strong>
                 <span>
-                  Submitted and settled payments only. Drafts, failures, and
-                  operational exceptions stay internal.
+                  Settled USDC payments verified on Stellar. Drafts, failures,
+                  and operational exceptions stay internal.
                 </span>
               </section>
             </div>
