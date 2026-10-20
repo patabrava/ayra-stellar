@@ -229,7 +229,7 @@ export default async function Home({ searchParams }: PageProps) {
                   </span>
                   <span>
                     <small>Confirmed project disbursements</small>
-                    <strong>{formatUsdc(leadSummary.confirmedProjectDisbursementUsdc)}</strong>
+                    <strong>{leadSummary.projectFundingEvidenceStatus === "verified" ? formatUsdc(leadSummary.confirmedProjectDisbursementUsdc) : "Not yet verified"}</strong>
                   </span>
                   <span>
                     <small>Next milestone</small>
