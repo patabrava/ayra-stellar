@@ -494,6 +494,30 @@ export async function loadStoredAdvisorSources(): Promise<AdvisorSource[]> {
   }
 }
 
+// Runtime state owns every AYRA, project and payment fact. A stored copy in one of
+// these namespaces without a current runtime counterpart is stale (renamed,
+// unpublished or superseded) and must not come back as a published fact.
+const RUNTIME_OWNED_ADVISOR_SOURCE_PREFIXES = [
+  "ayra:",
+  "track:",
+  "project:",
+  "funding:",
+  "stellar:",
+  "proof:",
+];
+
+export function withoutStaleStoredAdvisorSources(
+  stored: AdvisorSource[],
+  runtime: AdvisorSource[],
+) {
+  const current = new Set(runtime.map((source) => source.id));
+  return stored.filter(
+    (source) =>
+      current.has(source.id) ||
+      !RUNTIME_OWNED_ADVISOR_SOURCE_PREFIXES.some((prefix) => source.id.startsWith(prefix)),
+  );
+}
+
 export function mergeAdvisorSources(
   primary: AdvisorSource[],
   secondary: AdvisorSource[],

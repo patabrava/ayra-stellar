@@ -303,6 +303,30 @@ export function getJourneyStatus(
         body:
           "The source record and local attribution now resolve for this line item. The public export will show the matched state without exposing operator notes or private receipts.",
       };
+    case "funding-purpose-recorded":
+      return {
+        tone: "ok",
+        label: "Purpose reviewed",
+        title: "The reviewed funding purpose is recorded.",
+        body:
+          "You are recorded as the reviewer. Public pages show only the purpose; source, recipient and evidence stay private. A recorded purpose cannot be edited.",
+      };
+    case "funding-purpose-invalid":
+      return {
+        tone: "err",
+        label: "Review incomplete",
+        title: "The funding purpose was not recorded.",
+        body:
+          "Name the purpose, the registered source record and an evidence reference. Approved project disbursements also need the project's legal recipient.",
+      };
+    case "funding-purpose-error":
+      return {
+        tone: "err",
+        label: "Review rejected",
+        title: "The database rejected this funding purpose.",
+        body:
+          "Only an admin can record it, once, for a submitted or settled transfer of this project, with a registered source, this project's legal recipient and a Stellar mainnet transfer for approved disbursements.",
+      };
     case "proof-release-created":
       return {
         tone: "ok",

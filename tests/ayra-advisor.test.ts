@@ -475,7 +475,7 @@ describe("AYRA advisor API route", () => {
 
       assert.equal(response.status, 200);
       assert.equal(body.mode, "deterministic-fallback");
-      assert.match(body.answer, /public approval states are live and funding/i);
+      assert.match(body.answer, /not proof that a project has received money/i);
       assert.match(body.answer, /Reforestation/i);
       assert.equal(body.citations[0]?.sourceId, "ayra:approved-projects");
     });

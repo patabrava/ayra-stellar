@@ -16,7 +16,8 @@
     "verify:sdp-testnet": "node scripts/verify-sdp-testnet.mjs",
     "verify:sdp-mainnet": "node scripts/verify-sdp-mainnet.mjs",
     "populate:public-sdp-testnet-receipts": "node scripts/populate-public-sdp-testnet-receipts.mjs",
-    "backfill:usdc-proof-metadata": "node scripts/backfill-usdc-proof-metadata.mjs"
+    "backfill:usdc-proof-metadata": "node scripts/backfill-usdc-proof-metadata.mjs",
+    "verify:funding-classification-sql": "node scripts/verify-funding-classification-sql.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

@@ -195,6 +195,23 @@ export type MilestoneSubmission = {
 // An onchain settlement proves a transfer, not its purpose or local impact.
 // A missing classification MUST NOT be treated as approved project funding.
 export type PublicFundingPurpose = "technical_validation" | "approved_project_disbursement";
+export type PublicFundingPurposeStatus = PublicFundingPurpose | "unclassified";
+
+export function publicFundingPurposeStatus(
+  purpose?: PublicFundingPurpose,
+): PublicFundingPurposeStatus {
+  return purpose ?? "unclassified";
+}
+
+export function publicFundingPurposeLabel(purpose?: PublicFundingPurpose) {
+  if (purpose === "approved_project_disbursement") return "Approved project disbursement";
+  if (purpose === "technical_validation") return "Technical validation transfer, not project funding";
+  return "Unclassified, not confirmed project funding";
+}
+
+export function getPublicBatchFundingPurpose(state: AyraState, batchId: string) {
+  return state.batches.find((batch) => batch.id === batchId)?.publicFundingPurpose;
+}
 
 export type Batch = {
   id: string;

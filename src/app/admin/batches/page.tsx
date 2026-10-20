@@ -21,12 +21,17 @@ import {
 } from "@/components/ayra/ui";
 import {
   createBatchAction,
+  recordBatchFundingPurposeAction,
   resolveAttributionExceptionAction,
   submitBatchAction,
   syncBatchStatusAction,
 } from "@/lib/ayra/actions";
 import { suggestBatchCode } from "@/lib/ayra/batch-code";
-import { approvedUnusedMilestoneSubmissions, formatLocal } from "@/lib/ayra/domain";
+import {
+  approvedUnusedMilestoneSubmissions,
+  formatLocal,
+  publicFundingPurposeLabel,
+} from "@/lib/ayra/domain";
 import { requireAdminSession } from "@/lib/ayra/session";
 import { getConfiguredStellarNetwork } from "@/lib/ayra/stellar-network";
 
@@ -280,6 +285,72 @@ export default async function AdminBatchesPage({ searchParams }: PageProps) {
                         value={batch.sdpBatchId}
                       />
                     </div>
+
+                    {isSubmitted || isSettled ? (
+                      <div className="payment-registry-proof" data-funding-purpose-review>
+                        <span className="payment-registry-label">Funding purpose</span>
+                        {batch.publicFundingPurpose ? (
+                          <Chip
+                            tone={
+                              batch.publicFundingPurpose === "approved_project_disbursement"
+                                ? "ok"
+                                : "info"
+                            }
+                          >
+                            {publicFundingPurposeLabel(batch.publicFundingPurpose)}
+                          </Chip>
+                        ) : (
+                          <form action={recordBatchFundingPurposeAction} className="grid gap-2">
+                            <input name="batchId" type="hidden" value={batch.id} />
+                            <input name="initiativeId" type="hidden" value={batch.initiativeId} />
+                            <label className="text-xs text-ink-muted" htmlFor={`purpose-${batch.id}`}>
+                              Unclassified: not counted as project funding
+                            </label>
+                            <select defaultValue="" id={`purpose-${batch.id}`} name="purpose" required>
+                              <option disabled value="">
+                                Reviewed purpose
+                              </option>
+                              <option value="technical_validation">
+                                Technical validation (not project funding)
+                              </option>
+                              <option value="approved_project_disbursement">
+                                Approved project disbursement
+                              </option>
+                            </select>
+                            <input
+                              maxLength={200}
+                              minLength={3}
+                              name="sourceExternalId"
+                              placeholder="Registered source record ID"
+                              required
+                            />
+                            <select defaultValue="" name="recipientGranteeId">
+                              <option value="">Legal recipient (required for disbursements)</option>
+                              {session.state.grantees
+                                .filter((grantee) => grantee.initiativeId === batch.initiativeId)
+                                .map((grantee) => (
+                                  <option key={grantee.id} value={grantee.id}>
+                                    {grantee.name}
+                                  </option>
+                                ))}
+                            </select>
+                            <input
+                              maxLength={500}
+                              minLength={8}
+                              name="evidenceReference"
+                              placeholder="Evidence reference (approval document ID or link)"
+                              required
+                            />
+                            <FormSubmitButton className="btn" pendingLabel="Recording review...">
+                              Record reviewed purpose
+                            </FormSubmitButton>
+                            <span className="text-xs text-ink-muted">
+                              You are recorded as reviewer. A recorded purpose cannot be edited.
+                            </span>
+                          </form>
+                        )}
+                      </div>
+                    ) : null}
                   </article>
                 );
               })}

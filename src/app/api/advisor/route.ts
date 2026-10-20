@@ -8,6 +8,7 @@ import {
   loadStoredAdvisorSources,
   mergeAdvisorSources,
   selectAdvisorSourcesForQuestion,
+  withoutStaleStoredAdvisorSources,
 } from "@/lib/ayra/advisor";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
@@ -62,7 +63,10 @@ export async function POST(request: Request) {
   const storedSources = await loadStoredAdvisorSources();
   // Current verified runtime records supersede stale copies of the same source ID.
   // Synced store is a fallback, not an authority for a project's live money state.
-  const sources = mergeAdvisorSources(runtimeSources, storedSources);
+  const sources = mergeAdvisorSources(
+    runtimeSources,
+    withoutStaleStoredAdvisorSources(storedSources, runtimeSources),
+  );
   const retrievalSources = selectAdvisorSourcesForQuestion(
     parsed.data.question,
     sources,

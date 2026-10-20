@@ -28,11 +28,26 @@ import {
   submitUpdate,
   updateBatchLineItems,
   verifyPayoutAddress,
+  type AyraState,
 } from "../src/lib/ayra/domain";
+
+// Reviewed purposes normally arrive from public_batch_funding_purposes. The demo
+// state stays unclassified because it is also the public fallback state.
+function withApprovedDisbursement(state: AyraState, batchId: string): AyraState {
+  return {
+    ...state,
+    batches: state.batches.map((batch) =>
+      batch.id === batchId
+        ? { ...batch, publicFundingPurpose: "approved_project_disbursement" as const }
+        : batch,
+    ),
+  };
+}
 
 describe("AYRA Stellar domain smoke path", () => {
   it("projects only approved, privacy-safe public records for Providencia", () => {
-    const state = createDemoState();
+    assert.equal(getPublicWallProjection(createDemoState(), "providencia").spending.length, 0);
+    const state = withApprovedDisbursement(createDemoState(), "batch-reforest-apr26");
     const wall = getPublicWallProjection(state, "providencia");
 
     assert.equal(wall.track.name, "Providencia");
@@ -111,7 +126,7 @@ describe("AYRA Stellar domain smoke path", () => {
   });
 
   it("does not expose mock SDP references as public on-chain proof", () => {
-    const state = createDemoState();
+    const state = withApprovedDisbursement(createDemoState(), "batch-reforest-apr26");
     const project = getPublicInitiativeProjection(
       state,
       "providencia",
