@@ -2256,6 +2256,7 @@ export function getPublicInitiativeSummary(
   stage: PublicInitiativeStage;
   verifiedTransfersUsdc: number;
   confirmedProjectDisbursementUsdc: number;
+  projectFundingEvidenceStatus: "verified" | "unverified";
 } {
   const proofBatches = state.batches.filter(
     (batch) =>
@@ -2270,6 +2271,11 @@ export function getPublicInitiativeSummary(
     .filter((batch) => batch.publicFundingPurpose === "approved_project_disbursement")
     .reduce((sum, batch) => sum + sumPublicProofLineItems(state, batch.id), 0);
 
+  // A missing/legacy purpose classification is UNKNOWN, not confirmed zero.
+  const projectFundingEvidenceStatus = confirmedProjectDisbursementUsdc > 0
+    ? ("verified" as const)
+    : ("unverified" as const);
+
   const stage: PublicInitiativeStage =
     initiative.status === "draft"
       ? "In preparation"
@@ -2277,7 +2283,7 @@ export function getPublicInitiativeSummary(
         ? "In progress"
         : "Preparing to start";
 
-  return { stage, verifiedTransfersUsdc, confirmedProjectDisbursementUsdc };
+  return { stage, verifiedTransfersUsdc, confirmedProjectDisbursementUsdc, projectFundingEvidenceStatus };
 }
 
 function isPublicTransactionHash(value?: string) {
