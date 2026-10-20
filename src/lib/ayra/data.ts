@@ -50,6 +50,7 @@ type PublicRows = {
   media: MediaRow[];
   batches: BatchRow[];
   receipts: ReceiptRow[];
+  fundingPurposes?: FundingPurposeRow[];
   initiativeMedia?: InitiativeMediaRow[];
 };
 
@@ -166,6 +167,12 @@ type BatchRow = {
   submitted_at: string | null;
   settled_at: string | null;
   sdp_batch_id: string | null;
+};
+
+// A public projection includes ONLY reviewed classification, never reviewer or source identity.
+type FundingPurposeRow = {
+  batch_id: string;
+  public_funding_purpose: "technical_validation" | "approved_project_disbursement";
 };
 
 type ReceiptRow = {
@@ -437,6 +444,7 @@ async function loadPublicAyraStateFromClient(
     batches,
     receipts,
     initiativeMedia,
+    fundingPurposes,
   ] = await Promise.all([
     supabase
       .from("tracks")
@@ -483,6 +491,11 @@ async function loadPublicAyraStateFromClient(
       .from("initiative_media")
       .select("id,initiative_id,storage_path,role,mime_type,width,height,alt,credit,sort_order,focal_position")
       .order("sort_order"),
+    // Additive view may not exist until migration 0017 has been reviewed and applied.
+    // Its absence never converts existing receipts into project financing.
+    supabase
+      .from("public_batch_funding_purposes")
+      .select("batch_id,public_funding_purpose"),
   ]);
 
   if (
@@ -515,6 +528,7 @@ async function loadPublicAyraStateFromClient(
     media: (media.data ?? []) as MediaRow[],
     batches: (batches.data ?? []) as BatchRow[],
     receipts: (receipts.data ?? []) as ReceiptRow[],
+    fundingPurposes: (fundingPurposes.error ? [] : fundingPurposes.data ?? []) as FundingPurposeRow[],
     initiativeMedia: (initiativeMedia.data ?? []) as InitiativeMediaRow[],
   });
 }
@@ -550,6 +564,7 @@ async function loadOperatorAyraStateFromClient(
     auditLogs,
     initiativeMedia,
     applicationMedia,
+    fundingPurposes,
   ] = await Promise.all([
     supabase.from("profiles").select("id,email,display_name,created_at"),
     supabase.from("user_roles").select("id,profile_id,role,initiative_id,grantee_id"),
@@ -623,6 +638,9 @@ async function loadOperatorAyraStateFromClient(
       .from("application_media")
       .select("id,application_id,storage_path,role,original_name,mime_type,width,height,alt,credit,selected_for_public,sort_order,focal_position")
       .order("sort_order"),
+    supabase
+      .from("public_batch_funding_purposes")
+      .select("batch_id,public_funding_purpose"),
   ]);
 
   const results = [
@@ -680,11 +698,15 @@ async function loadOperatorAyraStateFromClient(
     auditLogs: (auditLogs.data ?? []) as AuditLogRow[],
     initiativeMedia: (initiativeMedia.data ?? []) as InitiativeMediaRow[],
     applicationMedia: (applicationMedia.data ?? []) as ApplicationMediaRow[],
+    fundingPurposes: (fundingPurposes.error ? [] : fundingPurposes.data ?? []) as FundingPurposeRow[],
   });
 }
 
 export function stateFromPublicRows(rows: PublicRows): AyraState {
   const mediaByUpdate = new Map<string, UpdateMedia[]>();
+  const purposeByBatch = new Map(
+    (rows.fundingPurposes ?? []).map((row) => [row.batch_id, row.public_funding_purpose]),
+  );
   rows.media.forEach((item) => {
     const current = mediaByUpdate.get(item.update_id) ?? [];
     current.push({
@@ -712,7 +734,10 @@ export function stateFromPublicRows(rows: PublicRows): AyraState {
     milestones: rows.milestones.map(mapMilestone),
     updates: rows.updates.map((row) => mapUpdate(row, mediaByUpdate)),
     milestoneSubmissions: [],
-    batches: rows.batches.map(mapBatch),
+    batches: rows.batches.map((row) => ({
+      ...mapBatch(row),
+      publicFundingPurpose: purposeByBatch.get(row.id),
+    })),
     batchLineItems: rows.receipts.map(mapReceiptLineItem),
     fundingAllocations: [],
     reconciliationItems: [],
