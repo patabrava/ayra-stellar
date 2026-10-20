@@ -211,55 +211,76 @@ describe("AYRA Stellar domain smoke path", () => {
     assert.equal(proof.receipts[0]?.transactionHash, realHash);
   });
 
-  it("derives one public stage and disbursed total for the wall and project page", () => {
+  it("separates onchain QA proof from authorised project funding", () => {
     const state = createDemoState();
     const batchId = "batch-reforest-apr26";
-    const approvedDefaults = {
+    const verifiedLineItems = state.batchLineItems.map((lineItem) =>
+      lineItem.id === `${batchId}-line-1`
+        ? {
+            ...lineItem,
+            amountUsdc: 5,
+            status: "settled" as const,
+            transactionHash:
+              "9b02f2db43af6a56907b92c1e74d95db1b243524b57430a5d1a579285d6c6ac6",
+            paymentAssetCode: "USDC" as const,
+            paymentAssetIssuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+            paymentAssetAmount: 5,
+          }
+        : lineItem,
+    );
+    const draft = {
       ...state,
       initiatives: state.initiatives.map((initiative) =>
         initiative.id === "initiative-reforest"
           ? { ...initiative, status: "funding" as const }
           : initiative,
       ),
-      batchLineItems: state.batchLineItems.map((lineItem) =>
-        lineItem.id === `${batchId}-line-1`
-          ? {
-              ...lineItem,
-              amountUsdc: 5,
-              status: "settled" as const,
-              transactionHash:
-                "9b02f2db43af6a56907b92c1e74d95db1b243524b57430a5d1a579285d6c6ac6",
-              paymentAssetCode: "USDC" as const,
-              paymentAssetIssuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
-              paymentAssetAmount: 5,
-            }
-          : lineItem,
+      batchLineItems: verifiedLineItems,
+    };
+    const initiative = draft.initiatives.find((item) => item.id === "initiative-reforest")!;
+    const unclassified = getPublicInitiativeSummary(draft, initiative);
+    assert.deepEqual(unclassified, {
+      stage: "Preparing to start",
+      verifiedTransfersUsdc: 5,
+      confirmedProjectDisbursementUsdc: 0,
+    });
+    const project = getPublicInitiativeProjection(draft, "providencia", "reforestation");
+    assert.equal(project.spending.length, 0);
+    assert.equal(project.batches[0]?.amountUsdc, 5);
+    assert.equal(getProofPack(draft, batchId).receipts.length, 1);
+    assert.equal(getPublicInitiativeLeagueScore(draft, initiative).components.funding, 0);
+
+    const qa = {
+      ...draft,
+      batches: draft.batches.map((batch) =>
+        batch.id === batchId
+          ? { ...batch, publicFundingPurpose: "technical_validation" as const }
+          : batch,
       ),
     };
-    const funded = approvedDefaults.initiatives.find(
-      (initiative) => initiative.id === "initiative-reforest",
-    )!;
-    const project = getPublicInitiativeProjection(
-      approvedDefaults,
-      "providencia",
-      "reforestation",
-    );
+    assert.equal(getPublicInitiativeSummary(qa, initiative).confirmedProjectDisbursementUsdc, 0);
 
-    assert.deepEqual(getPublicInitiativeSummary(approvedDefaults, funded), {
-      stage: "In progress",
-      disbursedUsdc: 5,
+    const approved = {
+      ...draft,
+      batches: draft.batches.map((batch) =>
+        batch.id === batchId
+          ? { ...batch, publicFundingPurpose: "approved_project_disbursement" as const }
+          : batch,
+      ),
+    };
+    assert.deepEqual(getPublicInitiativeSummary(approved, initiative), {
+      stage: "Preparing to start",
+      verifiedTransfersUsdc: 5,
+      confirmedProjectDisbursementUsdc: 5,
     });
-    assert.equal(
-      project.batches.reduce((sum, batch) => sum + batch.amountUsdc, 0),
-      5,
-    );
+    assert.equal(getPublicInitiativeProjection(approved, "providencia", "reforestation").spending.length, 1);
+    assert.ok(getPublicInitiativeLeagueScore(approved, initiative).components.funding > 0);
 
-    const unpaid = state.initiatives.find(
-      (initiative) => initiative.slug === "dog-sterilization",
-    )!;
+    const unpaid = state.initiatives.find((item) => item.slug === "dog-sterilization")!;
     assert.deepEqual(getPublicInitiativeSummary(state, unpaid), {
       stage: "Preparing to start",
-      disbursedUsdc: 0,
+      verifiedTransfersUsdc: 0,
+      confirmedProjectDisbursementUsdc: 0,
     });
   });
 
