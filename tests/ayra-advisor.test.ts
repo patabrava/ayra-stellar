@@ -352,7 +352,7 @@ describe("AYRA advisor public source contract", () => {
 
     assert.equal(response.status, "answered");
     assert.match(response.answer, /Verified onchain transfer volume .*4,820 USDC/);
-    assert.match(response.answer, /Confirmed project disbursements: 0 USDC/);
+    assert.match(response.answer, /Confirmed project disbursements: not yet verified/);
     assert.match(response.answer, /No public category spend yet/i);
     assert.doesNotMatch(response.answer, /mock-payment-/);
     assert.equal(response.citations[0]?.sourceId, "funding:providencia:reforestation");
