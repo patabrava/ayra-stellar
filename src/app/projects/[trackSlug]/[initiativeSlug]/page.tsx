@@ -220,7 +220,7 @@ export default async function InitiativePage({ params }: PageProps) {
 
               <section className="batch-volume" aria-label="Confirmed project disbursements">
                 <span className="public-muted text-sm">Confirmed project disbursements</span>
-                <strong>{formatUsdc(summary.confirmedProjectDisbursementUsdc)}</strong>
+                <strong>{summary.projectFundingEvidenceStatus === "verified" ? formatUsdc(summary.confirmedProjectDisbursementUsdc) : "Not yet verified"}</strong>
                 <span>
                   Only verified transfers explicitly classified as approved project disbursements count here. Other valid onchain receipts remain visible below. Drafts, failures,
                   and operational exceptions stay internal.
