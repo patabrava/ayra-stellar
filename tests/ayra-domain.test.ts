@@ -252,6 +252,7 @@ describe("AYRA Stellar domain smoke path", () => {
       stage: "Preparing to start",
       verifiedTransfersUsdc: 5,
       confirmedProjectDisbursementUsdc: 0,
+      projectFundingEvidenceStatus: "unverified",
     });
     const project = getPublicInitiativeProjection(draft, "providencia", "reforestation");
     assert.equal(project.spending.length, 0);
@@ -268,6 +269,7 @@ describe("AYRA Stellar domain smoke path", () => {
       ),
     };
     assert.equal(getPublicInitiativeSummary(qa, initiative).confirmedProjectDisbursementUsdc, 0);
+    assert.equal(getPublicInitiativeSummary(qa, initiative).projectFundingEvidenceStatus, "unverified");
 
     const approved = {
       ...draft,
@@ -281,6 +283,7 @@ describe("AYRA Stellar domain smoke path", () => {
       stage: "Preparing to start",
       verifiedTransfersUsdc: 5,
       confirmedProjectDisbursementUsdc: 5,
+      projectFundingEvidenceStatus: "verified",
     });
     assert.equal(getPublicInitiativeProjection(approved, "providencia", "reforestation").spending.length, 1);
     assert.ok(getPublicInitiativeLeagueScore(approved, initiative).components.funding > 0);
@@ -290,6 +293,7 @@ describe("AYRA Stellar domain smoke path", () => {
       stage: "Preparing to start",
       verifiedTransfersUsdc: 0,
       confirmedProjectDisbursementUsdc: 0,
+      projectFundingEvidenceStatus: "unverified",
     });
   });
 
