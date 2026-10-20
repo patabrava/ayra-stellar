@@ -197,12 +197,21 @@ describe("AYRA Stellar domain smoke path", () => {
           }
         : lineItem,
     );
+    const verifiedState = {
+      ...state,
+      batches: state.batches.map((batch) =>
+        batch.id === batchId
+          ? { ...batch, publicFundingPurpose: "approved_project_disbursement" as const }
+          : batch,
+      ),
+      batchLineItems,
+    };
     const project = getPublicInitiativeProjection(
-      { ...state, batchLineItems },
+      verifiedState,
       "providencia",
       "reforestation",
     );
-    const proof = getProofPack({ ...state, batchLineItems }, batchId);
+    const proof = getProofPack(verifiedState, batchId);
 
     assert.equal(project.spending.length, 1);
     assert.equal(project.spending[0]?.amountUsdc, 1);
