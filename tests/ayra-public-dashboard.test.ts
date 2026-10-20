@@ -61,6 +61,8 @@ describe("AYRA public transparency dashboard", () => {
     assert.match(project, /formatUsdc\(summary\.confirmedProjectDisbursementUsdc\)/);
     assert.match(page, /<MetricTooltip/);
     assert.match(project, /<MetricTooltip/);
+    assert.match(page, /Not yet verified/);
+    assert.match(project, /Not yet verified/);
   });
 
   it("adds public wayfinding without a redundant closing record note", () => {
