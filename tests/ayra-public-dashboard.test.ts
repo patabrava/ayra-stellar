@@ -11,7 +11,7 @@ describe("AYRA public transparency dashboard", () => {
   it("preserves the original place-led landing message", () => {
     assert.match(page, /\{wall\.track\.name\},/);
     assert.match(page, /lived in\./);
-    assert.match(page, /Funded by AYRA\./);
+    assert.match(page, /Documented with AYRA\./);
     assert.match(page, /AYRA builds impact zones in places we care about\./);
     assert.doesNotMatch(page, /Follow the work\./);
     assert.doesNotMatch(page, /What is documented now/);
@@ -49,16 +49,16 @@ describe("AYRA public transparency dashboard", () => {
 
     assert.match(page, /getPublicInitiativeSummary\(state, leadInitiative\)/);
     assert.match(page, /\{leadInitiative\.targetMetricLabel\}/);
-    assert.match(page, /<small>Funds disbursed<\/small>/);
-    assert.match(page, /formatUsdc\(leadSummary\.disbursedUsdc\)/);
+    assert.match(page, /<small>Confirmed project disbursements<\/small>/);
+    assert.match(page, /formatUsdc\(leadSummary\.confirmedProjectDisbursementUsdc\)/);
     assert.doesNotMatch(page, /initiative\.status === "funding"/);
     assert.match(page, /getPublicInitiativeLeagueScore\(state, initiative\)\.score/);
 
     assert.match(project, /getPublicInitiativeSummary\(state, project\.initiative\)/);
     assert.match(project, /\{summary\.stage\}/);
     assert.match(project, /League score <strong>\{leagueScore\.score\}<\/strong> \/ 99/);
-    assert.match(project, />Funds disbursed</);
-    assert.match(project, /formatUsdc\(summary\.disbursedUsdc\)/);
+    assert.match(project, />Confirmed project disbursements</);
+    assert.match(project, /formatUsdc\(summary\.confirmedProjectDisbursementUsdc\)/);
     assert.match(page, /<MetricTooltip/);
     assert.match(project, /<MetricTooltip/);
   });
