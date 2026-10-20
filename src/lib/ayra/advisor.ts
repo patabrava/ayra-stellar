@@ -419,7 +419,7 @@ export function buildAdvisorSources(
           href: `/projects/${track.slug}/${initiative.slug}`,
           trackSlug: track.slug,
           initiativeSlug: initiative.slug,
-          content: `${initiative.name} public payment proof in ${track.name}. Verified onchain transfer volume (including technical and unclassified receipts): ${formatUsdc(visibleTotal)}. Settled onchain transfers: ${formatUsdc(settledTotal)}. In-flight onchain transfers: ${formatUsdc(inFlightTotal)}. Confirmed project disbursements: ${formatUsdc(publicSummary.confirmedProjectDisbursementUsdc)}; a zero here can mean missing classification and is not an assertion that no project funds exist. This is not the amount raised, received by the organisation, or ecological work delivered. Public receipts: ${batchSummary}. Approved project category spend: ${categorySummary}.`,
+          content: `${initiative.name} public payment proof in ${track.name}. Verified onchain transfer volume (including technical and unclassified receipts): ${formatUsdc(visibleTotal)}. Settled onchain transfers: ${formatUsdc(settledTotal)}. In-flight onchain transfers: ${formatUsdc(inFlightTotal)}. Confirmed project disbursements: ${publicSummary.projectFundingEvidenceStatus === "verified" ? formatUsdc(publicSummary.confirmedProjectDisbursementUsdc) : "not yet verified"}; missing classification never means confirmed zero or available financing. This is not the amount raised, received by the organisation, or ecological work delivered. Public receipts: ${batchSummary}. Approved project category spend: ${categorySummary}.`,
         }),
         publicSource({
           id: `stellar:${track.slug}:${initiative.slug}`,
