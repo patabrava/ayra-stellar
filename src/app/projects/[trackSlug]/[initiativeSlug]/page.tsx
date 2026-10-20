@@ -218,11 +218,11 @@ export default async function InitiativePage({ params }: PageProps) {
                 </p>
               </section>
 
-              <section className="batch-volume" aria-label="Funds disbursed">
-                <span className="public-muted text-sm">Funds disbursed</span>
-                <strong>{formatUsdc(summary.disbursedUsdc)}</strong>
+              <section className="batch-volume" aria-label="Confirmed project disbursements">
+                <span className="public-muted text-sm">Confirmed project disbursements</span>
+                <strong>{formatUsdc(summary.confirmedProjectDisbursementUsdc)}</strong>
                 <span>
-                  Settled USDC payments verified on Stellar. Drafts, failures,
+                  Only verified transfers explicitly classified as approved project disbursements count here. Other valid onchain receipts remain visible below. Drafts, failures,
                   and operational exceptions stay internal.
                 </span>
               </section>
