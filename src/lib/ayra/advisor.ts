@@ -212,7 +212,7 @@ const ayraWebsiteSources = [
     title: "AYRA Studio model",
     href: "https://www.ayra.haus/",
     content:
-      "An AYRA Studio is a sponsored adoption sandbox in Providencia: one company, one vertical, three teams, up to nine local student fellows, one 100-point scorecard, one winner, and one continuation path. A sponsor backs one Studio with a 37,500 EUR hard cap. The teams push adoption of real products, stacks, and systems with local partners, while selected artists turn the work into stories, films, exhibitions, and public moments.",
+      "An AYRA Studio is one sponsor-backed adoption lane with one independent local business or team and one defined use case. AYRA works with local operators to test practical product adoption and retain an operating business that can keep serving customers afterwards. The exact price, participants, tax treatment, deliverables and continuation depend on the current approved Studio agreement; historic example prices are not current public offers.",
   }),
   publicSource({
     id: "ayra:season-timeline",
@@ -226,7 +226,7 @@ const ayraWebsiteSources = [
     title: "AYRA Studio sponsorship",
     href: "https://www.ayra.haus/",
     content:
-      "A sponsor reserves one Studio by choosing one vertical, then sending or selecting three teams to build adoption in Providencia. The 37,500 EUR hard cap backs the vertical, the three teams moving through Season 1, up to nine local student fellows, the 100-point scorecard, the winner selection, a sponsor report, and the Cartagena finale. The budget position is hard-capped, transparent, and published monthly.",
+      "Back a Studio supports one local team or business and one agreed use case, with product adoption and a verifiable continuation outcome. Shape a Season is a different commercial offer with two dedicated Studios and a Season-shaping layer. Prices, personnel, media rights and delivery scope are agreement-specific and must be checked against the current accepted quote, financial model and release gates. Public stories do not activate a sponsorship or project funding.",
   }),
   publicSource({
     id: "ayra:verticals",
@@ -240,7 +240,7 @@ const ayraWebsiteSources = [
     title: "AYRA ground traction",
     href: "https://www.ayra.haus/",
     content:
-      "The AYRA north-star material names two proof points for why the model can work on the ground. VIIO, AYRA's on-chain payments partner, operates in production as a B2SME wallet with regulated infrastructure partners and reported performance including 326M USD total payment volume, 650 active SME accounts, 11,900 operations, and an average transaction size around 27K USD. Providencia impact traction through Climate Future includes about 1,500 trees and shrubs planted, more than 420 children engaged across schools, animal welfare programs with about 30 dogs and 50 cats adopted, and about 95 percent of known street dogs regularly supported or adopted.",
+      "AYRA has an existing public Stellar payment-proof application and the first mainnet validation receipt. A validated blockchain transfer does not prove local project funding, live merchant adoption or ecological outcomes. Historical partner-performance and Providencia field-impact figures must be checked against dated primary evidence and publication rights before quoting them as achieved. Current public project pages distinguish approved field updates from technical receipt evidence; without that evidence, current results are unverified.",
   }),
 ] satisfies AdvisorSource[];
 
@@ -297,11 +297,11 @@ function buildApprovedProjectsContent(state: AyraState) {
     .filter((value): value is string => value !== null);
 
   return [
-    "AYRA public approval states are live and funding.",
+    "The app uses live and funding as publication/workflow status labels, not proof that a project has received money or delivered field results.",
     trackSummaries.length > 0
-      ? `Publicly approved and active projects: ${trackSummaries.join("; ")}.`
+      ? `Publicly listed project records: ${trackSummaries.join("; ")}.`
       : "No publicly approved or active projects are listed yet.",
-    "Draft initiatives are not public yet.",
+    "Project financing needs separately classified approved payment receipts; onchain QA transfers and planned funding are not project funding. Draft initiatives are not public yet.",
   ].join(" ");
 }
 
@@ -347,7 +347,7 @@ export function buildAdvisorSources(
       id: "ayra:payment-language",
       title: "AYRA payment language",
       content:
-        "AYRA public payment labels use In flight for submitted payments and Cleared for settled payments. Funding numbers must come from public payment and line-item totals, not estimates.",
+        "AYRA public payment labels In flight and Cleared describe transaction processing status only. A blockchain receipt is not proof of authorised project financing or ecological delivery. Only receipts explicitly classified against a valid approved project source and purpose count as confirmed project disbursements. Unclassified and technical validation transfers remain separately visible as onchain transfers, not funding. Planned, committed, received, unlocked and spent are distinct evidence statuses; unknown stays unknown.",
     }),
     publicSource({
       id: "ayra:approved-projects",
@@ -381,6 +381,7 @@ export function buildAdvisorSources(
         track.slug,
         initiative.slug,
       );
+      const publicSummary = getPublicInitiativeSummary(state, initiative);
       const visibleTotal = project.batches.reduce(
         (sum, batch) => sum + batch.amountUsdc,
         0,
@@ -395,7 +396,7 @@ export function buildAdvisorSources(
         project.batches
           .map(
             (batch) =>
-              `${batch.periodLabel}: ${formatUsdc(batch.amountUsdc)} ${publicBatchLabel(batch.status)}`,
+              `${batch.periodLabel}: ${formatUsdc(batch.amountUsdc)} ${publicBatchLabel(batch.status)} (${batch.publicFundingPurpose === "approved_project_disbursement" ? "approved project transfer" : batch.publicFundingPurpose === "technical_validation" ? "technical validation only" : "unclassified purpose; not project funding"})`,
           )
           .join("; ") || "No submitted or settled public payments yet.";
       const categorySummary =
@@ -410,7 +411,7 @@ export function buildAdvisorSources(
           href: `/projects/${track.slug}/${initiative.slug}`,
           trackSlug: track.slug,
           initiativeSlug: initiative.slug,
-          content: `${initiative.name} is an AYRA project in ${track.name}. Headline: ${initiative.headline}. Description: ${initiative.description}. Public steward name: ${initiative.stewardName ?? "not published"}. Progress: ${plainNumber(initiative.targetMetricCurrent)} of ${plainNumber(initiative.targetMetricGoal)} ${initiative.targetMetricLabel}. League score: ${getPublicInitiativeLeagueScore(state, initiative).score} of 99. Stage: ${getPublicInitiativeSummary(state, initiative).stage}.`,
+          content: `${initiative.name} is an AYRA project in ${track.name}. Headline: ${initiative.headline}. Description: ${initiative.description}. Public steward name: ${initiative.stewardName ?? "not published"}. Progress: ${plainNumber(initiative.targetMetricCurrent)} of ${plainNumber(initiative.targetMetricGoal)} ${initiative.targetMetricLabel}. League score: ${getPublicInitiativeLeagueScore(state, initiative).score} of 99. Stage: ${publicSummary.stage}. Status alone does not verify disbursement, paid demand or field impact.`,
         }),
         publicSource({
           id: `funding:${track.slug}:${initiative.slug}`,
@@ -418,7 +419,7 @@ export function buildAdvisorSources(
           href: `/projects/${track.slug}/${initiative.slug}`,
           trackSlug: track.slug,
           initiativeSlug: initiative.slug,
-          content: `${initiative.name} funding in ${track.name}. Visible payment volume: ${formatUsdc(visibleTotal)}. Settled total: ${formatUsdc(settledTotal)}. In flight total: ${formatUsdc(inFlightTotal)}. Public payments: ${batchSummary}. Public category spend: ${categorySummary}.`,
+          content: `${initiative.name} public payment proof in ${track.name}. Verified onchain transfer volume (including technical and unclassified receipts): ${formatUsdc(visibleTotal)}. Settled onchain transfers: ${formatUsdc(settledTotal)}. In-flight onchain transfers: ${formatUsdc(inFlightTotal)}. Confirmed project disbursements: ${formatUsdc(publicSummary.confirmedProjectDisbursementUsdc)}; a zero here can mean missing classification and is not an assertion that no project funds exist. This is not the amount raised, received by the organisation, or ecological work delivered. Public receipts: ${batchSummary}. Approved project category spend: ${categorySummary}.`,
         }),
         publicSource({
           id: `stellar:${track.slug}:${initiative.slug}`,
@@ -438,7 +439,7 @@ export function buildAdvisorSources(
             href: `/proof/${batch.id}`,
             trackSlug: track.slug,
             initiativeSlug: initiative.slug,
-            content: `${batch.code} is a public proof payment for ${initiative.name}. Period: ${batch.periodLabel}. Amount: ${formatUsdc(batch.amountUsdc)}. Public status: ${publicBatchLabel(batch.status)}. Sponsor: ${batch.sponsorName ?? "not published"}.`,
+            content: `${batch.code} is an onchain payment proof for ${initiative.name}. Period: ${batch.periodLabel}. Verified transfer amount: ${formatUsdc(batch.amountUsdc)}. Settlement status: ${publicBatchLabel(batch.status)}. Purpose: ${batch.publicFundingPurpose === "approved_project_disbursement" ? "approved project disbursement" : batch.publicFundingPurpose === "technical_validation" ? "technical QA transfer, not project funding" : "unclassified, not confirmed project funding"}. Sponsor label: ${batch.sponsorName ?? "not published"}. A receipt does not itself prove physical delivery.`,
           }),
         );
       }
@@ -558,8 +559,8 @@ export function buildAdvisorPrompt(
     "Do not reveal private contacts, emails, phone numbers, payout addresses, raw receipt paths, failed payment details, or internal reconciliation notes.",
     "For general AYRA, Season, Studio, sponsorship, vertical, timeline, traction, or Providencia questions, use the AYRA North Star and Studio sources before project-proof sources.",
     "For application, login, admin, steward, portal, access, or how-to-use questions, use the AYRA application flow, login flow, and portal access sources. Give direct public paths such as /apply and /login when the source pack provides them.",
-    "For funding questions, answer exact public totals when the source pack provides them. Use the terms Cleared and In flight.",
-    "For approved, active, live, or funded project questions, use the approved-projects source. In AYRA public state, live and funding are the public approval statuses; draft is not public yet.",
+    "For funding questions, distinguish verified onchain transfer volume from approved and classified project disbursements. Cleared and In flight describe payment settlement only. Never infer capital received, funding commitments, delivery, impact or rights from a transaction alone. A confirmed disbursement of zero may mean missing approved classification.",
+    "For approved, active, live, or funded project questions, use the approved-projects source, but explain that the workflow status labels live and funding do not verify cash receipt or actual on-ground outcomes. Draft is not public yet.",
     "Explain transaction hashes in plain public language: how to watch them, what they do, where they resolve, and which proof pack or explorer page to open.",
     "If the sources do not support the answer, set status to grounded_decline and say what public page to inspect instead.",
     "Every answered response must cite one to three source IDs copied exactly from the source pack.",
@@ -666,7 +667,7 @@ export function fallbackAdvisorAnswer(
   if (asksStudio && studioSource) {
     return {
       answer:
-        "An AYRA Studio is the working unit of the season: one company backs one vertical, three teams test adoption with local partners, and up to nine local student fellows help make it operational. The sponsor cap is 37,500 EUR, and the work is judged through a 100-point scorecard with one winner and a continuation path after the season.",
+        "An AYRA Studio is one sponsor-backed adoption lane with one independent local business or team and one agreed use case. Local operators test real product adoption and aim to retain an operating business that keeps serving customers. The current price, participants and contractual deliverables need an approved quote; older presentation prices are not a current offer.",
       citations: [advisorCitation(studioSource)],
       followups: [
         "What does the sponsor budget cover?",
@@ -708,7 +709,7 @@ export function fallbackAdvisorAnswer(
   if (asksTraction && tractionSource) {
     return {
       answer:
-        "AYRA points to two kinds of ground traction. On the payments side, VIIO is already operating as a B2SME wallet with production volume and regulated infrastructure partners. On the Providencia impact side, Climate Future programs have already planted trees and shrubs, worked with children across schools, and supported animal welfare on the island. That matters because AYRA is meant to build from existing local and operational proof, not from a blank slate.",
+        "AYRA has an existing Stellar-backed public proof application and an initial technical validation transfer. That validates a payment rail, not a funded field project, a paying merchant network or ecological results. Historical partner and local impact figures require dated source records and publication approval before being described as achieved. For current verified results, use the specific project's approved updates and properly classified receipts.",
       citations: [advisorCitation(tractionSource)],
       followups: [
         "Who is VIIO?",
