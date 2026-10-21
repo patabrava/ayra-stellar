@@ -8,7 +8,7 @@ import {
   stateFromOperatorRows,
   stateFromPublicRows,
 } from "../src/lib/ayra/data";
-import { getProofPack, getPublicWallProjection } from "../src/lib/ayra/domain";
+import { getProofPack, getPublicInitiativeSummary, getPublicWallProjection } from "../src/lib/ayra/domain";
 
 const publicRows = {
   tracks: [
@@ -98,6 +98,12 @@ const publicRows = {
       submitted_at: "2026-04-30T09:14:00Z",
       settled_at: null,
       sdp_batch_id: "mock-batch-1",
+    },
+  ],
+  fundingPurposes: [
+    {
+      batch_id: "batch-1",
+      public_funding_purpose: "approved_project_disbursement" as const,
     },
   ],
   receipts: [
@@ -247,6 +253,45 @@ describe("AYRA Supabase row mapping", () => {
     assert.ok(!JSON.stringify(wall).includes("mock-payment-1"));
     assert.ok(!JSON.stringify(wall).includes("payment-xlm-1"));
     assert.ok(!JSON.stringify(wall).includes("profile-private"));
+  });
+
+  it("never treats unclassified or technical payment proof as approved project financing", () => {
+    const unclassified = stateFromPublicRows({ ...publicRows, fundingPurposes: [] });
+    const initiative = unclassified.initiatives[0]!;
+    const publicWall = getPublicWallProjection(unclassified, "providencia");
+    assert.equal(unclassified.batches[0]?.publicFundingPurpose, undefined);
+    assert.equal(publicWall.spending.length, 0);
+    assert.equal(publicWall.batches[0]?.amountUsdc, 1);
+    assert.equal(getProofPack(unclassified, "batch-1").receipts.length, 1);
+    assert.equal(getPublicInitiativeSummary(unclassified, initiative).projectFundingEvidenceStatus, "unverified");
+
+    const technical = stateFromPublicRows({
+      ...publicRows,
+      fundingPurposes: [
+        { batch_id: "batch-1", public_funding_purpose: "technical_validation" },
+      ],
+    });
+    assert.equal(technical.batches[0]?.publicFundingPurpose, "technical_validation");
+    assert.equal(getPublicWallProjection(technical, "providencia").spending.length, 0);
+    assert.equal(getPublicInitiativeSummary(technical, technical.initiatives[0]!).confirmedProjectDisbursementUsdc, 0);
+
+    const approved = stateFromPublicRows(publicRows);
+    assert.equal(approved.batches[0]?.publicFundingPurpose, "approved_project_disbursement");
+    assert.equal(getPublicInitiativeSummary(approved, approved.initiatives[0]!).confirmedProjectDisbursementUsdc, 1);
+  });
+
+  it("keeps funding provenance private and the public view read-only", () => {
+    const sql = readFileSync("supabase/migrations/0017_public_funding_classification.sql", "utf8");
+    assert.match(sql, /batch_funding_classifications.*\(/s);
+    assert.match(sql, /source_record_id uuid not null/);
+    assert.match(sql, /reviewed_by_profile_id uuid not null/);
+    assert.match(sql, /enable row level security/);
+    assert.match(sql, /public.is_admin\(\)/);
+    const viewText = sql.slice(sql.indexOf("create or replace view public.public_batch_funding_purposes"));
+    assert.match(viewText, /select\s+b\.id as batch_id,\s+c\.public_funding_purpose/);
+    assert.doesNotMatch(viewText, /select\s+\*/);
+    assert.doesNotMatch(viewText, /c\.source_record_id|c\.reviewed_by_profile_id/);
+    assert.doesNotMatch(sql, /^update public\.funding_batches/mi);
   });
 
   it("normalizes canonical track display names from live rows", () => {

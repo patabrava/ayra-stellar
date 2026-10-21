@@ -22,6 +22,7 @@ import {
   loadStrictPublicAyraState,
 } from "@/lib/ayra/data";
 import { getProofPack } from "@/lib/ayra/domain";
+import { fundingClassificationSchema } from "@/lib/ayra/funding-classification";
 import { createProofPackRelease } from "@/lib/ayra/proof-release";
 import { MAX_UPDATE_MEDIA_BYTES } from "@/lib/ayra/upload";
 import {
@@ -1628,6 +1629,36 @@ export async function freezeProofPackReleaseAction(formData: FormData) {
     `/admin/proof?batchId=${encodeURIComponent(parsed.data.entityId)}`,
     "proof-release-created",
   );
+}
+
+export async function recordBatchFundingPurposeAction(formData: FormData) {
+  const parsed = fundingClassificationSchema.safeParse({
+    batchId: text(formData, "batchId"),
+    initiativeId: text(formData, "initiativeId"),
+    purpose: text(formData, "purpose"),
+    sourceExternalId: text(formData, "sourceExternalId"),
+    recipientGranteeId: optionalText(formData, "recipientGranteeId"),
+    evidenceReference: text(formData, "evidenceReference"),
+  });
+  if (!parsed.success) redirectWithStatus("/admin/batches", "funding-purpose-invalid");
+  const session = await requireAdminSession("/admin/batches");
+  if (session.isDemo) demoRedirect("/admin/batches", "funding-purpose-recorded");
+
+  // The signed-in admin's own client, never the service role: the database
+  // records this admin as the reviewer and rejects anyone else.
+  const { error } = await session.supabase!.rpc("admin_record_batch_funding_classification", {
+    p_batch_id: parsed.data.batchId,
+    p_initiative_id: parsed.data.initiativeId,
+    p_purpose: parsed.data.purpose,
+    p_source_external_id: parsed.data.sourceExternalId,
+    p_recipient_grantee_id: parsed.data.recipientGranteeId ?? null,
+    p_evidence_reference: parsed.data.evidenceReference,
+  });
+  if (error) redirectWithStatus("/admin/batches", "funding-purpose-error");
+
+  revalidatePath("/admin/batches");
+  revalidatePath("/");
+  redirectWithStatus("/admin/batches", "funding-purpose-recorded");
 }
 
 export async function resolveAttributionExceptionAction(formData: FormData) {

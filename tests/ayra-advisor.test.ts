@@ -7,6 +7,7 @@ import {
   buildAdvisorSources,
   fallbackAdvisorAnswer,
   isApprovedProjectsQuestion,
+  mergeAdvisorSources,
   normalizeAdvisorAnswer,
 } from "../src/lib/ayra/advisor";
 import { POST as postAdvisor } from "../src/app/api/advisor/route";
@@ -89,7 +90,7 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.ok(approved);
-    assert.match(approved.content, /public approval states are live and funding/i);
+    assert.match(approved.content, /publication\/workflow status labels/i);
     assert.match(approved.content, /Reforestation \(live\)/i);
     assert.match(approved.content, /Draft initiatives are not public yet\./i);
   });
@@ -114,10 +115,40 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.ok(funding);
-    assert.match(funding.content, /visible payment volume:/i);
-    assert.match(funding.content, /settled total:/i);
-    assert.match(funding.content, /in flight total:/i);
+    assert.match(funding.content, /verified onchain transfer volume/i);
+    assert.match(funding.content, /settled onchain transfers:/i);
+    assert.match(funding.content, /in-flight onchain transfers:/i);
     assert.match(funding.href ?? "", /\/projects\/providencia\/reforestation/);
+  });
+
+  it("keeps unverified legacy prices and impact statistics out of public advisor sources", () => {
+    const sources = buildAdvisorSources(createDemoState(), {});
+    const serialized = JSON.stringify(sources);
+    assert.doesNotMatch(serialized, /37,500 EUR hard cap|326M USD|1,500 trees|95 percent of known street dogs/i);
+    const traction = sources.find((item) => item.id === "ayra:traction");
+    assert.ok(traction);
+    assert.match(traction.content, /validation receipt/i);
+    assert.match(traction.content, /does not prove local project funding/i);
+  });
+
+  it("prefers current runtime project truth over stored copies with the same source ID", () => {
+    const runtime = buildAdvisorSources(createDemoState(), {});
+    const staleStored = [{
+      id: "funding:providencia:reforestation",
+      title: "Old funding claims",
+      content: "Project is fully funded at 100000 USDC",
+    }, {
+      id: "extra:authorised-independent-resource",
+      title: "Independent resource",
+      content: "Reference-only guidance",
+    }];
+    const sources = mergeAdvisorSources(runtime, staleStored);
+    const current = sources.find((item) => item.id === "funding:providencia:reforestation");
+    assert.ok(current);
+    assert.match(current.content, /confirmed project disbursements/i);
+    assert.doesNotMatch(current.content, /fully funded at 100000 USDC/i);
+    assert.equal(sources.filter((item) => item.id === current.id).length, 1);
+    assert.ok(sources.some((item) => item.id === "extra:authorised-independent-resource"));
   });
 
   it("builds stellar trace facts for transaction-hash questions", () => {
@@ -147,7 +178,8 @@ describe("AYRA advisor public source contract", () => {
     assert.match(northStar.content, /impact zones/i);
     assert.match(northStar.content, /Providencia/i);
     assert.ok(studioModel);
-    assert.match(studioModel.content, /one company, one vertical, three teams/i);
+    assert.match(studioModel.content, /one independent local business or team and one defined use case/i);
+    assert.doesNotMatch(studioModel.content, /37,500|hard cap/i);
     assert.ok(season);
     assert.match(season.content, /September 2026/i);
     assert.ok(verticals);
@@ -191,8 +223,8 @@ describe("AYRA advisor public source contract", () => {
 
     assert.equal(response.status, "answered");
     assert.match(response.answer, /Studio/i);
-    assert.match(response.answer, /37,500/i);
-    assert.match(response.answer, /three teams/i);
+    assert.doesNotMatch(response.answer, /37,500|three teams/i);
+    assert.match(response.answer, /one agreed use case/i);
     assert.equal(response.citations[0]?.sourceId, "ayra:studio-model");
   });
 
@@ -237,7 +269,7 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.equal(response.status, "answered");
-    assert.match(response.answer, /public approval states are live and funding/i);
+    assert.match(response.answer, /publication\/workflow status labels/i);
     assert.match(response.answer, /Reforestation/i);
     assert.equal(response.citations[0]?.sourceId, "ayra:approved-projects");
   });
@@ -319,8 +351,9 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.equal(response.status, "answered");
-    assert.match(response.answer, /Visible payment volume: 4,820 USDC/);
-    assert.match(response.answer, /Crew wages: 4,820 USDC/);
+    assert.match(response.answer, /Verified onchain transfer volume .*4,820 USDC/);
+    assert.match(response.answer, /Confirmed project disbursements: not yet verified/);
+    assert.match(response.answer, /No public category spend yet/i);
     assert.doesNotMatch(response.answer, /mock-payment-/);
     assert.equal(response.citations[0]?.sourceId, "funding:providencia:reforestation");
   });
@@ -372,7 +405,7 @@ describe("AYRA advisor public source contract", () => {
     assert.match(prompt, /SOURCE ID: ayra:apply-flow/);
     assert.match(prompt, /SOURCE ID: ayra:login-flow/);
     assert.match(prompt, /approved-projects source/i);
-    assert.match(prompt, /live and funding are the public approval statuses/i);
+    assert.match(prompt, /live and funding do not verify cash receipt/i);
     assert.match(prompt, /Conversation history:/i);
     assert.match(prompt, /Question: What is the public approval list\?/);
     assert.ok(prompt.length < 15000);
@@ -442,7 +475,7 @@ describe("AYRA advisor API route", () => {
 
       assert.equal(response.status, 200);
       assert.equal(body.mode, "deterministic-fallback");
-      assert.match(body.answer, /public approval states are live and funding/i);
+      assert.match(body.answer, /not proof that a project has received money/i);
       assert.match(body.answer, /Reforestation/i);
       assert.equal(body.citations[0]?.sourceId, "ayra:approved-projects");
     });

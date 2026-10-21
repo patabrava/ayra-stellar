@@ -1,4 +1,9 @@
-import type { AyraState, ProofPack } from "@/lib/ayra/domain";
+import {
+  publicFundingPurposeStatus,
+  type AyraState,
+  type ProofPack,
+  type PublicFundingPurpose,
+} from "@/lib/ayra/domain";
 
 type AdminCsvRow = {
   code: string;
@@ -89,7 +94,9 @@ export function buildStewardCsv({ rows }: { rows: StewardCsvRow[] }) {
   );
 }
 
-export function buildPublicBatchCsv(proof: ProofPack) {
+// A missing purpose is exported as "unclassified": a verified receipt alone is
+// never confirmed project funding.
+export function buildPublicBatchCsv(proof: ProofPack, fundingPurpose?: PublicFundingPurpose) {
   const headers = [
     "batch_code",
     "period",
@@ -107,6 +114,7 @@ export function buildPublicBatchCsv(proof: ProofPack) {
     "recipient_category",
     "attribution_match_status",
     "transaction_hash",
+    "funding_purpose",
   ];
   return toCsv(
     headers,
@@ -127,6 +135,7 @@ export function buildPublicBatchCsv(proof: ProofPack) {
       recipient_category: receipt.recipientCategory,
       attribution_match_status: receipt.attributionMatchStatus,
       transaction_hash: receipt.transactionHash,
+      funding_purpose: publicFundingPurposeStatus(fundingPurpose),
     })),
   );
 }

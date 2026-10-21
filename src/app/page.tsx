@@ -179,7 +179,7 @@ export default async function Home({ searchParams }: PageProps) {
             <br />
             lived in.
             <br />
-            Funded by AYRA.
+            Documented with AYRA.
           </h1>
           <p className="public-muted mt-8 max-w-2xl text-xl leading-8">
             AYRA builds impact zones in places we care about. First zone:
@@ -228,8 +228,8 @@ export default async function Home({ searchParams }: PageProps) {
                     </strong>
                   </span>
                   <span>
-                    <small>Funds disbursed</small>
-                    <strong>{formatUsdc(leadSummary.disbursedUsdc)}</strong>
+                    <small>Confirmed project disbursements</small>
+                    <strong>{leadSummary.projectFundingEvidenceStatus === "verified" ? formatUsdc(leadSummary.confirmedProjectDisbursementUsdc) : "Not yet verified"}</strong>
                   </span>
                   <span>
                     <small>Next milestone</small>

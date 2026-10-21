@@ -4,7 +4,13 @@ import { ArrowLeft, Download, ShieldCheck } from "lucide-react";
 
 import { Hash } from "@/components/ayra/ui";
 import { loadPublicAyraState } from "@/lib/ayra/data";
-import { formatLocal, formatUsdc, getProofPack } from "@/lib/ayra/domain";
+import {
+  formatLocal,
+  formatUsdc,
+  getProofPack,
+  getPublicBatchFundingPurpose,
+  publicFundingPurposeLabel,
+} from "@/lib/ayra/domain";
 
 type PageProps = {
   params: Promise<{ batchId: string }>;
@@ -21,6 +27,7 @@ export default async function ProofPage({ params }: PageProps) {
   }
 
   const total = proof.receipts.reduce((sum, item) => sum + item.amountUsdc, 0);
+  const fundingPurpose = getPublicBatchFundingPurpose(state, proof.batchId);
   const matched = proof.receipts.filter(
     (receipt) => receipt.attributionMatchStatus === "matched",
   ).length;
@@ -65,8 +72,12 @@ export default async function ProofPage({ params }: PageProps) {
 
           <div className="proof-ledger-strip" aria-label="Proof pack summary">
             <div className="proof-ledger-cell">
-              <span>Total</span>
+              <span>Verified transfer total</span>
               <strong>{formatUsdc(total)}</strong>
+            </div>
+            <div className="proof-ledger-cell" data-funding-purpose={fundingPurpose ?? "unclassified"}>
+              <span>Funding purpose</span>
+              <strong>{publicFundingPurposeLabel(fundingPurpose)}</strong>
             </div>
             <div className="proof-ledger-cell">
               <span>Receipt lines</span>
@@ -123,8 +134,10 @@ export default async function ProofPage({ params }: PageProps) {
           <div className="proof-exclusion">
             <ShieldCheck className="mt-1 h-5 w-5" />
             <p className="text-sm leading-6">
-              Public proof shows category-level USDC payments verified against
-              Stellar transaction metadata. Recipient names, private receipt
+              A verified receipt proves an onchain transfer, not project funding
+              or field delivery, unless it is classified as an approved project
+              disbursement. Public proof shows category-level USDC payments
+              verified against Stellar transaction metadata. Recipient names, private receipt
               files, failed payments, internal reconciliation notes, and native
               XLM fee or reserve activity stay off this page.
             </p>

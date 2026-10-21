@@ -192,6 +192,27 @@ export type MilestoneSubmission = {
   reviewNote?: string;
 };
 
+// An onchain settlement proves a transfer, not its purpose or local impact.
+// A missing classification MUST NOT be treated as approved project funding.
+export type PublicFundingPurpose = "technical_validation" | "approved_project_disbursement";
+export type PublicFundingPurposeStatus = PublicFundingPurpose | "unclassified";
+
+export function publicFundingPurposeStatus(
+  purpose?: PublicFundingPurpose,
+): PublicFundingPurposeStatus {
+  return purpose ?? "unclassified";
+}
+
+export function publicFundingPurposeLabel(purpose?: PublicFundingPurpose) {
+  if (purpose === "approved_project_disbursement") return "Approved project disbursement";
+  if (purpose === "technical_validation") return "Technical validation transfer, not project funding";
+  return "Unclassified, not confirmed project funding";
+}
+
+export function getPublicBatchFundingPurpose(state: AyraState, batchId: string) {
+  return state.batches.find((batch) => batch.id === batchId)?.publicFundingPurpose;
+}
+
 export type Batch = {
   id: string;
   initiativeId: string;
@@ -201,6 +222,7 @@ export type Batch = {
   stellarNetwork: StellarNetwork;
   paymentKind: PaymentKind;
   milestoneSubmissionId?: string;
+  publicFundingPurpose?: PublicFundingPurpose;
   status: BatchStatus;
   createdByProfileId: string;
   createdAt: string;
@@ -339,6 +361,7 @@ export type PublicWallProjection = {
     sponsorName?: string;
     status: BatchStatus;
     publicLabel: "In flight" | "Cleared";
+    publicFundingPurpose?: PublicFundingPurpose;
   }>;
 };
 
@@ -373,6 +396,7 @@ export type PublicInitiativeProjection = {
     sponsorName?: string;
     status: BatchStatus;
     publicLabel: "In flight" | "Cleared";
+    publicFundingPurpose?: PublicFundingPurpose;
   }>;
 };
 
@@ -1922,6 +1946,7 @@ export function getPublicWallProjection(
         initiatives.find((initiative) => initiative.id === batch.initiativeId)
           ?.name ?? "Unknown initiative",
       periodLabel: batch.periodLabel,
+      publicFundingPurpose: batch.publicFundingPurpose,
       amountUsdc: sumPublicProofLineItems(state, batch.id),
       sponsorName: state.sponsors.find((sponsor) => sponsor.id === batch.sponsorId)
         ?.name,
@@ -1968,6 +1993,7 @@ export function getPublicWallProjection(
           (batch) =>
             batch.id === lineItem.batchId &&
             initiativeIds.has(batch.initiativeId) &&
+            batch.publicFundingPurpose === "approved_project_disbursement" &&
             (batch.status === "submitted" || batch.status === "settled"),
         ),
       )
@@ -2166,7 +2192,11 @@ export function getPublicInitiativeLeagueScore(
   const milestones = state.milestones.filter((item) => item.initiativeId === initiative.id);
   const submissions = state.milestoneSubmissions.filter((item) => item.initiativeId === initiative.id);
   const updates = state.updates.filter((item) => item.initiativeId === initiative.id);
-  const batches = state.batches.filter((item) => item.initiativeId === initiative.id);
+  // Technical and unclassified transfers must not improve a project's funding score.
+  const batches = state.batches.filter(
+    (item) => item.initiativeId === initiative.id &&
+      item.publicFundingPurpose === "approved_project_disbursement",
+  );
   const { profile, weights } = leagueScoreWeights(initiative);
 
   const delivery = clampScore(
@@ -2219,7 +2249,7 @@ export function getPublicInitiativeLeagueScore(
 
   const funding = clampScore(
     batches.length
-      ? (batches.filter((item) => item.status === "settled").length / batches.length) * 100
+      ? (batches.filter((item) => sumPublicProofLineItems(state, item.id) > 0).length / batches.length) * 100
       : 0,
   );
 
@@ -2234,28 +2264,43 @@ export function getPublicInitiativeLeagueScore(
   return { score, profile, components: { delivery, speed, reliability, transparency, funding } };
 }
 
-// Approval stores status "funding" and nothing advances it, so the public stage
-// also counts verified USDC payouts as the project having started.
+// Project stage is an explicit editorial/operator state. A verified USDC
+// receipt alone (including a 5-USDC rail check) cannot advance it.
 export function getPublicInitiativeSummary(
   state: AyraState,
   initiative: Pick<Initiative, "id" | "status">,
-): { stage: PublicInitiativeStage; disbursedUsdc: number } {
-  const disbursedUsdc = state.batches
-    .filter(
-      (batch) =>
-        batch.initiativeId === initiative.id &&
-        (batch.status === "submitted" || batch.status === "settled"),
-    )
+): {
+  stage: PublicInitiativeStage;
+  verifiedTransfersUsdc: number;
+  confirmedProjectDisbursementUsdc: number;
+  projectFundingEvidenceStatus: "verified" | "unverified";
+} {
+  const proofBatches = state.batches.filter(
+    (batch) =>
+      batch.initiativeId === initiative.id &&
+      (batch.status === "submitted" || batch.status === "settled"),
+  );
+  const verifiedTransfersUsdc = proofBatches.reduce(
+    (sum, batch) => sum + sumPublicProofLineItems(state, batch.id),
+    0,
+  );
+  const confirmedProjectDisbursementUsdc = proofBatches
+    .filter((batch) => batch.publicFundingPurpose === "approved_project_disbursement")
     .reduce((sum, batch) => sum + sumPublicProofLineItems(state, batch.id), 0);
+
+  // A missing/legacy purpose classification is UNKNOWN, not confirmed zero.
+  const projectFundingEvidenceStatus = confirmedProjectDisbursementUsdc > 0
+    ? ("verified" as const)
+    : ("unverified" as const);
 
   const stage: PublicInitiativeStage =
     initiative.status === "draft"
       ? "In preparation"
-      : initiative.status === "live" || disbursedUsdc > 0
+      : initiative.status === "live"
         ? "In progress"
         : "Preparing to start";
 
-  return { stage, disbursedUsdc };
+  return { stage, verifiedTransfersUsdc, confirmedProjectDisbursementUsdc, projectFundingEvidenceStatus };
 }
 
 function isPublicTransactionHash(value?: string) {
