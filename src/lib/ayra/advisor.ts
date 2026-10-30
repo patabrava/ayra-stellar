@@ -418,7 +418,7 @@ export function buildAdvisorSources(
           href: `/projects/${track.slug}/${initiative.slug}`,
           trackSlug: track.slug,
           initiativeSlug: initiative.slug,
-          content: `${initiative.name} funding in ${track.name}. Visible payment volume: ${formatUsdc(visibleTotal)}. Settled total: ${formatUsdc(settledTotal)}. In flight total: ${formatUsdc(inFlightTotal)}. Public payments: ${batchSummary}. Public category spend: ${categorySummary}.`,
+          content: `${initiative.name} public payment proof in ${track.name}. Verified onchain transfer volume (including technical and unclassified receipts): ${formatUsdc(visibleTotal)}. Settled onchain transfers: ${formatUsdc(settledTotal)}. In-flight onchain transfers: ${formatUsdc(inFlightTotal)}. Confirmed project disbursements: not yet verified; missing classification never means confirmed zero or available financing. This is not the amount raised, received by the organisation, or ecological work delivered. Public receipts: ${batchSummary}. Public category spend: ${categorySummary}.`,
         }),
         publicSource({
           id: `stellar:${track.slug}:${initiative.slug}`,

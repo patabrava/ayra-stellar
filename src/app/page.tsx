@@ -8,7 +8,6 @@ import { PublicNav } from "@/components/ayra/public-nav";
 import { MetricTooltip } from "@/components/ayra/metric-tooltip";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
-  formatUsdc,
   getPublicInitiativeLeagueScore,
   getPublicInitiativeSummary,
   getPublicWallProjection,
@@ -179,7 +178,7 @@ export default async function Home({ searchParams }: PageProps) {
             <br />
             lived in.
             <br />
-            Funded by AYRA.
+            Documented with AYRA.
           </h1>
           <p className="public-muted mt-8 max-w-2xl text-xl leading-8">
             AYRA builds impact zones in places we care about. First zone:
@@ -228,8 +227,8 @@ export default async function Home({ searchParams }: PageProps) {
                     </strong>
                   </span>
                   <span>
-                    <small>Funds disbursed</small>
-                    <strong>{formatUsdc(leadSummary.disbursedUsdc)}</strong>
+                    <small>Confirmed project disbursements</small>
+                    <strong>Not yet verified</strong>
                   </span>
                   <span>
                     <small>Next milestone</small>

@@ -60,7 +60,7 @@ test.describe("public navigation mobile adaptation", () => {
     await expect(page.getByRole("navigation", { name: "Public wall" })).toBeVisible();
     await expectCompactPublicNav(page);
     await expect(
-      page.getByRole("heading", { level: 1, name: /Providencia.*lived in.*Funded by AYRA/s }),
+      page.getByRole("heading", { level: 1, name: /Providencia.*lived in.*Documented with AYRA/s }),
     ).toBeVisible();
     await expect(page.getByText(/AYRA builds impact zones in places we care about/)).toBeVisible();
     await expect(page.getByRole("link", { name: /Open Reforestation/i })).toBeVisible();

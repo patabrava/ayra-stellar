@@ -65,7 +65,7 @@ export default async function ProofPage({ params }: PageProps) {
 
           <div className="proof-ledger-strip" aria-label="Proof pack summary">
             <div className="proof-ledger-cell">
-              <span>Total</span>
+              <span>Verified transfer total</span>
               <strong>{formatUsdc(total)}</strong>
             </div>
             <div className="proof-ledger-cell">
@@ -123,8 +123,10 @@ export default async function ProofPage({ params }: PageProps) {
           <div className="proof-exclusion">
             <ShieldCheck className="mt-1 h-5 w-5" />
             <p className="text-sm leading-6">
-              Public proof shows category-level USDC payments verified against
-              Stellar transaction metadata. Recipient names, private receipt
+              A verified receipt proves an onchain transfer, not project funding
+              or field delivery, unless it is classified as an approved project
+              disbursement. Public proof shows category-level USDC payments
+              verified against Stellar transaction metadata. Recipient names, private receipt
               files, failed payments, internal reconciliation notes, and native
               XLM fee or reserve activity stay off this page.
             </p>
