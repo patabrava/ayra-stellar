@@ -278,6 +278,19 @@ describe("AYRA Stellar domain smoke path", () => {
     assert.ok(outcomeScore.components.delivery > serviceScore.components.delivery);
   });
 
+  it("does not let a settled transfer raise the funding score", () => {
+    const state = createDemoState();
+    const outcome = state.initiatives.find((initiative) => initiative.slug === "reforestation")!;
+    const settled = {
+      ...state,
+      batches: state.batches.map((batch) =>
+        batch.initiativeId === outcome.id ? { ...batch, status: "settled" as const } : batch,
+      ),
+    };
+
+    assert.equal(getPublicInitiativeLeagueScore(settled, outcome).components.funding, 0);
+  });
+
   it("does not publish hash-only receipts without verified USDC metadata", () => {
     const state = createDemoState();
     const batchId = "batch-reforest-apr26";

@@ -2166,7 +2166,6 @@ export function getPublicInitiativeLeagueScore(
   const milestones = state.milestones.filter((item) => item.initiativeId === initiative.id);
   const submissions = state.milestoneSubmissions.filter((item) => item.initiativeId === initiative.id);
   const updates = state.updates.filter((item) => item.initiativeId === initiative.id);
-  const batches = state.batches.filter((item) => item.initiativeId === initiative.id);
   const { profile, weights } = leagueScoreWeights(initiative);
 
   const delivery = clampScore(
@@ -2217,11 +2216,8 @@ export function getPublicInitiativeLeagueScore(
       )
     : 0;
 
-  const funding = clampScore(
-    batches.length
-      ? (batches.filter((item) => item.status === "settled").length / batches.length) * 100
-      : 0,
-  );
+  // No transfer is classified as project funding yet, so none may raise this score.
+  const funding = 0;
 
   const score = clampScore(
     delivery * weights.delivery +

@@ -114,9 +114,11 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.ok(funding);
-    assert.match(funding.content, /visible payment volume:/i);
-    assert.match(funding.content, /settled total:/i);
-    assert.match(funding.content, /in flight total:/i);
+    assert.match(funding.content, /verified onchain transfer volume/i);
+    assert.match(funding.content, /settled onchain transfers:/i);
+    assert.match(funding.content, /in-flight onchain transfers:/i);
+    assert.match(funding.content, /confirmed project disbursements: not yet verified/i);
+    assert.doesNotMatch(funding.content, /\bfunding in\b/i);
     assert.match(funding.href ?? "", /\/projects\/providencia\/reforestation/);
   });
 
@@ -319,7 +321,8 @@ describe("AYRA advisor public source contract", () => {
     );
 
     assert.equal(response.status, "answered");
-    assert.match(response.answer, /Visible payment volume: 4,820 USDC/);
+    assert.match(response.answer, /Verified onchain transfer volume \(including technical and unclassified receipts\): 4,820 USDC/);
+    assert.match(response.answer, /Confirmed project disbursements: not yet verified/);
     assert.match(response.answer, /Crew wages: 4,820 USDC/);
     assert.doesNotMatch(response.answer, /mock-payment-/);
     assert.equal(response.citations[0]?.sourceId, "funding:providencia:reforestation");
