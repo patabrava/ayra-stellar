@@ -10,6 +10,7 @@ import { PublicNav } from "@/components/ayra/public-nav";
 import { PublicRichText } from "@/components/ayra/public-rich-text";
 import { Chip, Hash } from "@/components/ayra/ui";
 import { ProjectGallery } from "@/components/ayra/project-gallery";
+import { PUBLIC_CONTACT_EMAIL } from "@/lib/ayra/contact";
 import { loadPublicAyraState } from "@/lib/ayra/data";
 import {
   formatLocal,
@@ -59,6 +60,16 @@ export default async function InitiativePage({ params }: PageProps) {
   );
   if (!initiativeExists) notFound();
   const project = getPublicInitiativeProjection(state, trackSlug, initiativeSlug);
+  const supportProjectUrl =
+    trackSlug === "providencia-sustainable-enterprise" &&
+    initiativeSlug === "luz-marina-regenerative-plant-nursery-learning-garden" &&
+    project.track.slug === trackSlug &&
+    project.initiative.slug === initiativeSlug
+      ? `https://transparency.ayra.haus/projects/${trackSlug}/${initiativeSlug}`
+      : null;
+  const supportInquiryHref = supportProjectUrl
+    ? `mailto:${PUBLIC_CONTACT_EMAIL}?subject=${encodeURIComponent(`Support inquiry — ${project.initiative.name}`)}&body=${encodeURIComponent(supportProjectUrl)}`
+    : null;
   const progress = percent(
     project.initiative.targetMetricCurrent,
     project.initiative.targetMetricGoal,
@@ -143,6 +154,23 @@ export default async function InitiativePage({ params }: PageProps) {
                 </span>
               </div>
             </div>
+            {supportInquiryHref ? (
+              <section
+                aria-label="Project support inquiry"
+                className="mb-8 border border-[var(--dark-rule)] p-6"
+              >
+                <p className="public-muted leading-7" id="project-support-description">
+                  Contact AYRA to discuss support for this project. No payment is collected on this page.
+                </p>
+                <a
+                  aria-describedby="project-support-description"
+                  className="btn mt-4 w-full text-center sm:w-auto"
+                  href={supportInquiryHref}
+                >
+                  Ask about supporting this project
+                </a>
+              </section>
+            ) : null}
             <div className="project-detail-visual">
               <Image
                 alt={image.alt}
